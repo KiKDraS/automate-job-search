@@ -60,10 +60,13 @@ npm run doctor
 ```
 
 Then open OpenCode in the project and start a session — Coach is the default
-agent.
+agent. First time:
 
-Feature skills arrive in later phases; `npm run doctor` tells you what works
-today.
+- `/job/setup` — onboarding: resume, preferences, work history
+- `/job/search` — find and score new jobs
+
+The first search opens a browser window — log into LinkedIn there, once.
+`npm run doctor` tells you what works today.
 
 ## Privacy & safety
 

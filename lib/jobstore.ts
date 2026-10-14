@@ -154,6 +154,25 @@ export async function seenJobKeys(): Promise<Set<string>> {
   return keys
 }
 
+/**
+ * Remove candidates already seen — present in history or repeated earlier in
+ * the same batch. Order is preserved.
+ */
+export function filterNew<T extends Pick<HistoryRecord, "title" | "company" | "location">>(
+  candidates: readonly T[],
+  seen: ReadonlySet<string>,
+): T[] {
+  const batch = new Set<string>()
+  const out: T[] = []
+  for (const candidate of candidates) {
+    const key = duplicateKey(candidate)
+    if (seen.has(key) || batch.has(key)) continue
+    batch.add(key)
+    out.push(candidate)
+  }
+  return out
+}
+
 /** Append one search section to job-history.md. */
 export async function appendHistory(
   date: string,

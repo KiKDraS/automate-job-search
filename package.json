@@ -12,6 +12,10 @@
   "scripts": {
     "doctor": "tsx scripts/doctor.ts",
     "check:skills": "tsx scripts/check-skills.ts",
+    "data-dir": "tsx scripts/data-dir.ts",
+    "linkedin": "tsx scripts/linkedin.ts",
+    "history": "tsx scripts/history.ts",
+    "save-posting": "tsx scripts/save-posting.ts",
     "test": "tsx --test tests/lib.test.ts",
     "typecheck": "tsc --noEmit"
   },

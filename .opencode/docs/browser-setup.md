@@ -3,6 +3,22 @@
 How browser automation works in this project. Used by `job-scout` and later
 `presence-coach`. Canonical tool: the Playwright MCP server (`playwright`).
 
+## Why MCP + Code Mode (spike decision)
+
+Chosen over the Playwright CLI after a measured head-to-head on a free model
+(same task, same model): MCP + Code Mode = 2 model calls / ~13.9k tokens
+processed; Playwright CLI = 5 calls / ~36.5k tokens. Code Mode lets one model
+step batch several browser operations inside a single `execute` call, and
+only the returned value enters context.
+
+## Batching discipline (mandatory)
+
+- Combine browser operations into ONE `execute` call per step: navigate +
+  extract together, return only compact data.
+- Never let snapshots or raw page text enter the conversation; write large
+  output to files (`filename` parameter) and read selectively.
+- One page at a time; result caps per run (default 25 listings).
+
 ## Profile and login
 
 - The browser runs headful with a persistent profile (Playwright MCP's

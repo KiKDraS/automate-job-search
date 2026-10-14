@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Token-economy groundwork: `.opencode/docs/token-economy.md` (context
+  budgets, delegation economics, deterministic-first rules), unused
+  Playwright MCP tools denied so they stay out of model context, and `steps`
+  caps on the Coach and release-manager agents.
+- README section on running the toolkit on free models.
 - Helper library: `lib/linkedin-url.ts` (search URL builder, job URL
   extraction and canonicalization, tracking-parameter stripping) and
   `lib/jobstore.ts` (append-only job history, duplicate keys, per-job

@@ -1,6 +1,7 @@
 ---
 description: "Git lifecycle for this repository: branches, commits, PRs, merges, tags, and GitHub releases. Never touches personal job-search data."
 mode: subagent
+steps: 20
 permissions:
   - action: edit
     resource: "*"

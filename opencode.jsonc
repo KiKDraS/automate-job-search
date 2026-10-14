@@ -28,9 +28,19 @@
 
     // ------- Browser automation guards -------
     // No arbitrary code execution in the Playwright server process; no file
-    // uploads until assisted apply lands (Phase 9).
+    // uploads until assisted apply lands (Phase 9). Unused tools are denied
+    // so they stay out of model context (see docs/token-economy.md).
     { "action": "playwright_browser_run_code_unsafe", "resource": "*", "effect": "deny" },
-    { "action": "playwright_browser_file_upload", "resource": "*", "effect": "deny" }
+    { "action": "playwright_browser_file_upload", "resource": "*", "effect": "deny" },
+    { "action": "playwright_browser_drag", "resource": "*", "effect": "deny" },
+    { "action": "playwright_browser_drop", "resource": "*", "effect": "deny" },
+    { "action": "playwright_browser_hover", "resource": "*", "effect": "deny" },
+    { "action": "playwright_browser_emulate_media", "resource": "*", "effect": "deny" },
+    { "action": "playwright_browser_resize", "resource": "*", "effect": "deny" },
+    { "action": "playwright_browser_console_messages", "resource": "*", "effect": "deny" },
+    { "action": "playwright_browser_network_request", "resource": "*", "effect": "deny" },
+    { "action": "playwright_browser_network_requests", "resource": "*", "effect": "deny" },
+    { "action": "playwright_browser_take_screenshot", "resource": "*", "effect": "deny" }
   ],
 
   // Persistent profile: log into LinkedIn once in the browser it opens.

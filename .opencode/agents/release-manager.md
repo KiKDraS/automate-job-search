@@ -31,15 +31,8 @@ You own the git lifecycle of this repository. That is your only job.
 
 ## Git flow
 
-`main` = released. `develop` = integration. Every merge goes through a PR.
-
-| Type | From → To | Naming |
-| --- | --- | --- |
-| feature | develop → develop | `feature/<name>` |
-| release | develop → main + develop | `release/vX.Y.Z` |
-| hotfix | main → main + develop | `hotfix/<name>` |
-
-Full policy: `.opencode/docs/git-flow.md`.
+Read `.opencode/docs/git-flow.md` before any branch, PR, or release work. It
+is the canonical flow, including the operating rules for shell commands.
 
 ## Authority
 

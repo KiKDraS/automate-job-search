@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Nine shared documents in `.opencode/docs/`: priority hierarchy, data
+  directory, approval flow, git flow, fit scoring, browser setup, LinkedIn UI
+  patterns, untrusted content, and voice rules.
+- `git-flow.md` is now the single source for branch and release flow;
+  the release-manager contract points to it instead of duplicating it.
 - OpenCode configuration (`opencode.jsonc`): Coach as the default agent,
   global permission policy, and the Playwright MCP server (persistent Chrome
   profile, `browser_run_code_unsafe` and `browser_file_upload` blocked).

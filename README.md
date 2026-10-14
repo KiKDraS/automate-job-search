@@ -41,6 +41,15 @@ Pipeline: **Plan → your approval → delegate → audit → your approval → 
 - Chrome (for browser automation via Playwright MCP)
 - [`gh` CLI](https://cli.github.com) (optional; used by `release-manager` workflows)
 
+## Runs on free models
+
+No paid subscription required. This toolkit is token-aware by design:
+deterministic work runs in code, browser data never floods the conversation,
+and every agent has a step budget.
+
+Pick a free model from [OpenCode Zen](https://opencode.ai/zen) as your
+session model — Coach and all subagents inherit it.
+
 ## Quick start
 
 ```sh

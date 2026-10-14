@@ -46,6 +46,7 @@ Never copy a rule between documents. Edit the source.
 | Approval flow and gates | `.opencode/docs/approval-flow.md` |
 | Data directory | `.opencode/docs/data-directory.md` |
 | Priority hierarchy | `.opencode/docs/priority-hierarchy.md` |
+| Token economy | `.opencode/docs/token-economy.md` |
 | Git flow | `.opencode/docs/git-flow.md` |
 | Fit scoring | `.opencode/docs/fit-scoring.md` |
 | Browser setup | `.opencode/docs/browser-setup.md` |

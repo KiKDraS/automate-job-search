@@ -1,6 +1,7 @@
 ---
 description: "User-facing job-search coach. Plans with the user, delegates to specialist subagents, and gates every outbound action behind explicit approval."
 mode: primary
+steps: 25
 permissions:
   - action: subagent
     resource: "*"

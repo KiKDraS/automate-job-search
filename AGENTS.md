@@ -10,8 +10,8 @@ never enters this repository.
 | --- | --- | --- | --- |
 | `coach` | primary | User-facing. Plans, gates, delegates. | `.opencode/agents/coach.md` |
 | `job-scout` | subagent | Browser work: search, fit scoring, saving postings. | `.opencode/agents/job-scout.md` |
-| `artifact-writer` | subagent | Resumes, cover letters, outreach drafts. | Phase 6 |
-| `draft-review` | subagent | Audit gate for anything outbound. | Phase 6 |
+| `artifact-writer` | subagent | Resumes, cover letters, outreach drafts. | `.opencode/agents/artifact-writer.md` |
+| `draft-review` | subagent | Audit gate for anything outbound. | `.opencode/agents/draft-review.md` |
 | `release-manager` | subagent | Git lifecycle of this repository. | `.opencode/agents/release-manager.md` |
 | `presence-coach` | subagent | LinkedIn attention layer (profile, posts, comments). | Phase 8 |
 

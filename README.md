@@ -64,6 +64,9 @@ agent. First time:
 
 - `/job/setup` — onboarding: resume, preferences, work history
 - `/job/search` — find and score new jobs
+- `/job/tailor` — tailored resume for a saved job
+- `/job/cover-letter` — cover letter for a saved job
+- `/job/outreach` — connection notes and follow-ups (draft-only)
 
 The first search opens a browser window — log into LinkedIn there, once.
 `npm run doctor` tells you what works today.

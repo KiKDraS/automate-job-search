@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Artifact pipeline: `artifact-writer` and `draft-review` agents,
+  `tailor-resume` / `cover-letter` / `outreach` skills, and `/job/tailor` /
+  `/job/cover-letter` / `/job/outreach` commands. Nothing outbound passes
+  without an APPROVED review; outreach is draft-only and logged to
+  `outreach-history.md`.
 - Core skills: `job-setup` (onboarding interview, preferences and profile
   files) and `job-search` (batched browser extraction, dedupe, fit scoring,
   saved postings), with `/job/setup` and `/job/search` commands and the

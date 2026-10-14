@@ -88,6 +88,7 @@ scripts/             doctor.ts, check-skills.ts
 ```sh
 npm run doctor        # environment self-check
 npm run check:skills  # validate skill frontmatter
+npm test              # unit tests for the helper lib
 npm run typecheck     # TypeScript check
 ```
 

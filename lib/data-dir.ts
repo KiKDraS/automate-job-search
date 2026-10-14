@@ -32,3 +32,8 @@ export async function ensureDataDir(): Promise<string> {
   await fs.mkdir(dir, { recursive: true })
   return dir
 }
+
+/** Join path segments onto the resolved data directory. */
+export function dataPath(...segments: string[]): string {
+  return path.join(resolveDataDir(), ...segments)
+}

@@ -12,6 +12,7 @@
   "scripts": {
     "doctor": "tsx scripts/doctor.ts",
     "check:skills": "tsx scripts/check-skills.ts",
+    "test": "tsx --test tests/lib.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

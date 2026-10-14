@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Helper library: `lib/linkedin-url.ts` (search URL builder, job URL
+  extraction and canonicalization, tracking-parameter stripping) and
+  `lib/jobstore.ts` (append-only job history, duplicate keys, per-job
+  folders).
+- `npm run doctor` now probes the data directory with a real write, detects
+  Chrome, checks that Playwright MCP runs via npx, and reports browser
+  profile/login guidance.
+- Unit tests for the helper library (`npm test`, Node's test runner via tsx).
 - Nine shared documents in `.opencode/docs/`: priority hierarchy, data
   directory, approval flow, git flow, fit scoring, browser setup, LinkedIn UI
   patterns, untrusted content, and voice rules.

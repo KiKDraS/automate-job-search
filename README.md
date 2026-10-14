@@ -72,7 +72,8 @@ today.
 ## Project structure
 
 ```text
-opencode.json        OpenCode config: agents, permissions, MCP servers
+opencode.jsonc       OpenCode config: agents, permissions, MCP servers
+AGENTS.md            Session rules: agent roster, gates, git flow
 .opencode/
   agents/            Coach + specialist subagents
   skills/            Job-search skills (the toolkit itself)

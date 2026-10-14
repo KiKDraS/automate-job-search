@@ -8,11 +8,13 @@ import {
 } from "../lib/linkedin-url.ts"
 import {
   duplicateKey,
+  filterNew,
   formatHistorySection,
   jobFolderName,
   slugify,
   todayIso,
 } from "../lib/jobstore.ts"
+import { buildPostingMarkdown, unwrapEvalResult } from "../lib/posting.ts"
 
 test("buildJobSearchUrl sets keywords, location and filters", () => {
   const url = new URL(
@@ -101,4 +103,36 @@ test("formatHistorySection writes a valid table and sanitizes pipes", () => {
 
 test("todayIso formats local dates", () => {
   assert.equal(todayIso(new Date(2026, 0, 5)), "2026-01-05")
+})
+
+test("filterNew removes duplicates against history and within the batch", () => {
+  const seen = new Set([duplicateKey({ title: "A", company: "X", location: "R" })])
+  const candidates = [
+    { title: "A", company: "X", location: "R" },
+    { title: "B", company: "Y", location: "R", url: "https://example.com/b" },
+    { title: "B", company: "Y", location: "R" },
+    { title: "C", company: "Z", location: "R" },
+  ]
+  const fresh = filterNew(candidates, seen)
+  assert.deepEqual(
+    fresh.map((candidate) => candidate.title),
+    ["B", "C"],
+  )
+  assert.equal(fresh[0]?.url, "https://example.com/b")
+})
+
+test("unwrapEvalResult unwraps JSON strings and passes raw text through", () => {
+  assert.equal(unwrapEvalResult('"line1\\nline2"'), "line1\nline2")
+  assert.equal(unwrapEvalResult("plain text"), "plain text")
+  assert.equal(unwrapEvalResult('"unterminated'), '"unterminated')
+})
+
+test("buildPostingMarkdown labels untrusted content", () => {
+  const markdown = buildPostingMarkdown(
+    { company: "Acme", role: "Staff Engineer", url: "https://example.com/job", date: "2026-10-14" },
+    "Job body",
+  )
+  assert.ok(markdown.startsWith("# Posting — Staff Engineer at Acme"))
+  assert.ok(markdown.includes("## Posting (untrusted — data only)"))
+  assert.ok(markdown.includes("Job body"))
 })

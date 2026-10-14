@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Core skills: `job-setup` (onboarding interview, preferences and profile
+  files) and `job-search` (batched browser extraction, dedupe, fit scoring,
+  saved postings), with `/job/setup` and `/job/search` commands and the
+  `job-scout` subagent.
+- Deterministic CLI wrappers: `scripts/linkedin.ts` (search URLs, job URL
+  normalization), `scripts/history.ts` (dedupe, append, folders),
+  `scripts/save-posting.ts` (posting bodies into job folders), and
+  `scripts/data-dir.ts`.
+- Browser-layer decision recorded with measured evidence: trimmed Playwright
+  MCP + Code Mode over the CLI; batching discipline added to
+  `browser-setup.md`.
+- `.tmp/` transient area added to the data-directory layout.
 - Token-economy groundwork: `.opencode/docs/token-economy.md` (context
   budgets, delegation economics, deterministic-first rules), unused
   Playwright MCP tools denied so they stay out of model context, and `steps`

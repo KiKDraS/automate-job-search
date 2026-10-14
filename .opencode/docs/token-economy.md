@@ -45,6 +45,8 @@ files or histories.
 
 - Browser only for login-walled flows; use `webfetch` for public pages
   (employer postings, careers pages).
+- Batch browser operations into one `execute` call; never let snapshots or
+  raw page text enter context (see `browser-setup.md`).
 - Never take screenshots unless the user asks.
 - Extraction caps: first N results (default 25), one page at a time.
 - Extract with a single scoped selector; save large output to a file and read

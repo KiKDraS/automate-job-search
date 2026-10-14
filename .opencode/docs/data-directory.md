@@ -22,6 +22,7 @@ never hand-build the path.
 ├── company-careers.json       # cache: company → careers page URL
 ├── outreach-history.md        # outreach log (who, when, what, status)
 ├── application-data.md        # reusable application answers
+├── .tmp/                      # transient handoff files (safe to delete)
 └── jobs/
     └── <company>-<role>-<date>/
         ├── posting.md         # saved job description (raw, delimited)
@@ -36,6 +37,8 @@ never hand-build the path.
   first time it has real content.
 - `job-history.md` and `outreach-history.md` are append-only. Never rewrite
   history; corrections get new entries.
+- `.tmp/` holds transient files handed between steps (candidate lists,
+  section JSON). Scripts may recreate it; deleting it is always safe.
 - Saved postings keep the raw text, delimited as untrusted content (see
   `untrusted-content.md`). Do not summarize away details needed for tailoring.
 - The data directory is never committed, copied into the repo, or included in

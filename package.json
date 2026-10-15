@@ -17,11 +17,13 @@
     "history": "tsx scripts/history.ts",
     "save-posting": "tsx scripts/save-posting.ts",
     "render-resume": "tsx scripts/render-resume.ts",
+    "resume-text": "tsx scripts/resume-text.ts",
     "test": "tsx --test tests/lib.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
+    "pdfjs-dist": "^6.4.299",
     "playwright-core": "^1.64.1",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"

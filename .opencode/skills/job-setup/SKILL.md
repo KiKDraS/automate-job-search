@@ -36,7 +36,15 @@ work history?"
 
 - **Has one**: ask them to copy it into `<data dir>/resume/`, then verify
   the file exists with the glob/read tools — never shell (it is denied for
-  this flow). Offer a `resume-review` pass before continuing.
+  this flow). If it is a PDF, extract the text once so every later step can
+  read it:
+
+      npx tsx scripts/resume-text.ts --file <data dir>/resume/<name>.pdf
+
+  It writes `<name>.txt` beside the PDF. Scanned or image-only PDFs are
+  reported, not written — then ask the user to paste the resume text or
+  share a text-based export (DOCX included). Offer a `resume-review` pass
+  before continuing.
 - **No resume**: run the extended interview — for each role: company, title,
   dates, one line of scope, 2–3 bullets with real numbers; plus education
   (with institution), certifications (with issuer and year), and a contact

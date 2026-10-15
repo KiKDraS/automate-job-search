@@ -4,6 +4,7 @@ import os from "node:os"
 import path from "node:path"
 import { test } from "node:test"
 import { parseDataDirConfig, resolveDataDirWithSource } from "../lib/data-dir.ts"
+import { isLikelyScanned, joinPages } from "../lib/resume-text.ts"
 import {
   buildJobSearchUrl,
   jobIdFromUrl,
@@ -115,6 +116,16 @@ test("parseDataDirConfig accepts valid configs and rejects invalid ones", () => 
   assert.equal(parseDataDirConfig('{"dataDir":"  "}'), null)
   assert.equal(parseDataDirConfig('{"other":1}'), null)
   assert.equal(parseDataDirConfig("not json"), null)
+})
+
+test("joinPages normalizes whitespace and drops empty pages", () => {
+  assert.equal(joinPages(["  Hello   world ", "", "Second\r\npage"]), "Hello world\n\nSecond\npage")
+})
+
+test("isLikelyScanned flags near-empty extraction output", () => {
+  assert.equal(isLikelyScanned(""), true)
+  assert.equal(isLikelyScanned("short"), true)
+  assert.equal(isLikelyScanned("x".repeat(300)), false)
 })
 
 test("data dir resolution: env wins, config second, default last", () => {

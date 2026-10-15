@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Resume text extraction: `scripts/resume-text.ts` (+ `lib/resume-text.ts`,
+  pdfjs-dist) turns a text-layer resume PDF into `resume/base.txt` — the
+  canonical readable source for review and tailoring, so free models without
+  document support can work with any resume. Scanned/image PDFs are detected
+  and reported; the skills fall back to asking for pasted text.
 - Resume quality: the `resume-review` skill and `/job/resume-review` command,
   plus `.opencode/docs/resume-standards.md` — the canonical rules for
   structure, ATS, impact, consistency, and a human-reading voice. Creation

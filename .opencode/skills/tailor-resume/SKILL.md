@@ -30,15 +30,16 @@ Follow the steps exactly.
    - Reorder and rephrase real experience to lead with what the posting asks
      for. Rewording is allowed; inventing is not.
    - Quantified achievements only as they appear in the profile or resume.
-   - Plain, ATS-friendly markdown: no tables, no columns, no graphics.
-   - 1–2 pages equivalent; trim to relevance, do not pad.
+   - Follow `.opencode/docs/resume-standards.md` for structure, ATS rules,
+     impact, and voice.
 4. Offer the PDF export (default yes when the user plans to apply):
 
        npx tsx scripts/render-resume.ts --file <job folder>/resume.md
 
    It writes `resume.pdf` next to the file.
 5. Report to Coach: file path(s), 3–5 bullets on what was emphasized, and
-   the gap list.
+   the gaps — as questions when the experience might exist but is not in the
+   profile (standards: "Missing data: ask, never guess").
 
 ## Rules
 

@@ -49,8 +49,8 @@ models, with no subscription required.
 
 ## Scope
 
-**In:** setup, job search, tailored resumes, cover letters, outreach drafts,
-launch greeting.
+**In:** setup, job search, resumes (build, review, tailoring), cover letters,
+outreach drafts, launch greeting.
 
 **Deferred:**
 

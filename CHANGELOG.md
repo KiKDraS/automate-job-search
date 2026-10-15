@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Resume quality: the `resume-review` skill and `/job/resume-review` command,
+  plus `.opencode/docs/resume-standards.md` — the canonical rules for
+  structure, ATS, impact, consistency, and a human-reading voice. Creation
+  flows (`job-setup`, `tailor-resume`) write to the standards and ask one
+  batched clarification round instead of writing around missing data;
+  rewrites pass `draft-review`.
+- SPEC.md: resumes scope now includes review (user-approved).
 - Data directory automation: setup asks where data should live and calls
   `jobsearch_set_data_dir` — the new `data-dir` plugin validates the path,
   creates the folder, stores the choice

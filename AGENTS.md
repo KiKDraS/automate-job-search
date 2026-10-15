@@ -60,3 +60,4 @@ first, and update it in the same change as the decision that caused it.
 | LinkedIn UI patterns | `.opencode/docs/linkedin-ui-patterns.md` |
 | Untrusted content | `.opencode/docs/untrusted-content.md` |
 | Voice rules | `.opencode/docs/voice-rules.md` |
+| Resume standards | `.opencode/docs/resume-standards.md` |

@@ -36,12 +36,15 @@ work history?"
 
 - **Has one**: ask them to copy it into `<data dir>/resume/`, then verify
   the file exists with the glob/read tools — never shell (it is denied for
-  this flow).
+  this flow). Offer a `resume-review` pass before continuing.
 - **No resume**: run the extended interview — for each role: company, title,
-  dates, one line of scope, 2–3 bullets with real numbers; plus education,
-  certifications, and a contact line (name, city, email, LinkedIn URL).
-  Write `<data dir>/resume/base.md` with `assets/resume-template.md`
-  (ATS-plain markdown). Then offer the PDF export:
+  dates, one line of scope, 2–3 bullets with real numbers; plus education
+  (with institution), certifications (with issuer and year), and a contact
+  line (name, city, email, LinkedIn URL). Write `<data dir>/resume/base.md`
+  with `assets/resume-template.md`, following
+  `.opencode/docs/resume-standards.md`. Before finalizing, run one batched
+  clarification round for anything vague or missing (standards: "Missing
+  data: ask, never guess"). Then offer the PDF export:
 
       npx tsx scripts/render-resume.ts --file <data dir>/resume/base.md
 

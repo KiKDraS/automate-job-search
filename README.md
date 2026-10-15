@@ -69,6 +69,14 @@ agent. First time:
 - `/job/outreach` — connection notes and follow-ups (draft-only)
 - `/job` — show the menu anytime
 
+New sessions greet you automatically: a session-start plugin opens a Coach
+session with the menu on screen. Prefer to open straight into the menu
+yourself? Add a shell alias:
+
+```sh
+alias job='opencode --prompt "/job"'
+```
+
 The first search opens a browser window — log into LinkedIn there, once.
 `npm run doctor` tells you what works today.
 

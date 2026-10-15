@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Greeting on launch: `coach-greeting` now ships as a two-part plugin
+  package. The server half nudges fresh Coach sessions; the TUI half opens a
+  greeted welcome session when OpenCode starts (reusing it while the user
+  has not typed in it). README documents an `opencode --prompt "/job"`
+  alias as an alternative.
 - Coach greets new sessions: a session-start plugin (`coach-greeting`) nudges
   fresh top-level Coach sessions with a synthetic message; the greeting menu
   lives in the Coach contract, and `/job` shows it on demand.

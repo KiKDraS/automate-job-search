@@ -1,12 +1,15 @@
 import { Plugin } from "@opencode/plugin"
 
 /**
- * coach-greeting — greet the user when a fresh Coach session starts.
+ * coach-greeting (server half) — nudge fresh Coach sessions to greet.
  *
  * Reacts to `session.created` events: top-level Coach sessions in this
  * location, still empty, not greeted before. The nudge is a synthetic
  * message; the greeting itself is defined in the Coach agent contract
  * (`First contact` in `.opencode/agents/coach.md`).
+ *
+ * The TUI half (`tui.ts`) creates a welcome session on launch so this
+ * nudge has somewhere to land before the user types anything.
  */
 const NUDGE =
   "Session start — greet the user: one warm line, then a short menu (setup, search, artifacts, help), then ask what they want to do."

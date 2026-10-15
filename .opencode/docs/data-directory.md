@@ -15,7 +15,7 @@ never hand-build the path.
 
 ```text
 <data dir>/
-├── resume/                    # source resume files (PDF/DOCX)
+├── resume/                    # source resume files (PDF) + extracted base.txt
 ├── profile.md                 # work-history interview output
 ├── preferences.md             # target roles, locations, compensation, constraints
 ├── job-history.md             # append-only log of every job seen

@@ -11,8 +11,11 @@ or estimate.
 
 ## Inputs
 
-- The resume file(s) in `<data dir>/resume/` (the base; if only `base.md`
-  exists, use it).
+- The resume text in `<data dir>/resume/`: `base.txt` (extracted from a PDF),
+  `base.md` (built here), or any `.txt`/`.md`. If only a PDF exists, extract
+  it first:
+  `npx tsx scripts/resume-text.ts --file <data dir>/resume/<name>.pdf`
+  (scanned PDFs are reported — ask the user to paste the text instead).
 - `<data dir>/profile.md` for verification.
 - `<data dir>/preferences.md` for target-role relevance.
 - The standards: `.opencode/docs/resume-standards.md`.

@@ -123,6 +123,7 @@ async function main(): Promise<void> {
   // ---- docs references ----
   const files = [
     path.resolve(ROOT, "AGENTS.md"),
+    path.resolve(ROOT, "SPEC.md"),
     ...(await walkMarkdown(path.resolve(ROOT, ".opencode"))),
   ]
   const seenRefs = new Set<string>()

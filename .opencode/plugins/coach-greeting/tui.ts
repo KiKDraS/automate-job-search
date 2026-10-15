@@ -10,6 +10,18 @@ import { Plugin } from "@opencode/plugin/tui"
  *
  * Runs once per TUI process. Failures are caught and logged; the TUI must
  * never break because of this plugin.
+ *
+ * Maintainer notes (learned the hard way; keep in mind when editing):
+ * - TUI plugin storage keys must not contain "/": storage composes
+ *   `plugin.<id>.<key>` and rejects invalid segments.
+ * - `context.client.session.create(...)` resolves to the session object
+ *   itself — the id is at the top level (`{ id }`), not `{ data: { id } }`.
+ *   Both shapes are accepted below, defensively.
+ * - On a fresh launch `router.current()` reports `{ type: "home" }`; with a
+ *   session open it reports `{ type: "session", sessionID }`. The resume
+ *   guard below relies on that distinction.
+ * - Plugin console output is not captured by OpenCode's log file. When
+ *   debugging this plugin, write temporary lines to a file instead.
  */
 
 const WELCOME_TITLE = "Welcome"

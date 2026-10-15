@@ -37,10 +37,14 @@ Pipeline: **Plan → user approval → delegate → draft-review → user approv
 | Scope | Lives in |
 | --- | --- |
 | All agents | this file |
+| Project intent and scope | `SPEC.md` |
 | Two or more agents | `.opencode/docs/` (referenced by pointer) |
 | One agent | that agent's file in `.opencode/agents/` |
 
 Never copy a rule between documents. Edit the source.
+
+`SPEC.md` changes require explicit user approval — propose the exact change
+first, and update it in the same change as the decision that caused it.
 
 ## Shared documents
 

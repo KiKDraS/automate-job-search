@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `SPEC.md`: the project's single intent document — mission, principles
+  (warmth, token economy, approval-first, deterministic-first, no rule
+  copies, data privacy), system map, scope (in / deferred / out), and how we
+  work. Modifications require explicit user approval; `check:skills`
+  validates its doc pointers; the PR template carries the approval gate.
 - Greeting on launch: `coach-greeting` now ships as a two-part plugin
   package. The server half nudges fresh Coach sessions; the TUI half opens a
   greeted welcome session when OpenCode starts (reusing it while the user

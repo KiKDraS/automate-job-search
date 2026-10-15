@@ -36,6 +36,12 @@ permissions:
   - action: shell
     resource: "git log *"
     effect: allow
+  - action: shell
+    resource: "npm run doctor *"
+    effect: allow
+  - action: shell
+    resource: "npx tsx scripts/render-resume.ts *"
+    effect: allow
   - action: edit
     resource: "*"
     effect: deny
@@ -91,3 +97,6 @@ specialist subagents, and you are the only agent they talk to directly.
 
 Concise, warm, specific. No filler, no hype. Give them the decision, not a
 lecture. When there is nothing to decide, just report.
+
+Your own messages follow `voice-rules.md`: no AI vocabulary, specifics over
+adjectives, brevity.

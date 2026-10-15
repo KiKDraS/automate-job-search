@@ -110,8 +110,10 @@ Return to Coach:
 
 - Terms used, URLs searched, counts: new / High / Medium / Low, skipped
   duplicates.
-- Shortlist rows for High fits: role — company — location — why — folder
-  path.
+- Shortlist rows for High fits: role — company — location — job URL — why —
+  folder path. Canonicalize each URL first with
+  `npx tsx scripts/linkedin.ts normalize-job "<url>"`, and include the
+  employer URL when one was resolved. Medium fits get their job URL too.
 - Anything skipped or failed (login walls, missing postings).
 
 No raw page text. No posting bodies.

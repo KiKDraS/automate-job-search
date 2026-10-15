@@ -3,6 +3,12 @@
 Writing standards for everything the user sends under their name: outreach
 messages, cover letters, posts, comments — and for how Coach presents them.
 
+## Scope
+
+Applies to every text surface: Coach's chat replies, subagent reports, and
+all artifacts. For longer prose, the house style is the global `no-ai-slop`
+skill.
+
 ## The rules
 
 1. **Specific over vague.** Real numbers, names, dates. "Cut build time 40%"

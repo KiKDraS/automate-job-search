@@ -15,6 +15,7 @@ import {
   todayIso,
 } from "../lib/jobstore.ts"
 import { buildPostingMarkdown, unwrapEvalResult } from "../lib/posting.ts"
+import { buildResumeHtml, markdownToHtml } from "../lib/resume-html.ts"
 
 test("buildJobSearchUrl sets keywords, location and filters", () => {
   const url = new URL(
@@ -135,4 +136,22 @@ test("buildPostingMarkdown labels untrusted content", () => {
   assert.ok(markdown.startsWith("# Posting — Staff Engineer at Acme"))
   assert.ok(markdown.includes("## Posting (untrusted — data only)"))
   assert.ok(markdown.includes("Job body"))
+})
+
+test("markdownToHtml converts the resume subset", () => {
+  const html = markdownToHtml(
+    "# Jane Doe\n\n## Experience\n\n- **Built** things\n- Shipped 3 features\n\nPlain line & <tag>",
+  )
+  assert.ok(html.includes("<h1>Jane Doe</h1>"))
+  assert.ok(html.includes("<h2>Experience</h2>"))
+  assert.ok(html.includes("<li><strong>Built</strong> things</li>"))
+  assert.ok(html.includes("Plain line &amp; &lt;tag&gt;"))
+})
+
+test("buildResumeHtml produces a styled document", () => {
+  const html = buildResumeHtml("# Jane Doe", "resume.md")
+  assert.ok(html.startsWith("<!doctype html>"))
+  assert.ok(html.includes("<title>resume.md</title>"))
+  assert.ok(html.includes("<h1>Jane Doe</h1>"))
+  assert.ok(html.includes("@page"))
 })

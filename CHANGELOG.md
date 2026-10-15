@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Live-test hardening: voice rules now bind every text surface (chat,
+  reports, artifacts); shortlists include canonical job URLs; setup asks
+  where the data folder lives (guided custom-path flow); setup can build a
+  base resume from scratch with PDF export via `scripts/render-resume.ts`
+  (playwright-core + system Chrome).
+- `check:skills` now validates `.opencode/docs/` references and skill-local
+  `assets/`/`references/` files, and warns when a description exceeds the
+  token-economy budget.
+- Doctor checks `playwright-core` for resume PDF export.
 - Artifact pipeline: `artifact-writer` and `draft-review` agents,
   `tailor-resume` / `cover-letter` / `outreach` skills, and `/job/tailor` /
   `/job/cover-letter` / `/job/outreach` commands. Nothing outbound passes

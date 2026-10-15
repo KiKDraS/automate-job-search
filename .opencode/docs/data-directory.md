@@ -45,3 +45,20 @@ never hand-build the path.
   prompts that leave the session except where a skill explicitly says so.
 - Paths in this repository are written with forward slashes; code resolves
   them with `path.join`, never by string concatenation.
+
+## Custom location
+
+To keep data elsewhere (e.g. an encrypted volume):
+
+1. Set `JOBSEARCH_HOME` in your shell profile (absolute path).
+2. Add matching permission rules to `opencode.jsonc`, replacing
+   `~/.jobsearch` with your path:
+
+   ```jsonc
+   { "action": "external_directory", "resource": "<path>/*", "effect": "allow" },
+   { "action": "read", "resource": "<path>/*", "effect": "allow" },
+   { "action": "edit", "resource": "<path>/*", "effect": "allow" },
+   ```
+
+3. Restart the session and verify: `npm run doctor` shows the custom path as
+   writable.

@@ -48,17 +48,16 @@ never hand-build the path.
 
 ## Custom location
 
-To keep data elsewhere (e.g. an encrypted volume):
+Setup asks where the data should live; for a custom path it calls
+`jobsearch_set_data_dir` (the `data-dir` plugin). The tool validates the
+path, creates the folder, writes the user config file
+(`~/.config/opencode/jobsearch.json`), and grants the running session
+access. New sessions are granted automatically — no manual configuration.
 
-1. Set `JOBSEARCH_HOME` in your shell profile (absolute path).
-2. Add matching permission rules to `opencode.jsonc`, replacing
-   `~/.jobsearch` with your path:
+Resolution order (canonical implementation: `lib/data-dir.ts`):
 
-   ```jsonc
-   { "action": "external_directory", "resource": "<path>/*", "effect": "allow" },
-   { "action": "read", "resource": "<path>/*", "effect": "allow" },
-   { "action": "edit", "resource": "<path>/*", "effect": "allow" },
-   ```
+1. `JOBSEARCH_HOME` environment variable — advanced setups
+2. The user config file written by the tool
+3. `~/.jobsearch` — the default
 
-3. Restart the session and verify: `npm run doctor` shows the custom path as
-   writable.
+`npm run doctor` shows the resolved path and where the choice came from.

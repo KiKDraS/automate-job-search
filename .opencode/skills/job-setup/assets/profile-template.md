@@ -1,0 +1,19 @@
+# Profile
+
+## Roles
+
+- <Company> — <Title> (<start>–<end>): <one line of scope>
+- <Company> — <Title> (<start>–<end>): <one line of scope>
+
+## Skills
+
+<top 8, comma-separated>
+
+## Achievements
+
+- <achievement with a real number where possible>
+- <achievement with a real number where possible>
+
+## Education / Certifications
+
+- <degree, institution, year>

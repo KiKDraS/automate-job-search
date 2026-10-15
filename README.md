@@ -41,6 +41,15 @@ Pipeline: **Plan → your approval → delegate → audit → your approval → 
 - Chrome (for browser automation via Playwright MCP)
 - [`gh` CLI](https://cli.github.com) (optional; used by `release-manager` workflows)
 
+## Runs on free models
+
+No paid subscription required. This toolkit is token-aware by design:
+deterministic work runs in code, browser data never floods the conversation,
+and every agent has a step budget.
+
+Pick a free model from [OpenCode Zen](https://opencode.ai/zen) as your
+session model — Coach and all subagents inherit it.
+
 ## Quick start
 
 ```sh
@@ -51,10 +60,16 @@ npm run doctor
 ```
 
 Then open OpenCode in the project and start a session — Coach is the default
-agent.
+agent. First time:
 
-Feature skills arrive in later phases; `npm run doctor` tells you what works
-today.
+- `/job/setup` — onboarding: resume, preferences, work history
+- `/job/search` — find and score new jobs
+- `/job/tailor` — tailored resume for a saved job
+- `/job/cover-letter` — cover letter for a saved job
+- `/job/outreach` — connection notes and follow-ups (draft-only)
+
+The first search opens a browser window — log into LinkedIn there, once.
+`npm run doctor` tells you what works today.
 
 ## Privacy & safety
 
@@ -72,7 +87,8 @@ today.
 ## Project structure
 
 ```text
-opencode.json        OpenCode config: agents, permissions, MCP servers
+opencode.jsonc       OpenCode config: agents, permissions, MCP servers
+AGENTS.md            Session rules: agent roster, gates, git flow
 .opencode/
   agents/            Coach + specialist subagents
   skills/            Job-search skills (the toolkit itself)
@@ -87,6 +103,7 @@ scripts/             doctor.ts, check-skills.ts
 ```sh
 npm run doctor        # environment self-check
 npm run check:skills  # validate skill frontmatter
+npm test              # unit tests for the helper lib
 npm run typecheck     # TypeScript check
 ```
 

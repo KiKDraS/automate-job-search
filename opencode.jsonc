@@ -1,0 +1,56 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  // The agent the user talks to.
+  "default_agent": "coach",
+
+  // Ordered rules; the LAST matching rule wins. Global rules apply to every
+  // agent. This file is the only place global permission policy lives.
+  "permissions": [
+    // ------- Personal data directory (outside the repo) -------
+    { "action": "external_directory", "resource": "~/.jobsearch/*", "effect": "allow" },
+    { "action": "read", "resource": "~/.jobsearch/*", "effect": "allow" },
+    { "action": "edit", "resource": "~/.jobsearch/*", "effect": "allow" },
+    { "action": "read", "resource": "~/.jobsearch/.env", "effect": "ask" },
+
+    // ------- Shell: ask by default, allow routine reads/scripts -------
+    { "action": "shell", "resource": "*", "effect": "ask" },
+    { "action": "shell", "resource": "git status *", "effect": "allow" },
+    { "action": "shell", "resource": "git diff *", "effect": "allow" },
+    { "action": "shell", "resource": "git log *", "effect": "allow" },
+    { "action": "shell", "resource": "npm run *", "effect": "allow" },
+
+    // ------- Destructive or remote-mutating commands: blocked everywhere -------
+    // release-manager re-allows what it needs in its own agent file.
+    { "action": "shell", "resource": "rm *", "effect": "deny" },
+    { "action": "shell", "resource": "sudo *", "effect": "deny" },
+    { "action": "shell", "resource": "git push *", "effect": "deny" },
+
+    // ------- Browser automation guards -------
+    // No arbitrary code execution in the Playwright server process; no file
+    // uploads until assisted apply lands (Phase 9). Unused tools are denied
+    // so they stay out of model context (see docs/token-economy.md).
+    { "action": "playwright_browser_run_code_unsafe", "resource": "*", "effect": "deny" },
+    { "action": "playwright_browser_file_upload", "resource": "*", "effect": "deny" },
+    { "action": "playwright_browser_drag", "resource": "*", "effect": "deny" },
+    { "action": "playwright_browser_drop", "resource": "*", "effect": "deny" },
+    { "action": "playwright_browser_hover", "resource": "*", "effect": "deny" },
+    { "action": "playwright_browser_emulate_media", "resource": "*", "effect": "deny" },
+    { "action": "playwright_browser_resize", "resource": "*", "effect": "deny" },
+    { "action": "playwright_browser_console_messages", "resource": "*", "effect": "deny" },
+    { "action": "playwright_browser_network_request", "resource": "*", "effect": "deny" },
+    { "action": "playwright_browser_network_requests", "resource": "*", "effect": "deny" },
+    { "action": "playwright_browser_take_screenshot", "resource": "*", "effect": "deny" }
+  ],
+
+  // Persistent profile: log into LinkedIn once in the browser it opens.
+  // Profile location is Playwright MCP's per-workspace default (per OS).
+  "mcp": {
+    "servers": {
+      "playwright": {
+        "type": "local",
+        "command": ["npx", "@playwright/mcp@latest", "--browser", "chrome"]
+      }
+    }
+  }
+}

@@ -1,22 +1,25 @@
 #!/usr/bin/env node
 /**
- * check-skills — validate SKILL.md files under .opencode/skills.
+ * check-skills — validate skills and cross-references.
  *
- * Phase 1 scope:
- *   - directory names are lowercase kebab-case (skill IDs)
- *   - each skill directory contains a SKILL.md with a frontmatter block
- *   - frontmatter declares `name` and `description`
+ * Failures (exit 1):
+ *   - skill directory not lowercase kebab-case
+ *   - missing SKILL.md, frontmatter, name, or description
+ *   - missing `.opencode/docs/*.md` file referenced from AGENTS.md or .opencode
+ *   - missing skill-local `assets/` or `references/` file
+ *
+ * Warnings (exit 0):
+ *   - description over the token-economy budget (~40 words)
  */
 import { promises as fs } from "node:fs"
 import path from "node:path"
 
-const SKILLS_DIR = path.resolve(process.cwd(), ".opencode", "skills")
+const ROOT = process.cwd()
+const SKILLS_DIR = path.resolve(ROOT, ".opencode", "skills")
 const ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
-
-interface Problem {
-  skill: string
-  message: string
-}
+const DESCRIPTION_WORD_BUDGET = 40
+const DOCS_REF_PATTERN = /\.opencode\/docs\/[a-z0-9-]+\.md/g
+const LOCAL_REF_PATTERN = /`((?:assets|references)\/[^`]+)`/g
 
 function extractFrontmatter(source: string): string | null {
   if (!source.startsWith("---\n") && !source.startsWith("---\r\n")) {
@@ -29,8 +32,10 @@ function extractFrontmatter(source: string): string | null {
   return source.slice(4, end)
 }
 
-function hasField(frontmatter: string, field: string): boolean {
-  return new RegExp(`^${field}:\\s*\\S`, "m").test(frontmatter)
+function fieldValue(frontmatter: string, field: string): string | null {
+  const match = frontmatter.match(new RegExp(`^${field}:\\s*(.+)$`, "m"))
+  if (!match) return null
+  return (match[1] ?? "").trim().replace(/^"|"$/g, "")
 }
 
 async function listSkillIds(): Promise<string[]> {
@@ -49,49 +54,110 @@ async function listSkillIds(): Promise<string[]> {
   return flags.filter((id): id is string => id !== null)
 }
 
-async function main(): Promise<void> {
-  const ids = await listSkillIds()
-  if (ids.length === 0) {
-    console.log(`No skills to check yet (${SKILLS_DIR} is empty or missing).`)
-    return
+async function walkMarkdown(dir: string, out: string[] = []): Promise<string[]> {
+  let entries
+  try {
+    entries = await fs.readdir(dir, { withFileTypes: true })
+  } catch {
+    return out
   }
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name)
+    if (entry.isDirectory()) {
+      await walkMarkdown(full, out)
+    } else if (entry.isFile() && entry.name.endsWith(".md")) {
+      out.push(full)
+    }
+  }
+  return out
+}
 
-  const problems: Problem[] = []
+async function main(): Promise<void> {
+  const problems: string[] = []
+  const warnings: string[] = []
+
+  // ---- skills ----
+  const ids = await listSkillIds()
   for (const id of ids) {
     if (!ID_PATTERN.test(id)) {
-      problems.push({ skill: id, message: "directory name is not lowercase kebab-case" })
+      problems.push(`${id}: directory name is not lowercase kebab-case`)
     }
     const skillFile = path.join(SKILLS_DIR, id, "SKILL.md")
     let source: string
     try {
       source = await fs.readFile(skillFile, "utf8")
     } catch {
-      problems.push({ skill: id, message: "missing SKILL.md" })
+      problems.push(`${id}: missing SKILL.md`)
       continue
     }
     const frontmatter = extractFrontmatter(source)
     if (frontmatter === null) {
-      problems.push({ skill: id, message: "SKILL.md has no frontmatter block" })
+      problems.push(`${id}: SKILL.md has no frontmatter block`)
       continue
     }
-    if (!hasField(frontmatter, "name")) {
-      problems.push({ skill: id, message: "frontmatter missing `name`" })
+    if (fieldValue(frontmatter, "name") === null) {
+      problems.push(`${id}: frontmatter missing \`name\``)
     }
-    if (!hasField(frontmatter, "description")) {
-      problems.push({ skill: id, message: "frontmatter missing `description`" })
+    const description = fieldValue(frontmatter, "description")
+    if (description === null) {
+      problems.push(`${id}: frontmatter missing \`description\``)
+    } else {
+      const words = description.split(/\s+/).filter(Boolean).length
+      if (words > DESCRIPTION_WORD_BUDGET) {
+        warnings.push(
+          `${id}: description is ${words} words (budget ~${DESCRIPTION_WORD_BUDGET}) — it is listed on every model step`,
+        )
+      }
+    }
+    const body = source.slice(source.indexOf("\n---", 3) + 4)
+    for (const match of body.matchAll(LOCAL_REF_PATTERN)) {
+      const ref = match[1] ?? ""
+      try {
+        await fs.access(path.join(SKILLS_DIR, id, ref))
+      } catch {
+        problems.push(`${id}: \`${ref}\` referenced but missing`)
+      }
     }
   }
 
-  if (problems.length > 0) {
-    for (const problem of problems) {
-      console.log(`✗ ${problem.skill}: ${problem.message}`)
+  // ---- docs references ----
+  const files = [
+    path.resolve(ROOT, "AGENTS.md"),
+    ...(await walkMarkdown(path.resolve(ROOT, ".opencode"))),
+  ]
+  const seenRefs = new Set<string>()
+  for (const file of files) {
+    let source: string
+    try {
+      source = await fs.readFile(file, "utf8")
+    } catch {
+      continue
     }
-    console.log(`\n${problems.length} problem(s) across ${ids.length} skill(s).`)
-    process.exitCode = 1
+    for (const match of source.matchAll(DOCS_REF_PATTERN)) {
+      const ref = match[0]
+      if (seenRefs.has(ref)) continue
+      seenRefs.add(ref)
+      try {
+        await fs.access(path.resolve(ROOT, ref))
+      } catch {
+        problems.push(`${path.relative(ROOT, file)}: references \`${ref}\` but it is missing`)
+      }
+    }
+  }
+
+  // ---- report ----
+  if (ids.length === 0 && seenRefs.size === 0) {
+    console.log(`No skills to check yet (${SKILLS_DIR} is empty or missing).`)
     return
   }
-
-  console.log(`✓ ${ids.length} skill(s) valid.`)
+  for (const warning of warnings) console.log(`! ${warning}`)
+  for (const problem of problems) console.log(`✗ ${problem}`)
+  console.log(
+    `${ids.length} skill(s), ${seenRefs.size} docs reference(s): ${warnings.length} warning(s), ${problems.length} problem(s).`,
+  )
+  if (problems.length > 0) {
+    process.exitCode = 1
+  }
 }
 
 await main()

@@ -43,5 +43,6 @@ and follow it exactly.
 ## Report format
 
 Compact only: counts (new / High / Medium / Low), shortlist rows
-(role — company — location — why — folder path), and anything skipped.
+(role — company — location — job URL — why — folder path), and anything
+skipped. Prose follows `voice-rules.md` (no AI vocabulary, specifics).
 No raw page text, no prose dumps.

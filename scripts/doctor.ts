@@ -137,31 +137,54 @@ async function checkPlaywrightMcp(): Promise<CheckResult> {
   }
 }
 
-function playwrightCacheDir(): string {
+async function checkPlaywrightCore(): Promise<CheckResult> {
+  try {
+    await import("playwright-core")
+    return check("Playwright (PDF)", "ok", "playwright-core available for resume PDF export")
+  } catch {
+    return check(
+      "Playwright (PDF)",
+      "warn",
+      "playwright-core not installed — run npm install to enable resume PDF export",
+    )
+  }
+}
+
+function playwrightProfileDirs(): string[] {
   if (process.platform === "darwin") {
-    return path.join(os.homedir(), "Library", "Caches", "ms-playwright")
+    return [
+      path.join(os.homedir(), "Library", "Caches", "ms-playwright-mcp"),
+      path.join(os.homedir(), "Library", "Caches", "ms-playwright"),
+    ]
   }
   if (process.platform === "win32") {
     const localAppData = process.env["LOCALAPPDATA"] ?? path.join(os.homedir(), "AppData", "Local")
-    return path.join(localAppData, "ms-playwright")
+    return [path.join(localAppData, "ms-playwright-mcp"), path.join(localAppData, "ms-playwright")]
   }
-  return path.join(os.homedir(), ".cache", "ms-playwright")
+  return [
+    path.join(os.homedir(), ".cache", "ms-playwright-mcp"),
+    path.join(os.homedir(), ".cache", "ms-playwright"),
+  ]
 }
 
 async function checkBrowserProfile(): Promise<CheckResult> {
-  const cache = playwrightCacheDir()
-  let profiles: string[] = []
-  try {
-    const entries = await fs.readdir(cache)
-    profiles = entries.filter((entry) => entry.startsWith("mcp-"))
-  } catch {
-    // cache directory does not exist yet
+  const found: string[] = []
+  for (const dir of playwrightProfileDirs()) {
+    let entries: string[] = []
+    try {
+      entries = await fs.readdir(dir)
+    } catch {
+      continue
+    }
+    for (const entry of entries) {
+      if (entry.startsWith("mcp-")) found.push(path.join(dir, entry))
+    }
   }
-  if (profiles.length > 0) {
+  if (found.length > 0) {
     return check(
       "Browser profile",
       "ok",
-      `${profiles.length} profile(s) in ${cache} — if a task hits a login wall, log in manually in the browser window`,
+      `${found.length} profile(s), e.g. ${found[0]} — if a task hits a login wall, log in manually in the browser window`,
     )
   }
   return check(
@@ -179,6 +202,7 @@ async function main(): Promise<void> {
     await checkDataDir(),
     await checkChrome(),
     await checkPlaywrightMcp(),
+    await checkPlaywrightCore(),
     await checkBrowserProfile(),
   ]
   for (const item of results) {

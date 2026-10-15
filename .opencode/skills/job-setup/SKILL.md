@@ -16,18 +16,36 @@ reads. Keep it to one batch of questions at a time.
 
 ## Steps
 
-### 1. Check existing setup
+### 1. Data folder and existing setup
 
-The data directory is `~/.jobsearch` by default; use `JOBSEARCH_HOME` if the
-user says they set it. If `profile.md` and `preferences.md` exist, summarize
-their current values and ask what to change. Only touch what the user wants
-changed.
+Ask: "Where should I keep your job-search data?" Default: `~/.jobsearch`
+(recommended — outside this repository, so nothing personal can be
+committed). Warn against any path inside the repo.
 
-### 2. Resume
+For a custom path, guide the user through the one-time config change in
+`.opencode/docs/data-directory.md` § Custom location, then verify with
+`npm run doctor` before continuing.
 
-Ask the user to copy their resume into `<data dir>/resume/` (or confirm it is
-already there). Check the directory to verify the file exists. Do not extract
-text now — tailoring reads it later.
+If `profile.md` and `preferences.md` already exist, summarize their current
+values and ask what to change. Only touch what the user wants changed.
+
+### 2. Resume — have one, or build one?
+
+Ask: "Do you have a resume already (PDF), or should I build one from your
+work history?"
+
+- **Has one**: ask them to copy it into `<data dir>/resume/`, then verify
+  the file exists with the glob/read tools — never shell (it is denied for
+  this flow).
+- **No resume**: run the extended interview — for each role: company, title,
+  dates, one line of scope, 2–3 bullets with real numbers; plus education,
+  certifications, and a contact line (name, city, email, LinkedIn URL).
+  Write `<data dir>/resume/base.md` with `assets/resume-template.md`
+  (ATS-plain markdown). Then offer the PDF export:
+
+      npx tsx scripts/render-resume.ts --file <data dir>/resume/base.md
+
+  It writes `base.pdf` next to the file.
 
 ### 3. Preferences (one batch of questions)
 
@@ -52,8 +70,9 @@ factual: tailoring may only use what is in this file.
 
 ### 5. Wrap up
 
-Summarize the files written and remind the user that the first search opens a
-browser window where they log into LinkedIn manually, once.
+Summarize the files written (including any PDF) and remind the user that the
+first search opens a browser window where they log into LinkedIn manually,
+once.
 
 ## Rules
 

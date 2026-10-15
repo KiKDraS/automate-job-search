@@ -12,6 +12,9 @@ permissions:
   - action: shell
     resource: "*"
     effect: deny
+  - action: shell
+    resource: "npx tsx scripts/render-resume.ts *"
+    effect: allow
   - action: edit
     resource: "*"
     effect: deny

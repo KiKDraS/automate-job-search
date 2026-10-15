@@ -20,11 +20,11 @@ reads. Keep it to one batch of questions at a time.
 
 Ask: "Where should I keep your job-search data?" Default: `~/.jobsearch`
 (recommended — outside this repository, so nothing personal can be
-committed). Warn against any path inside the repo.
+committed). Never accept a path inside the repo.
 
-For a custom path, guide the user through the one-time config change in
-`.opencode/docs/data-directory.md` § Custom location, then verify with
-`npm run doctor` before continuing.
+If the user wants a custom path, call the `jobsearch_set_data_dir` tool with
+it — it validates the path, creates the folder, and grants this session
+access. No manual configuration, no restarts.
 
 If `profile.md` and `preferences.md` already exist, summarize their current
 values and ask what to change. Only touch what the user wants changed.

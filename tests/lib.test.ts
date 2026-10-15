@@ -1,5 +1,9 @@
 import assert from "node:assert/strict"
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import os from "node:os"
+import path from "node:path"
 import { test } from "node:test"
+import { parseDataDirConfig, resolveDataDirWithSource } from "../lib/data-dir.ts"
 import {
   buildJobSearchUrl,
   jobIdFromUrl,
@@ -104,6 +108,45 @@ test("formatHistorySection writes a valid table and sanitizes pipes", () => {
 
 test("todayIso formats local dates", () => {
   assert.equal(todayIso(new Date(2026, 0, 5)), "2026-01-05")
+})
+
+test("parseDataDirConfig accepts valid configs and rejects invalid ones", () => {
+  assert.equal(parseDataDirConfig('{"dataDir":"/tmp/x"}'), "/tmp/x")
+  assert.equal(parseDataDirConfig('{"dataDir":"  "}'), null)
+  assert.equal(parseDataDirConfig('{"other":1}'), null)
+  assert.equal(parseDataDirConfig("not json"), null)
+})
+
+test("data dir resolution: env wins, config second, default last", () => {
+  const prevEnv = process.env["JOBSEARCH_HOME"]
+  const prevXdg = process.env["XDG_CONFIG_HOME"]
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "jobsearch-datadir-"))
+  try {
+    mkdirSync(path.join(tmp, "opencode"), { recursive: true })
+    const configFile = path.join(tmp, "opencode", "jobsearch.json")
+    writeFileSync(configFile, '{"dataDir":"/tmp/from-config"}')
+    process.env["XDG_CONFIG_HOME"] = tmp
+
+    process.env["JOBSEARCH_HOME"] = "/tmp/from-env"
+    const fromEnv = resolveDataDirWithSource()
+    assert.equal(fromEnv.source, "env")
+    assert.equal(fromEnv.dir, "/tmp/from-env")
+
+    delete process.env["JOBSEARCH_HOME"]
+    const fromConfig = resolveDataDirWithSource()
+    assert.equal(fromConfig.source, "config")
+    assert.equal(fromConfig.dir, "/tmp/from-config")
+
+    writeFileSync(configFile, "{}")
+    const fromDefault = resolveDataDirWithSource()
+    assert.equal(fromDefault.source, "default")
+  } finally {
+    if (prevEnv === undefined) delete process.env["JOBSEARCH_HOME"]
+    else process.env["JOBSEARCH_HOME"] = prevEnv
+    if (prevXdg === undefined) delete process.env["XDG_CONFIG_HOME"]
+    else process.env["XDG_CONFIG_HOME"] = prevXdg
+    rmSync(tmp, { recursive: true, force: true })
+  }
 })
 
 test("filterNew removes duplicates against history and within the batch", () => {

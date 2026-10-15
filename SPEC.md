@@ -16,6 +16,9 @@ models, with no subscription required.
 
 ## Principles
 
+- **Simplest path for the user.** No manual setup, ever — no config files to
+  edit, no shell profiles, no environment variables. Choices happen in
+  conversation; everything else works out of the box.
 - **Warmth is the goal.** User-facing text — chat, reports, artifacts — is
   warm, clear, and specific. Nothing user-facing is compressed or terse for
   its own sake. (`.opencode/docs/voice-rules.md`)

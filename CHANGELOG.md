@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Data directory automation: setup asks where data should live and calls
+  `jobsearch_set_data_dir` — the new `data-dir` plugin validates the path,
+  creates the folder, stores the choice
+  (`~/.config/opencode/jobsearch.json`), and grants the session access. No
+  manual config edits, shell profiles, or restarts; doctor reports the
+  resolved path and its source.
+- `SPEC.md`: new principle — the simplest path for the user; no manual setup.
 - `SPEC.md`: the project's single intent document — mission, principles
   (warmth, token economy, approval-first, deterministic-first, no rule
   copies, data privacy), system map, scope (in / deferred / out), and how we

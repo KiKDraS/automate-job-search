@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Coach greets new sessions: a session-start plugin (`coach-greeting`) nudges
+  fresh top-level Coach sessions with a synthetic message; the greeting menu
+  lives in the Coach contract, and `/job` shows it on demand.
 - Live-test hardening: voice rules now bind every text surface (chat,
   reports, artifacts); shortlists include canonical job URLs; setup asks
   where the data folder lives (guided custom-path flow); setup can build a

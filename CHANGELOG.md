@@ -7,16 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
-- Greeting self-heals when the welcome session is gone: the TUI half no
-  longer stores a session id between launches. Each launch finds an unused
-  "Welcome" session from the server (or creates one), so deleting, renaming,
-  or using the welcome session can never wedge the greeting with
-  "Session not found" again.
-
-## [0.1.0] - 2026-10-15
-
 ### Added
 
 - Resume text extraction: `scripts/resume-text.ts` (+ `lib/resume-text.ts`,
@@ -51,6 +41,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Coach greets new sessions: a session-start plugin (`coach-greeting`) nudges
   fresh top-level Coach sessions with a synthetic message; the greeting menu
   lives in the Coach contract, and `/job` shows it on demand.
+
+### Fixed
+
+- Greeting self-heals when the welcome session is gone: the TUI half no
+  longer stores a session id between launches. Each launch finds an unused
+  "Welcome" session from the server (or creates one), so deleting, renaming,
+  or using the welcome session can never wedge the greeting with
+  "Session not found" again.
+
+## [0.1.0] - 2026-10-15
+
+### Added
+
 - Live-test hardening: voice rules now bind every text surface (chat,
   reports, artifacts); shortlists include canonical job URLs; setup asks
   where the data folder lives (guided custom-path flow); setup can build a

@@ -61,3 +61,4 @@ first, and update it in the same change as the decision that caused it.
 | Untrusted content | `.opencode/docs/untrusted-content.md` |
 | Voice rules | `.opencode/docs/voice-rules.md` |
 | Resume standards | `.opencode/docs/resume-standards.md` |
+| Root README (user docs) | `SPEC.md` — audience and sync rule; `write-root-readme` skill — format |

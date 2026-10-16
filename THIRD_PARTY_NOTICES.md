@@ -23,6 +23,22 @@ the originals.
   voice rules, untrusted-content handling, the approval-before-publish flow,
   and the attention-layer feature set (profile, posts, comments, engagement).
 
+## petergyang/no-ai-slop
+
+- Source: <https://github.com/petergyang/no-ai-slop>
+- License: MIT — Copyright (c) 2026 Peter Yang
+- Adapted: the `no-ai-slop` skill — editing rules, slop patterns, and the
+  eval rubric — adopted as the house style for prose; the eval file moved to
+  `references/` and the description trimmed for the token budget.
+
+## liblaf/skills
+
+- Source: <https://github.com/liblaf/skills>
+- License: MIT — Copyright (c) 2026 liblaf
+- Adapted: the `write-root-readme` skill — README structure, hero and badge
+  conventions, and validation hints — including its example README references
+  to liblaf/grapes and lobehub/lobe-chat.
+
 ---
 
 The MIT License text below applies to sergebulaev/linkedin-skills:

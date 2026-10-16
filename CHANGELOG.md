@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Craft skills ship with the toolkit: `no-ai-slop` (house style for prose)
+  and `write-root-readme` (README conventions — no generic emoji headings),
+  both adapted with notices recorded in `THIRD_PARTY_NOTICES.md`.
 - Resume text extraction: `scripts/resume-text.ts` (+ `lib/resume-text.ts`,
   pdfjs-dist) turns a text-layer resume PDF into `resume/base.txt` — the
   canonical readable source for review and tailoring, so free models without
@@ -41,6 +44,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Coach greets new sessions: a session-start plugin (`coach-greeting`) nudges
   fresh top-level Coach sessions with a synthetic message; the greeting menu
   lives in the Coach contract, and `/job` shows it on demand.
+
+### Changed
+
+- `README.md` is now user documentation — what the project is and how to use
+  it. The documentation split is recorded in `SPEC.md` and enforced by the PR
+  checklist: README updates ride with user-visible changes.
+- Prose craft rules (vocabulary, em dashes, patterns) now have one source —
+  the `no-ai-slop` skill; `voice-rules.md` keeps the project-specific rules
+  and points there.
 
 ### Fixed
 

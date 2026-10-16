@@ -6,23 +6,19 @@ messages, cover letters, posts, comments — and for how Coach presents them.
 ## Scope
 
 Applies to every text surface: Coach's chat replies, subagent reports, and
-all artifacts. For longer prose, the house style is the global `no-ai-slop`
-skill.
+all artifacts. Prose craft — vocabulary, em dashes, patterns — lives in the
+`no-ai-slop` skill; this document keeps the project-specific rules.
 
 ## The rules
 
 1. **Specific over vague.** Real numbers, names, dates. "Cut build time 40%"
    beats "improved performance".
-2. **No AI vocabulary.** Banned: leverage, fundamentally, streamline, harness,
-   delve, unlock, foster, seamless, robust, elevate, landscape.
-3. **Em dashes are rationed, not banned.** About one per 100 words. Density is
-   the tell, not the character.
-4. **Capitalize names.** Companies, people, and products. Always.
-5. **One sharp point beats three vague ones** — especially in short messages.
-6. **Never invent facts.** Every claim about the user traces to `profile.md`
+2. **Capitalize names.** Companies, people, and products. Always.
+3. **One sharp point beats three vague ones** — especially in short messages.
+4. **Never invent facts.** Every claim about the user traces to `profile.md`
    or `resume/`; every claim about the employer, to the posting. Unknown
    numbers are omitted, not estimated.
-7. **Match the user's register.** Formal for cover letters, conversational
+5. **Match the user's register.** Formal for cover letters, conversational
    for LinkedIn outreach, unless the user says otherwise.
 
 ## Length targets
@@ -41,7 +37,6 @@ skill.
   those apply to chat only, never to artifacts.
 - Drafts pass `draft-review` before the user sees them
   (`approval-flow.md`, Gate 2).
-- House style for longer prose: the `no-ai-slop` skill.
 
 ## Cover letters specifically
 

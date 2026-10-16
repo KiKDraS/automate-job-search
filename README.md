@@ -28,6 +28,9 @@ Today it covers the full application loop: LinkedIn search with fit scoring,
 resume review and tailoring, cover letters, and outreach drafts. The attention
 layer — profile, posts, comments, engagement — is next.
 
+Talk in your language. Coach chats in whatever language you choose at first
+contact, and resumes and letters follow each posting's language.
+
 ## Quick start
 
 You'll need [OpenCode](https://opencode.ai) V2, Node.js ≥ 20, and Chrome; the

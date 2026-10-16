@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Language preferences: first contact asks for the chat language (bilingual
+  EN/ES) and records it in `<data dir>/language.md`; every session greets
+  and replies in it. Tailored resumes and letters follow each posting's
+  language, with a per-job user override (`voice-rules.md` → Language).
 - Craft skills ship with the toolkit: `no-ai-slop` (house style for prose)
   and `write-root-readme` (README conventions — no generic emoji headings),
   both adapted with notices recorded in `THIRD_PARTY_NOTICES.md`.

@@ -11,6 +11,7 @@ Produces `cover-letter.md` in the job folder. Short, specific, human.
 
 - Job folder (`posting.md`, and `resume.md` if it exists).
 - `<data dir>/profile.md`.
+- `<data dir>/language.md` for any document-language override.
 - Length target: 150–250 words, one page (`voice-rules.md`).
 
 ## Steps
@@ -34,4 +35,6 @@ Produces `cover-letter.md` in the job folder. Short, specific, human.
   posting.
 - 150–250 words. If it does not fit, cut — do not cram.
 - No AI vocabulary; em-dash density per `voice-rules.md`.
+- Language follows the posting; the user's override wins (`voice-rules.md`
+  → Language).
 - `draft-review` before the user sees it (`approval-flow.md`, Gate 2).

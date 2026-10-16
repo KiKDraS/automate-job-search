@@ -26,6 +26,11 @@ If the user wants a custom path, call the `jobsearch_set_data_dir` tool with
 it — it validates the path, creates the folder, and grants this session
 access. No manual configuration, no restarts.
 
+Then confirm the chat language: read `<data dir>/language.md`. If it is
+missing, ask the bilingual question (`coach.md`, "First contact") and write
+the file; if present, confirm it in one line and change it only if the user
+wants.
+
 If `profile.md` and `preferences.md` already exist, summarize their current
 values and ask what to change. Only touch what the user wants changed.
 
@@ -45,7 +50,9 @@ work history?"
   reported, not written — then ask the user to paste the resume text or
   share a text-based export (DOCX included). Offer a `resume-review` pass
   before continuing.
-- **No resume**: run the extended interview — for each role: company, title,
+- **No resume**: ask which language the resume should be in — English is
+  common for international roles; the chat language works for local markets.
+  Then run the extended interview — for each role: company, title,
   dates, one line of scope, 2–3 bullets with real numbers; plus education
   (with institution), certifications (with issuer and year), and a contact
   line (name, city, email, LinkedIn URL). Write `<data dir>/resume/base.md`

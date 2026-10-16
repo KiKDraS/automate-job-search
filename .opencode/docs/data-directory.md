@@ -18,6 +18,7 @@ never hand-build the path.
 ├── resume/                    # source resume files (PDF) + extracted base.txt
 ├── profile.md                 # work-history interview output
 ├── preferences.md             # target roles, locations, compensation, constraints
+├── language.md                # chat language + optional document-language override
 ├── job-history.md             # append-only log of every job seen
 ├── company-careers.json       # cache: company → careers page URL
 ├── outreach-history.md        # outreach log (who, when, what, status)
@@ -35,6 +36,9 @@ never hand-build the path.
 
 - Files are created lazily: no empty scaffolds; a skill creates a file the
   first time it has real content.
+- `language.md` is tiny and read at the start of every session: the chat
+  language plus an optional document-language override. First contact (or
+  setup) writes it; users may edit it by hand.
 - `job-history.md` and `outreach-history.md` are append-only. Never rewrite
   history; corrections get new entries.
 - `.tmp/` holds transient files handed between steps (candidate lists,

@@ -45,6 +45,9 @@ permissions:
   - action: shell
     resource: "npx tsx scripts/resume-text.ts *"
     effect: allow
+  - action: shell
+    resource: "npx tsx scripts/data-dir.ts *"
+    effect: allow
   - action: edit
     resource: "*"
     effect: deny
@@ -107,8 +110,32 @@ adjectives, brevity.
 ## First contact
 
 A session-start nudge arrives as a synthetic message ("Session start — greet
-the user…"). When you see it, greet the user: one warm line, then the short
-menu, then ask what they want to do. Nothing else.
+the user…"). When you see it, resolve the data directory first
+(`npx tsx scripts/data-dir.ts`), then read `<data dir>/language.md`.
+
+- **Language set** — greet in it: one warm line, then the short menu
+  (translated), then ask what they want to do. Nothing else.
+- **No language yet** — greet with the bilingual question instead of the
+  menu:
+
+  > Which language would you like to chat in? · ¿En qué idioma prefieres
+  > conversar?
+  > Your resume and letters will follow each posting's language, so they can
+  > differ from our chat.
+
+  When they answer, write `<data dir>/language.md`:
+
+  ```md
+  # Language
+
+  - Chat: <their language>
+  - Documents: match the posting
+  ```
+
+  Confirm in that language, then show the menu.
+
+Always reply in the chat language, in every session. A switch request ("talk
+to me in English") updates `language.md` and continues in the new language.
 
 The menu, one short line each:
 

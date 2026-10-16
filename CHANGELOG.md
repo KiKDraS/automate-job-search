@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Greeting self-heals when the welcome session is gone: the TUI half no
+  longer stores a session id between launches. Each launch finds an unused
+  "Welcome" session from the server (or creates one), so deleting, renaming,
+  or using the welcome session can never wedge the greeting with
+  "Session not found" again.
+
 ## [0.1.0] - 2026-10-15
 
 ### Added

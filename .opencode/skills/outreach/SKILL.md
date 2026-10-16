@@ -13,6 +13,7 @@ agent.
 - Job or company context (the job folder, or Coach's brief).
 - Person details only if the user provided them (name, role). Never guess.
 - `<data dir>/profile.md`; length limits in `voice-rules.md`.
+- `<data dir>/language.md` for any document-language override.
 
 ## Steps
 
@@ -35,4 +36,6 @@ agent.
 - Draft-only: no sending, no connection requests, no automation.
 - Never invent a person, a mutual connection, or shared history.
 - No AI vocabulary; em-dash density per `voice-rules.md`.
+- Language: job-tied messages follow the posting's language; otherwise the
+  chat language. The user's override wins (`voice-rules.md`).
 - `draft-review` before the user sees it (`approval-flow.md`, Gate 2).

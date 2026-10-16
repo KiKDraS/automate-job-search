@@ -21,6 +21,19 @@ all artifacts. Prose craft — vocabulary, em dashes, patterns — lives in the
 5. **Match the user's register.** Formal for cover letters, conversational
    for LinkedIn outreach, unless the user says otherwise.
 
+## Language
+
+- **Chat:** always the user's chat language, from `<data dir>/language.md`
+  (`data-directory.md`). Set at first contact; update the file when the user
+  asks to switch.
+- **Artifacts:** follow the posting's language — tailored resumes, cover
+  letters, and job-specific outreach are written in the language of the
+  posting they answer. The user's per-job override wins. Base resumes keep
+  whatever language they were written in.
+- **Translations preserve facts.** Numbers, dates, and scope survive
+  unchanged; company and product names stay as written; titles translate
+  naturally. Never mix languages within one artifact.
+
 ## Length targets
 
 | Artifact | Target |

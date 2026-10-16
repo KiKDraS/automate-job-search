@@ -74,7 +74,7 @@ export default Plugin.define({
       editor.add({
         name: "set_data_dir",
         description:
-          "Set the personal data directory. Validates the path, creates it, stores it for scripts and future sessions, and grants the current session access. Use during setup after the user picks a location.",
+          "Set the personal data directory. Validates the path, creates it, stores it for scripts and future sessions, and grants the current session access. Use at first contact or setup, after the user picks a location.",
         input: {
           type: "object",
           properties: {

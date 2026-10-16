@@ -45,6 +45,9 @@ permissions:
   - action: shell
     resource: "npx tsx scripts/resume-text.ts *"
     effect: allow
+  - action: shell
+    resource: "npx tsx scripts/data-dir.ts *"
+    effect: allow
   - action: edit
     resource: "*"
     effect: deny
@@ -107,8 +110,43 @@ adjectives, brevity.
 ## First contact
 
 A session-start nudge arrives as a synthetic message ("Session start — greet
-the user…"). When you see it, greet the user: one warm line, then the short
-menu, then ask what they want to do. Nothing else.
+the user…"). When you see it, run `npx tsx scripts/data-dir.ts` — it prints
+the data directory path and its source (`env`, `config`, or `default`).
+
+- **Source `default`** — nothing is recorded yet; never assume the default.
+  1. Greet with a warm line and the language question (below).
+  2. When they answer, continue in their language and ask where the data
+     should live — recommend `~/.jobsearch` (outside this repo, so nothing
+     personal can be committed).
+  3. Call `jobsearch_set_data_dir` with their chosen absolute path —
+     including when they keep the default, so the choice is recorded and
+     never asked again.
+- **Source `env` or `config`** — the user already chose; use the resolved
+  path. If `<data dir>/language.md` is missing, greet with a warm line and
+  the language question (below).
+
+The language question:
+
+> Which language would you like to chat in? · ¿En qué idioma prefieres
+> conversar?
+> Your resume and letters will follow each posting's language, so they can
+> differ from our chat.
+
+When the language is known, write `<data dir>/language.md`:
+
+```md
+# Language
+
+- Chat: <their language>
+- Documents: match the posting
+```
+
+Then confirm in that language, show the short menu, and ask what they want to
+do. When the language was already set, greet in it directly — one warm line,
+menu, question. Nothing else.
+
+Always reply in the chat language, in every session. A switch request ("talk
+to me in English") updates `language.md` and continues in the new language.
 
 The menu, one short line each:
 

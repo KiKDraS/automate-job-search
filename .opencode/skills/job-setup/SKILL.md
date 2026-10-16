@@ -18,13 +18,16 @@ reads. Keep it to one batch of questions at a time.
 
 ### 1. Data folder and existing setup
 
-Ask: "Where should I keep your job-search data?" Default: `~/.jobsearch`
-(recommended — outside this repository, so nothing personal can be
-committed). Never accept a path inside the repo.
-
-If the user wants a custom path, call the `jobsearch_set_data_dir` tool with
-it — it validates the path, creates the folder, and grants this session
-access. No manual configuration, no restarts.
+Run `npx tsx scripts/data-dir.ts` first — it prints the path and its source.
+If the source is `env` or `config`, the user already chose: confirm the path
+in one line, and change it only if they want (then call
+`jobsearch_set_data_dir` with the new absolute path). If the source is
+`default`, ask: "Where should I keep your job-search data?" Default:
+`~/.jobsearch` (recommended — outside this repository, so nothing personal
+can be committed). Never accept a path inside the repo, and always call
+`jobsearch_set_data_dir` with the chosen path — it validates, creates the
+folder, records the choice, and grants this session access. No manual
+configuration, no restarts.
 
 Then confirm the chat language: read `<data dir>/language.md`. If it is
 missing, ask the bilingual question (`coach.md`, "First contact") and write

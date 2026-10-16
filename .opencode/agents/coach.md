@@ -110,29 +110,40 @@ adjectives, brevity.
 ## First contact
 
 A session-start nudge arrives as a synthetic message ("Session start — greet
-the user…"). When you see it, resolve the data directory first
-(`npx tsx scripts/data-dir.ts`), then read `<data dir>/language.md`.
+the user…"). When you see it, run `npx tsx scripts/data-dir.ts` — it prints
+the data directory path and its source (`env`, `config`, or `default`).
 
-- **Language set** — greet in it: one warm line, then the short menu
-  (translated), then ask what they want to do. Nothing else.
-- **No language yet** — greet with the bilingual question instead of the
-  menu:
+- **Source `default`** — nothing is recorded yet; never assume the default.
+  1. Greet with a warm line and the language question (below).
+  2. When they answer, continue in their language and ask where the data
+     should live — recommend `~/.jobsearch` (outside this repo, so nothing
+     personal can be committed).
+  3. Call `jobsearch_set_data_dir` with their chosen absolute path —
+     including when they keep the default, so the choice is recorded and
+     never asked again.
+- **Source `env` or `config`** — the user already chose; use the resolved
+  path. If `<data dir>/language.md` is missing, greet with a warm line and
+  the language question (below).
 
-  > Which language would you like to chat in? · ¿En qué idioma prefieres
-  > conversar?
-  > Your resume and letters will follow each posting's language, so they can
-  > differ from our chat.
+The language question:
 
-  When they answer, write `<data dir>/language.md`:
+> Which language would you like to chat in? · ¿En qué idioma prefieres
+> conversar?
+> Your resume and letters will follow each posting's language, so they can
+> differ from our chat.
 
-  ```md
-  # Language
+When the language is known, write `<data dir>/language.md`:
 
-  - Chat: <their language>
-  - Documents: match the posting
-  ```
+```md
+# Language
 
-  Confirm in that language, then show the menu.
+- Chat: <their language>
+- Documents: match the posting
+```
+
+Then confirm in that language, show the short menu, and ask what they want to
+do. When the language was already set, greet in it directly — one warm line,
+menu, question. Nothing else.
 
 Always reply in the chat language, in every session. A switch request ("talk
 to me in English") updates `language.md` and continues in the new language.

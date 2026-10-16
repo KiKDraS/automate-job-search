@@ -39,7 +39,8 @@ models, with no subscription required.
 
 - **Agents** — Coach leads; job-scout, artifact-writer, draft-review,
   release-manager, later presence-coach. Roster: `AGENTS.md`
-- **Skills** — job-setup, job-search, tailor-resume, cover-letter, outreach
+- **Skills** — job-setup, job-search, resume-review, tailor-resume,
+  cover-letter, outreach; craft skills no-ai-slop and write-root-readme
   (`.opencode/skills/`)
 - **Plugins** — coach-greeting (server + TUI halves): greets on launch
   (`.opencode/plugins/coach-greeting/`)
@@ -73,6 +74,10 @@ outreach drafts, launch greeting.
   (`.opencode/docs/git-flow.md`)
 - **The hardening loop** — live test → session export to `~/.jobsearch/.tmp/`
   → mined findings → fixes → PR. Repeated before and after releases.
+- **Documentation split** — `README.md` is user documentation: what the
+  project is and how to use it, kept in sync with every user-visible change.
+  Development material lives in `SPEC.md`, `AGENTS.md`, and
+  `.opencode/docs/`; change history in `CHANGELOG.md`.
 - **Decision changes** — when a decision changes how, why, or what the
   project does, this document is updated in the same change, with explicit
   user approval.

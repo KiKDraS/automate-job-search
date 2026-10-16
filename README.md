@@ -1,56 +1,37 @@
-# automate-job-search
+<div align="center" markdown>
+
+<!-- TODO(public flip): enable the Socialify hero and live badges once the repository is public.
+![automate-job-search](https://socialify.git.ci/KiKDraS/automate-job-search/image?description=1&forks=1&issues=1&language=1&name=1&owner=1&pattern=Transparent&pulls=1&stargazers=1&theme=Auto)
+[![Stars](https://img.shields.io/github/stars/KiKDraS/automate-job-search)](https://github.com/KiKDraS/automate-job-search/stargazers)
+[![Forks](https://img.shields.io/github/forks/KiKDraS/automate-job-search)](https://github.com/KiKDraS/automate-job-search/forks)
+[![Issues](https://img.shields.io/github/issues/KiKDraS/automate-job-search)](https://github.com/KiKDraS/automate-job-search/issues)
+[![Pull requests](https://img.shields.io/github/issues-pr/KiKDraS/automate-job-search)](https://github.com/KiKDraS/automate-job-search/pulls)
+-->
+
+**[Changelog](https://github.com/KiKDraS/automate-job-search/blob/main/CHANGELOG.md) · [Report a bug](https://github.com/KiKDraS/automate-job-search/issues) · [Request a feature](https://github.com/KiKDraS/automate-job-search/issues)**
+
+[![OpenCode V2](https://img.shields.io/badge/OpenCode-V2-blue)](https://opencode.ai)
+[![Node](https://img.shields.io/badge/Node-%E2%89%A5%2020-339933?logo=node.js&logoColor=white)](https://nodejs.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow)](https://github.com/KiKDraS/automate-job-search/blob/main/LICENSE)
+
+![Rule](https://cdn.jsdelivr.net/gh/andreasbm/readme/assets/lines/rainbow.png)
+
+</div>
+
+## What it is
 
 An OpenCode-native job-search toolkit. A **Coach** agent plans the work with
 you, delegates to specialist subagents, and never sends, submits, or publishes
 anything without your explicit approval.
 
-> **Status: early development (Phase 1 of 9).** The repository skeleton, agent
-> team, and job-search skills land progressively — see
-> [CHANGELOG.md](CHANGELOG.md). First usable release: `v0.1.0`.
-
-## What it does
-
-- **Search** LinkedIn for roles that match your resume and preferences, with
-  fit scoring and dedupe against your history.
-- **Tailor** your resume and **write** cover letters for specific postings.
-- **Outreach**: connection notes and follow-ups that sound like a person.
-- **Presence** (later phases): profile optimization, posts, comments, and
-  engagement tracking to build visibility.
-
-Everything runs from a conversation with Coach inside OpenCode. Your personal
-data (resume, preferences, history) lives outside the repo in `~/.jobsearch/`
-(override with `JOBSEARCH_HOME`).
-
-## How it works
-
-| Agent | Role |
-| --- | --- |
-| **Coach** (`coach`) | Talks with you, plans, delegates, gates every outbound action |
-| `job-scout` | Browser work: searches, fit scoring, saving postings |
-| `artifact-writer` | Resumes, cover letters, outreach drafts |
-| `draft-review` | Fact-check + voice audit gate before anything ships |
-| `release-manager` | Git lifecycle for this repo (branches, PRs, tags, releases) |
-| `presence-coach` | *(later)* LinkedIn attention layer |
-
-Pipeline: **Plan → your approval → delegate → audit → your approval → done.**
-
-## Requirements
-
-- [OpenCode](https://opencode.ai) V2
-- Node.js ≥ 20
-- Chrome (for browser automation via Playwright MCP)
-- [`gh` CLI](https://cli.github.com) (optional; used by `release-manager` workflows)
-
-## Runs on free models
-
-No paid subscription required. This toolkit is token-aware by design:
-deterministic work runs in code, browser data never floods the conversation,
-and every agent has a step budget.
-
-Pick a free model from [OpenCode Zen](https://opencode.ai/zen) as your
-session model — Coach and all subagents inherit it.
+Today it covers the full application loop: LinkedIn search with fit scoring,
+resume review and tailoring, cover letters, and outreach drafts. The attention
+layer — profile, posts, comments, engagement — is next.
 
 ## Quick start
+
+You'll need [OpenCode](https://opencode.ai) V2, Node.js ≥ 20, and Chrome; the
+[`gh` CLI](https://cli.github.com) is optional.
 
 ```sh
 git clone https://github.com/KiKDraS/automate-job-search.git
@@ -60,79 +41,60 @@ npm run doctor
 ```
 
 Then open OpenCode in the project and start a session — Coach is the default
-agent. First time:
+agent and greets you automatically. First time, run `/job/setup`; it walks you
+through your resume, preferences, and work history. The first search opens a
+browser window — log into LinkedIn there, once.
 
-- `/job/setup` — onboarding: resume, preferences, work history
-- `/job/search` — find and score new jobs
-- `/job/tailor` — tailored resume for a saved job
-- `/job/resume-review` — CV feedback with concrete improvements
-- `/job/cover-letter` — cover letter for a saved job
-- `/job/outreach` — connection notes and follow-ups (draft-only)
-- `/job` — show the menu anytime
+## Commands
 
-New sessions greet you automatically: a session-start plugin opens a Coach
-session with the menu on screen. Prefer to open straight into the menu
-yourself? Add a shell alias:
+| Command | What it does |
+| --- | --- |
+| `/job/setup` | Onboarding: resume, preferences, work history |
+| `/job/search` | Find and score new jobs |
+| `/job/tailor` | Tailored resume for a saved job |
+| `/job/resume-review` | CV feedback with concrete improvements |
+| `/job/cover-letter` | Cover letter for a saved job |
+| `/job/outreach` | Connection notes and follow-ups (draft-only) |
+| `/job` | Show the menu anytime |
 
-```sh
-alias job='opencode --prompt "/job"'
-```
+## How it works
 
-The first search opens a browser window — log into LinkedIn there, once.
-`npm run doctor` tells you what works today.
+| Agent | Role |
+| --- | --- |
+| **Coach** (`coach`) | Talks with you, plans, delegates, gates every outbound action |
+| `job-scout` | Browser work: searches, fit scoring, saving postings |
+| `artifact-writer` | Resumes, cover letters, outreach drafts |
+| `draft-review` | Fact-check and voice audit gate before anything ships |
+| `release-manager` | Git lifecycle for this repo: branches, PRs, tags, releases |
 
-## Privacy & safety
+Pipeline: **plan → your approval → delegate → audit → your approval → done.**
+Nothing leaves your hands without an explicit OK.
 
-- Personal data lives in `~/.jobsearch/` (or `JOBSEARCH_HOME`), never in this
-  repository.
-- Browser automation uses a dedicated Playwright profile that you log into
-  once. Credentials are never stored or entered by the agent.
-- Approval-first: nothing is sent, submitted, or published without an explicit
-  OK from you. Drafts are shown in full before any outbound action.
+## Runs on free models
+
+No paid subscription required. The toolkit is token-aware by design:
+deterministic work runs in code, browser data never floods the conversation,
+and every agent has a step budget.
+
+Pick a free model from [OpenCode Zen](https://opencode.ai/zen) as your session
+model — Coach and all subagents inherit it.
+
+## Privacy and safety
+
+- Personal data — resume, preferences, history — lives outside this
+  repository, in a data folder you choose during setup.
+- Browser automation uses a dedicated profile you log into once. Credentials
+  are never stored or entered by an agent.
+- Approval-first: nothing is sent, submitted, or published without your OK on
+  the exact content. Drafts are always yours to send.
 - LinkedIn automation is read-mostly, low-volume, and human-paced. Review
-  LinkedIn's Terms of Service; you are responsible for your account.
-- External content (job postings, messages) is always treated as untrusted
+  LinkedIn's Terms of Service; your account is your responsibility.
+- External content — postings, messages — is always treated as untrusted
   input.
-
-## Project structure
-
-```text
-opencode.jsonc       OpenCode config: agents, permissions, MCP servers
-AGENTS.md            Session rules: agent roster, gates, git flow
-.opencode/
-  agents/            Coach + specialist subagents
-  skills/            Job-search skills (the toolkit itself)
-  commands/          /job/... slash commands
-  docs/              Shared rules referenced by skills and agents
-lib/                 TypeScript helpers (data dir, job store, URL parsing)
-scripts/             doctor.ts, check-skills.ts
-```
-
-## Development
-
-```sh
-npm run doctor        # environment self-check
-npm run check:skills  # validate skill frontmatter
-npm test              # unit tests for the helper lib
-npm run typecheck     # TypeScript check
-```
-
-Git flow: `main` (releases) ← `release/*` ← `develop` ← `feature/*`.
-All merges go through pull requests.
-
-## Roadmap
-
-1. Repository skeleton and toolchain
-2. OpenCode config, Coach, release-manager
-3. Shared docs (data directory, approval flow, browser setup, …)
-4. Helper lib and full environment doctor
-5. Setup + job-search skills
-6. Resume, cover letter, and outreach skills
-7. Hardening and first release
-8. Attention layer (profile, posts, comments, engagement)
-9. Apply automation and network scan (deferred)
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Third-party acknowledgements are in
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Copyright © 2026 [KiKDraS](https://github.com/KiKDraS). This project is
+[MIT](https://github.com/KiKDraS/automate-job-search/blob/main/LICENSE)
+licensed. Third-party acknowledgements are in
+[THIRD_PARTY_NOTICES.md](https://github.com/KiKDraS/automate-job-search/blob/main/THIRD_PARTY_NOTICES.md).

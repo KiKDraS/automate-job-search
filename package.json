@@ -16,6 +16,7 @@
     "linkedin": "tsx scripts/linkedin.ts",
     "history": "tsx scripts/history.ts",
     "save-posting": "tsx scripts/save-posting.ts",
+    "apply-log": "tsx scripts/apply-log.ts",
     "render-resume": "tsx scripts/render-resume.ts",
     "resume-text": "tsx scripts/resume-text.ts",
     "test": "tsx --test tests/lib.test.ts",

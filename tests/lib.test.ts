@@ -4,6 +4,7 @@ import os from "node:os"
 import path from "node:path"
 import { test } from "node:test"
 import { parseDataDirConfig, resolveDataDirWithSource } from "../lib/data-dir.ts"
+import { formatAppliedMarkdown, parseAppliedEntry } from "../lib/apply.ts"
 import { isLikelyScanned, joinPages } from "../lib/resume-text.ts"
 import {
   buildJobSearchUrl,
@@ -208,4 +209,43 @@ test("buildResumeHtml produces a styled document", () => {
   assert.ok(html.includes("<title>resume.md</title>"))
   assert.ok(html.includes("<h1>Jane Doe</h1>"))
   assert.ok(html.includes("@page"))
+})
+
+test("formatAppliedMarkdown records the submission and sanitizes values", () => {
+  const markdown = formatAppliedMarkdown(
+    {
+      role: "Staff Engineer",
+      company: "Acme",
+      url: "https://www.linkedin.com/jobs/view/123/",
+      resume: "resume.pdf",
+      confirmation: "Your application was sent\nto Acme",
+      fields: [
+        { label: "Authorized to work?", value: "Yes" },
+        { label: "Expected salary", value: "90,000 USD\nannually" },
+      ],
+    },
+    "2026-10-22",
+  )
+  assert.ok(markdown.startsWith("# Application — Staff Engineer at Acme"))
+  assert.ok(markdown.includes("- Date: 2026-10-22"))
+  assert.ok(markdown.includes('- Confirmation: "Your application was sent to Acme"'))
+  assert.ok(markdown.includes("- Cover letter: not requested"))
+  assert.ok(markdown.includes("- Expected salary: 90,000 USD annually"))
+})
+
+test("parseAppliedEntry accepts valid entries and rejects incomplete ones", () => {
+  const entry = parseAppliedEntry(
+    JSON.stringify({
+      role: "Staff Engineer",
+      company: "Acme",
+      url: "https://example.com/job",
+      resume: "resume.pdf",
+      confirmation: "sent",
+      fields: [{ label: "Email", value: "a@b.c" }, { label: "ignored" }],
+    }),
+  )
+  assert.equal(entry?.company, "Acme")
+  assert.deepEqual(entry?.fields, [{ label: "Email", value: "a@b.c" }])
+  assert.equal(parseAppliedEntry('{"role":"x"}'), null)
+  assert.equal(parseAppliedEntry("not json"), null)
 })

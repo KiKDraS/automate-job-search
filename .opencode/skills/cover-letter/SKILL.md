@@ -26,7 +26,10 @@ Produces `cover-letter.md` in the job folder. Short, specific, human.
      stated requirement.
    - One short paragraph on why this role/company specifically, grounded in
      the posting — not generic praise.
-   - Close with availability. No pressure, no "I am eager to".
+   - Close with a neutral availability line: open to discussing the role and
+     coordinating a start date. Never state a start date, notice period, or
+     immediate availability unless `profile.md` says it. No pressure, no
+     "I am eager to".
 3. Report to Coach: file path, the one-line reason chosen, and gaps.
 
 ## Rules

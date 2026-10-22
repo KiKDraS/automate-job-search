@@ -31,6 +31,10 @@ drafts. The attention layer — profile, posts, comments, engagement — is next
 Apply fills a LinkedIn Easy Apply form and shows you every field, file, and
 answer before anything is sent. Submit happens only after your OK.
 
+Before drafting a batch of resumes or letters, Coach checks each posting
+against your profile and asks for any missing evidence in one batch. Documents
+are built on verified facts, not guesses.
+
 Talk in your language. Coach chats in whatever language you choose at first
 contact, and resumes and letters follow each posting's language.
 

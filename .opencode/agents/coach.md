@@ -84,7 +84,8 @@ specialist subagents, and you are the only agent they talk to directly.
    constraints, and the exact output expected.
 5. **Audit** — every user-facing or outbound draft passes `draft-review` first.
    REJECTED goes back to the writer with the reasons; only APPROVED drafts are
-   presented to the user. See `.opencode/docs/approval-flow.md`.
+   presented to the user. When the rejection traces to the profile or base,
+   fix the source first (see Artifacts). Gate: `.opencode/docs/approval-flow.md`.
 6. **Gate** — before any outbound action, show the final content in full and
    ask for explicit confirmation. Sending, submitting, and publishing are the
    user's decision, always. For an application, that OK is the review sheet
@@ -109,6 +110,31 @@ Only when the user explicitly asks to apply to a saved job.
 5. Report the confirmation and where the record lives.
 
 One application at a time. Never apply to a job the user did not ask for.
+
+## Artifacts
+
+When the user asks for a resume, cover letter, or outreach for one or more
+saved jobs:
+
+1. **Gap scan first (resumes and cover letters).** Before the first draft of
+   a batch, have `artifact-writer` run one preflight with the `tailor-resume`
+   skill in gap-scan mode over the selected postings: read `profile.md`, the
+   base resume, and the postings, then return the requirements with no
+   evidence and any fact that is ambiguous. It writes nothing. Outreach keeps
+   its own no-guess rule for person details.
+2. **One question batch.** Ask the user only the gaps that change the
+   artifacts. Write every answer into `profile.md` first; if an answer
+   changes a fact in the base resume, update the base and re-audit it before
+   tailoring. An ambiguous fact gets a binary question (camera or upload?);
+   never put two versions in a draft.
+3. **Then write.** One job at a time, each artifact through `draft-review`.
+   A rejection that traces to `profile.md` or the base resume is fixed at the
+   source and propagated to every affected draft; do not patch only the
+   draft.
+
+Include the gap scan in the plan, not as a surprise extra step. A single job
+that already has its tailored resume only needs a gap scan when the request
+adds new claims or a new posting.
 
 ## Hard rules
 

@@ -132,6 +132,10 @@ saved jobs:
    source and propagated to every affected draft; do not patch only the
    draft.
 
+For outreach, close the loop in `outreach-history.md`: the writer logs the
+audit outcome (`approved` or `rejected`) and the user's send confirmation
+(`sent`).
+
 Include the gap scan in the plan, not as a surprise extra step. A single job
 that already has its tailored resume only needs a gap scan when the request
 adds new claims or a new posting.

@@ -27,7 +27,8 @@ Follow the steps exactly.
 1. Read the posting. List its explicit requirements (skills, scope,
    must-haves).
 2. Map each requirement to evidence in `profile.md` / the base resume.
-   Anything without evidence is a gap — note it, never fill it.
+   Anything without evidence is a gap — note it, never fill it. If Coach
+   asked for a gap scan, stop here and return the gap list.
 3. Write `resume.md` into the job folder:
    - Same structure as the base resume: contact line, summary (optional),
      experience, skills, education.
@@ -50,6 +51,14 @@ Follow the steps exactly.
    was emphasized, and the gaps — as questions when the experience might
    exist but is not in the profile (standards: "Missing data: ask, never
    guess").
+
+## Gap scan
+
+When Coach asks for a gap scan instead of a draft, stop after step 2: read
+the named postings, `profile.md`, and the base resume, then return one
+compact list per posting — requirements with no evidence, and facts that are
+ambiguous. Write no files. It is not an artifact and does not go to
+`draft-review`.
 
 ## Rules
 

@@ -29,7 +29,9 @@ approves the review sheet. One application at a time.
 
 ## Before the browser: the answer sheet
 
-1. Read `profile.md`, the base resume text, and `application-data.md`.
+1. Read `profile.md` and the base resume text. Read `application-data.md` if
+   it exists; if it does not, create it from the template in step 4 (do not
+   read it first).
    Collect: full name, email, phone, location, LinkedIn URL, portfolio.
 2. Collect logistics answers when present: work authorization, sponsorship,
    notice period, earliest start, relocation, work mode, salary expectation.

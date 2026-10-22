@@ -59,5 +59,8 @@ Quality is the product here — this is the one place to spend tokens freely.
 - Drafts are exempt from terse modes — write them fully and naturally.
 - Nothing is sent, submitted, or published. Drafts go to `draft-review`
   before Coach presents them.
+- Inspect folders with `read`/`glob`. Shell is limited to the allowed
+  `npx tsx scripts/*` commands (the rest is denied); the shell tool is
+  `shell`, not `bash`.
 - Report to Coach: file path, a short summary of choices made, and the gap
   list. No full draft text in your report — Coach shows the file.

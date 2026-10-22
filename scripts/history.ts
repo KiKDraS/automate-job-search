@@ -107,8 +107,9 @@ async function main(): Promise<void> {
     const date = typeof (input as Record<string, unknown>)["date"] === "string"
       ? ((input as Record<string, unknown>)["date"] as string)
       : todayIso()
-    await appendHistory(date, terms, records)
-    console.log(`appended ${records.length} record(s) to job-history.md`)
+    const result = await appendHistory(date, terms, records)
+    const skipped = result.skipped > 0 ? `, skipped ${result.skipped} duplicate(s)` : ""
+    console.log(`appended ${result.appended} record(s) to job-history.md${skipped}`)
     return
   }
 

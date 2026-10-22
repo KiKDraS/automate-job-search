@@ -41,16 +41,21 @@ export function todayIso(date = new Date()): string {
   return `${year}-${month}-${day}`
 }
 
-/** Filesystem-safe slug; never empty. */
+/** Filesystem-safe slug; never empty. Truncates on a word boundary. */
 export function slugify(value: string, maxLength = 40): string {
-  const slug = value
+  const normalized = value
     .toLowerCase()
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
-    .slice(0, maxLength)
-    .replace(/-+$/g, "")
+  let slug = normalized.slice(0, maxLength)
+  // If the cut lands inside a word, drop the partial word instead of
+  // ending with a fragment like "...-flutt".
+  if (normalized.length > maxLength && /[a-z0-9]/.test(normalized.charAt(maxLength))) {
+    slug = slug.replace(/-[a-z0-9]+$/, "")
+  }
+  slug = slug.replace(/-+$/g, "")
   return slug || "untitled"
 }
 
@@ -173,13 +178,25 @@ export function filterNew<T extends Pick<HistoryRecord, "title" | "company" | "l
   return out
 }
 
-/** Append one search section to job-history.md. */
+export interface AppendHistoryResult {
+  appended: number
+  skipped: number
+}
+
+/**
+ * Append one search section, dropping duplicates already in history or
+ * repeated within the section. Returns how many rows were written and
+ * skipped.
+ */
 export async function appendHistory(
   date: string,
   terms: string,
   records: HistoryRecord[],
-): Promise<void> {
-  if (records.length === 0) return
+): Promise<AppendHistoryResult> {
+  if (records.length === 0) return { appended: 0, skipped: 0 }
+  const fresh = filterNew(records, await seenJobKeys())
+  const skipped = records.length - fresh.length
+  if (fresh.length === 0) return { appended: 0, skipped }
   const file = dataPath("job-history.md")
   await fs.mkdir(path.dirname(file), { recursive: true })
   let existing = ""
@@ -190,5 +207,6 @@ export async function appendHistory(
   }
   const separator =
     existing.length === 0 ? "" : existing.endsWith("\n\n") ? "" : existing.endsWith("\n") ? "\n" : "\n\n"
-  await fs.appendFile(file, `${separator}${formatHistorySection(date, terms, records)}`)
+  await fs.appendFile(file, `${separator}${formatHistorySection(date, terms, fresh)}`)
+  return { appended: fresh.length, skipped }
 }

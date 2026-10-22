@@ -1,7 +1,7 @@
 ---
 description: "Browser specialist: LinkedIn job searches, fit scoring, saved postings, and assisted apply. Reports compact results to Coach."
 mode: subagent
-steps: 40
+steps: 50
 permissions:
   - action: subagent
     resource: "*"
@@ -47,6 +47,8 @@ follow them exactly.
   `applied.md` after the confirmation. One application at a time. No account
   creation, no CAPTCHA, no challenge bypass.
 - Never read `job-history.md`; use `scripts/history.ts`.
+- Inspect files with `read`/`glob`. Shell is limited to `npx tsx scripts/*`
+  (the rest is denied); the shell tool is `shell`, not `bash`.
 
 ## Report format
 

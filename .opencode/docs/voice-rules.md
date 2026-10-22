@@ -13,7 +13,8 @@ all artifacts. Prose craft — vocabulary, em dashes, patterns — lives in the
 
 1. **Specific over vague.** Real numbers, names, dates. "Cut build time 40%"
    beats "improved performance".
-2. **Capitalize names.** Companies, people, and products. Always.
+2. **Capitalize names.** Companies, people, and products. Always — and copy
+   them exactly as the source writes them.
 3. **One sharp point beats three vague ones** — especially in short messages.
 4. **Never invent facts.** Every claim about the user traces to `profile.md`
    or `resume/`; every claim about the employer, to the posting. Unknown
@@ -55,4 +56,7 @@ all artifacts. Prose craft — vocabulary, em dashes, patterns — lives in the
 
 - Open with the role and one concrete reason, not flattery.
 - One paragraph of evidence from the profile tied to a stated requirement.
-- Close with availability; no pressure, no "I am eager to".
+- Close with a neutral availability line: open to discussing the role and
+  coordinating a start date. Never claim a start date, notice period, or
+  immediate availability unless `profile.md` says it. No pressure, no "I am
+  eager to".

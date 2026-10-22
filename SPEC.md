@@ -40,7 +40,7 @@ models, with no subscription required.
 - **Agents** — Coach leads; job-scout, artifact-writer, draft-review,
   release-manager, later presence-coach. Roster: `AGENTS.md`
 - **Skills** — job-setup, job-search, resume-review, tailor-resume,
-  cover-letter, outreach; craft skills no-ai-slop and write-root-readme
+  cover-letter, outreach, apply; craft skills no-ai-slop and write-root-readme
   (`.opencode/skills/`)
 - **Plugins** — coach-greeting (server + TUI halves): greets on launch
   (`.opencode/plugins/coach-greeting/`)
@@ -51,19 +51,21 @@ models, with no subscription required.
 ## Scope
 
 **In:** setup, job search, resumes (build, review, tailoring), cover letters,
-outreach drafts, launch greeting.
+outreach drafts, assisted apply (completes applications when the user
+explicitly asks, with a full review-and-approve gate before the final submit),
+launch greeting.
 
 **Deferred:**
 
-- Assisted apply — highest-risk surface; ships with a hard stop before submit
 - Network scan — waiting on a LinkedIn contacts export
 - Scheduled/headless runs
 
 **Out:**
 
 - A standalone application — this is an OpenCode-native toolkit
-- Automated sending, submitting, or publishing — drafts are always the user's
-  to send
+- Autonomous outbound — nothing sends, submits, or publishes unattended;
+  messages, posts, and outreach stay draft-only, and applications submit only
+  on the user's explicit request and approval
 - API-based publishing integrations — draft-only by design
 - The Playwright CLI as the browser layer — measured against MCP + Code Mode;
   decision and numbers in `.opencode/docs/browser-setup.md`

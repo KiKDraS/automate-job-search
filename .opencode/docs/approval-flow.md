@@ -35,6 +35,20 @@ Approval is per action, never per session. A "yes" for one message is not a
 "yes" for the next. If content changes after approval, the changed version
 needs a new confirmation.
 
+### Submissions (assisted apply)
+
+An application is one more outbound action, with a review sheet instead of a
+draft:
+
+- Show the job (role, company, URL), every field with the exact value that
+  will be sent, the attached file names, and any cover-letter text in full.
+- Ask for explicit confirmation of that sheet.
+- The submit runs only after that OK, and it verifies the form still matches
+  the approved sheet. Any difference needs a new OK.
+
+Only the user's explicit request starts an application; the agent never
+applies on its own.
+
 ## What does not need approval
 
 - Reading public pages, searching, and evaluating results.

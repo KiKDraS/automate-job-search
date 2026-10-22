@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Assisted apply (LinkedIn Easy Apply): `/job/apply` fills a saved job's
+  application from `profile.md`, the tailored `resume.pdf`, and reusable
+  answers in `application-data.md`; it stops at the Review step and shows
+  every field, file, and answer for the user's explicit OK, then submits,
+  verifies the confirmation, and writes `applied.md`. New `apply` skill and
+  `apply-log` helper; `job-scout` gains the apply flow and
+  `browser_file_upload` scoped to the approved files; approval flow, browser
+  setup, LinkedIn patterns, and data-directory docs updated. SPEC.md: assisted
+  apply moves to In; the out-of-scope line is now autonomous outbound
+  (user-approved). Coach's menu gains Apply.
 - Language preferences: first contact asks for the chat language (bilingual
   EN/ES) and records it in `<data dir>/language.md`; every session greets
   and replies in it. Tailored resumes and letters follow each posting's

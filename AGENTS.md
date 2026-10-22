@@ -9,7 +9,7 @@ never enters this repository.
 | Agent | Mode | Role | Defined in |
 | --- | --- | --- | --- |
 | `coach` | primary | User-facing. Plans, gates, delegates. | `.opencode/agents/coach.md` |
-| `job-scout` | subagent | Browser work: search, fit scoring, saving postings. | `.opencode/agents/job-scout.md` |
+| `job-scout` | subagent | Browser work: search, fit scoring, saving postings, assisted apply. | `.opencode/agents/job-scout.md` |
 | `artifact-writer` | subagent | Resumes, cover letters, outreach drafts. | `.opencode/agents/artifact-writer.md` |
 | `draft-review` | subagent | Audit gate for anything outbound. | `.opencode/agents/draft-review.md` |
 | `release-manager` | subagent | Git lifecycle of this repository. | `.opencode/agents/release-manager.md` |

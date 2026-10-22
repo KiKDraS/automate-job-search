@@ -25,11 +25,32 @@ agent.
    - **Follow-up** — 200–350 characters. Reference the previous touch, add
      one new piece of value, keep it light. At most two follow-ups per
      thread, then stop.
-2. Draft the message: short sentences, specifics, the user's register.
-3. Show Coach the draft in full plus recipient and context. The user sends it
-   themselves.
-4. Append a log entry to `<data dir>/outreach-history.md` (append-only):
-   date, company, person (or "no contact"), type, status "drafted", preview.
+2. Write `<job folder>/outreach.md`: recipient (or "no contact"), language,
+   the draft, character count, and the evidence used. This file holds the
+   current draft; a revision replaces the text and keeps the evidence list.
+3. Show Coach the draft in full plus recipient and context. `draft-review`
+   runs before the user sees it. The user sends it themselves.
+4. Append a row to `<data dir>/outreach-history.md` for every draft version
+   or status change. On first use, create the file with this header:
+
+   ```md
+   # Outreach history
+
+   Append-only. One row per draft version or status change. The agent never
+   sends; `sent` means the user confirmed sending.
+
+   | Date | Company | Person | Type | Status | Preview |
+   | --- | --- | --- | --- | --- | --- |
+   ```
+
+   Statuses: `drafted` (written), `rejected` (`draft-review` rejected it),
+   `approved` (`draft-review` passed it), `sent` (the user confirmed
+   sending). Coach reports the review outcome and the send confirmation;
+   append the matching row when it does. If an existing header says "Nothing
+   here has been sent", replace that sentence when you add the first `sent`
+   row. Add the version or a short note in the preview when there is more
+   than one. Append-only: a revision or status change is a new row, never an
+   edit (`data-directory.md`).
 
 ## Rules
 

@@ -38,6 +38,7 @@ never hand-build the path.
         ├── resume.md          # tailored resume
         ├── resume.pdf         # tailored resume export (uploaded by apply)
         ├── cover-letter.md    # cover letter
+        ├── outreach.md        # current outreach draft: recipient, language, text, evidence
         └── applied.md         # application record: what was sent, when, confirmation
 ```
 
@@ -49,7 +50,11 @@ never hand-build the path.
   language plus an optional document-language override. First contact (or
   setup) writes it; users may edit it by hand.
 - `job-history.md` and `outreach-history.md` are append-only. Never rewrite
-  history; corrections get new entries.
+  history; corrections get new entries. Outreach rows use the statuses
+  defined in the `outreach` skill.
+- `<job folder>/outreach.md` is the current outreach draft: recipient (or
+  "no contact"), language, text, character count, and the evidence used. The
+  log is the index, not the draft.
 - `.tmp/` holds transient files handed between steps (candidate lists,
   section JSON). Scripts may recreate it; deleting it is always safe.
 - Saved postings keep the raw text, delimited as untrusted content (see

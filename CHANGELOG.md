@@ -82,6 +82,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Outreach: `<job folder>/outreach.md` is now the documented draft file, and
+  `outreach-history.md` records every draft version and status change
+  (`drafted`, `rejected`, `approved`, `sent`) instead of leaving rejected and
+  approved drafts indistinguishable.
 - `slugify` truncates on a word boundary, so folder names no longer end in
   fragments like `...-flutt`.
 - `history.ts append` drops duplicates already in history or repeated within

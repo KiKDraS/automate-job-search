@@ -64,6 +64,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Artifact facts: before drafting a batch, Coach runs one gap scan over the
+  saved postings, asks for missing evidence in one batch, and writes the
+  answers to `profile.md` (and the base resume) before tailoring. Rejections
+  that trace to the profile or base are fixed at the source and propagated.
+  Cover letters close with a neutral availability line instead of an
+  unverified start date.
+- Job search: `job-scout` gets 50 steps, postings are saved as each High fit
+  is confirmed, and history appends the filtered list. Subagent shell
+  contracts point to `read`/`glob` and the allowed scripts.
 - `README.md` is now user documentation — what the project is and how to use
   it. The documentation split is recorded in `SPEC.md` and enforced by the PR
   checklist: README updates ride with user-visible changes.
@@ -73,6 +82,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `slugify` truncates on a word boundary, so folder names no longer end in
+  fragments like `...-flutt`.
+- `history.ts append` drops duplicates already in history or repeated within
+  the section, and reports how many it skipped.
 - Greeting self-heals when the welcome session is gone: the TUI half no
   longer stores a session id between launches. Each launch finds an unused
   "Welcome" session from the server (or creates one), so deleting, renaming,

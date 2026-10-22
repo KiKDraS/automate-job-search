@@ -70,10 +70,12 @@ Score each new candidate per `.opencode/docs/fit-scoring.md` using
 preferences and profile: High / Medium / Low plus a one-line why. Score from
 listing data first; do not open postings yet.
 
-### 6. Save postings (High fits, cap 5)
+### 6. Save postings as you go (High fits, cap 5)
 
 For each High fit (max 5 unless Coach asks for more), one `execute` call per
-posting that saves the body to a file:
+posting that saves the body to a file. Save each one as soon as it is
+confirmed — do not wait for the whole list, so an interrupted run keeps what
+is already saved:
 
 ```js
 const nav = await tools.playwright.browser_navigate({ url: POSTING_URL })
@@ -90,8 +92,9 @@ Then move it into the job folder (never read the file yourself):
 
 If a posting shows a login wall or is gone, note it and continue.
 
-### 7. Append history (all new candidates)
+### 7. Append history (the filtered new candidates)
 
+Use the records from step 4's `filter` output — not the raw candidate list.
 Write `<data dir>/.tmp/section.json`:
 
 ```json
@@ -104,6 +107,10 @@ Then:
 
     npx tsx scripts/history.ts append --file <data dir>/.tmp/section.json
 
+`append` also drops duplicates already in history or repeated in the section,
+and reports how many it skipped. If it skips rows, that is expected — do not
+retry them or re-add them by hand.
+
 ### 8. Report (compact)
 
 Return to Coach:
@@ -115,5 +122,9 @@ Return to Coach:
   `npx tsx scripts/linkedin.ts normalize-job "<url>"`, and include the
   employer URL when one was resolved. Medium fits get their job URL too.
 - Anything skipped or failed (login walls, missing postings).
+- If you hit the step limit, report the partial result: what is saved, what
+  is missing, and the `candidates.json` path. Do not restart the search.
+- Verify saved folders with `read`/`glob`. Never re-run `save-posting` just
+  to check a folder.
 
 No raw page text. No posting bodies.

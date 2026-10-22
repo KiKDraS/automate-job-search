@@ -1,5 +1,5 @@
 import assert from "node:assert/strict"
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { test } from "node:test"
@@ -13,6 +13,7 @@ import {
   normalizeUrl,
 } from "../lib/linkedin-url.ts"
 import {
+  appendHistory,
   duplicateKey,
   filterNew,
   formatHistorySection,
@@ -78,6 +79,17 @@ test("slugify is filesystem-safe and never empty", () => {
   assert.equal(slugify("Anahí Foresi"), "anahi-foresi")
   assert.equal(slugify("!!!"), "untitled")
   assert.ok(slugify("x".repeat(80)).length <= 40)
+})
+
+test("slugify truncates on a word boundary", () => {
+  assert.equal(
+    slugify("Web Frontend Engineer — JS, CSS, React, Flutter"),
+    "web-frontend-engineer-js-css-react",
+  )
+  assert.equal(
+    jobFolderName("Canonical", "Web Frontend Engineer — JS, CSS, React, Flutter", "2026-10-22"),
+    "canonical-web-frontend-engineer-js-css-react-2026-10-22",
+  )
 })
 
 test("duplicateKey ignores case and punctuation", () => {
@@ -175,6 +187,34 @@ test("filterNew removes duplicates against history and within the batch", () => 
     ["B", "C"],
   )
   assert.equal(fresh[0]?.url, "https://example.com/b")
+})
+
+test("appendHistory skips duplicates against history and within the section", async () => {
+  const prevEnv = process.env["JOBSEARCH_HOME"]
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "jobsearch-history-"))
+  process.env["JOBSEARCH_HOME"] = tmp
+  try {
+    const record = {
+      title: "Senior Software Engineer, Build Loop",
+      company: "Webflow",
+      location: "Buenos Aires y alrededores (En remoto)",
+      salary: "not stated",
+      fit: "Low" as const,
+      notes: "duplicate check",
+    }
+    const first = await appendHistory("2026-10-22", "test", [record, { ...record }])
+    assert.deepEqual(first, { appended: 1, skipped: 1 })
+
+    const second = await appendHistory("2026-10-22", "test", [record])
+    assert.deepEqual(second, { appended: 0, skipped: 1 })
+
+    const text = readFileSync(path.join(tmp, "job-history.md"), "utf8")
+    assert.equal(text.match(/\| Senior Software Engineer, Build Loop \|/g)?.length, 1)
+  } finally {
+    if (prevEnv === undefined) delete process.env["JOBSEARCH_HOME"]
+    else process.env["JOBSEARCH_HOME"] = prevEnv
+    rmSync(tmp, { recursive: true, force: true })
+  }
 })
 
 test("unwrapEvalResult unwraps JSON strings and passes raw text through", () => {

@@ -12,7 +12,7 @@ import { Plugin } from "@opencode/plugin"
  * nudge has somewhere to land before the user types anything.
  */
 const NUDGE =
-  "Session start — greet the user: one warm line, then a short menu (setup, search, artifacts, help), then ask what they want to do. Greet in the chat language from language.md; if no language is set yet, ask for it first (bilingual EN/ES) and record it."
+  "Session start — greet the user: one warm line, then a short menu (setup, search, artifacts, apply, help), then ask what they want to do. Greet in the chat language from language.md; if no language is set yet, ask for it first (bilingual EN/ES) and record it."
 
 const GREETED_PREFIX = "coach-greeting/greeted/"
 

@@ -36,8 +36,9 @@ never hand-build the path.
     └── <company>-<role>-<date>/
         ├── posting.md         # saved job description (raw, delimited)
         ├── resume.md          # tailored resume
+        ├── resume.pdf         # tailored resume export (uploaded by apply)
         ├── cover-letter.md    # cover letter
-        └── applied.md         # application log entry (assisted-apply phase)
+        └── applied.md         # application record: what was sent, when, confirmation
 ```
 
 ## Rules
@@ -53,6 +54,10 @@ never hand-build the path.
   section JSON). Scripts may recreate it; deleting it is always safe.
 - Saved postings keep the raw text, delimited as untrusted content (see
   `untrusted-content.md`). Do not summarize away details needed for tailoring.
+- `application-data.md` holds reusable answers only — contact details,
+  logistics, recurring questions. Answers come from the user, never guessed.
+- `<job folder>/applied.md` is written only after a confirmed submission; it
+  records the exact values sent and the confirmation text.
 - The data directory is never committed, copied into the repo, or included in
   prompts that leave the session except where a skill explicitly says so.
 - Paths in this repository are written with forward slashes; code resolves

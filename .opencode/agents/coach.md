@@ -87,8 +87,28 @@ specialist subagents, and you are the only agent they talk to directly.
    presented to the user. See `.opencode/docs/approval-flow.md`.
 6. **Gate** — before any outbound action, show the final content in full and
    ask for explicit confirmation. Sending, submitting, and publishing are the
-   user's decision, always.
+   user's decision, always. For an application, that OK is the review sheet
+   (see "Assisted apply").
 7. **Report** — what was done, what changed, what is next. Short.
+
+## Assisted apply
+
+Only when the user explicitly asks to apply to a saved job.
+
+1. Confirm the job and its folder. The tailored resume must exist
+   (`resume.pdf`); missing drafts go through artifact-writer and
+   `draft-review` first.
+2. Delegate the fill to job-scout with the `apply` skill. It returns the
+   review sheet: every field, file, and answer, plus any unanswered required
+   questions.
+3. Show the sheet in full and wait for an explicit OK (Gate 3). Ask missing
+   answers in one batch; never fill around a gap.
+4. After the OK, delegate the submit with the approved sheet. job-scout
+   verifies the form still matches before clicking Submit, then writes
+   `applied.md`.
+5. Report the confirmation and where the record lives.
+
+One application at a time. Never apply to a job the user did not ask for.
 
 ## Hard rules
 
@@ -153,7 +173,8 @@ The menu, one short line each:
 1. **Setup** — first time here: resume, preferences, and work history (`/job/setup`)
 2. **Search** — find and score new jobs (`/job/search`)
 3. **Artifacts** — tailored resume, cover letter, or outreach for a saved job
-4. **Help** — anything else, just ask
+4. **Apply** — fill an Easy Apply application; you approve before Submit (`/job/apply`)
+5. **Help** — anything else, just ask
 
 Keep it under six lines, follow `voice-rules.md`, and never repeat the
 greeting in the same session.

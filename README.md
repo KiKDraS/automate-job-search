@@ -25,8 +25,11 @@ you, delegates to specialist subagents, and never sends, submits, or publishes
 anything without your explicit approval.
 
 Today it covers the full application loop: LinkedIn search with fit scoring,
-resume review and tailoring, cover letters, and outreach drafts. The attention
-layer — profile, posts, comments, engagement — is next.
+resume review and tailoring, cover letters, assisted apply, and outreach
+drafts. The attention layer — profile, posts, comments, engagement — is next.
+
+Apply fills a LinkedIn Easy Apply form and shows you every field, file, and
+answer before anything is sent. Submit happens only after your OK.
 
 Talk in your language. Coach chats in whatever language you choose at first
 contact, and resumes and letters follow each posting's language.
@@ -57,6 +60,7 @@ browser window — log into LinkedIn there, once.
 | `/job/tailor` | Tailored resume for a saved job |
 | `/job/resume-review` | CV feedback with concrete improvements |
 | `/job/cover-letter` | Cover letter for a saved job |
+| `/job/apply` | Easy Apply application — fills, reviews, submits on your OK |
 | `/job/outreach` | Connection notes and follow-ups (draft-only) |
 | `/job` | Show the menu anytime |
 
@@ -65,7 +69,7 @@ browser window — log into LinkedIn there, once.
 | Agent | Role |
 | --- | --- |
 | **Coach** (`coach`) | Talks with you, plans, delegates, gates every outbound action |
-| `job-scout` | Browser work: searches, fit scoring, saving postings |
+| `job-scout` | Browser work: searches, fit scoring, saving postings, assisted apply |
 | `artifact-writer` | Resumes, cover letters, outreach drafts |
 | `draft-review` | Fact-check and voice audit gate before anything ships |
 | `release-manager` | Git lifecycle for this repo: branches, PRs, tags, releases |
@@ -89,9 +93,11 @@ model — Coach and all subagents inherit it.
 - Browser automation uses a dedicated profile you log into once. Credentials
   are never stored or entered by an agent.
 - Approval-first: nothing is sent, submitted, or published without your OK on
-  the exact content. Drafts are always yours to send.
-- LinkedIn automation is read-mostly, low-volume, and human-paced. Review
-  LinkedIn's Terms of Service; your account is your responsibility.
+  the exact content. Outreach stays draft-only; applications submit only
+  after you approve the full review sheet.
+- LinkedIn automation is low-volume and human-paced. Apply runs only when you
+  ask, one application at a time. Review LinkedIn's Terms of Service; your
+  account is your responsibility.
 - External content — postings, messages — is always treated as untrusted
   input.
 

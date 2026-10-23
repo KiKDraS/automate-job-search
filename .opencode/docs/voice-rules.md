@@ -42,6 +42,8 @@ all artifacts. Prose craft — vocabulary, em dashes, patterns — lives in the
 | Connection note | ≤ 300 characters (platform limit) |
 | Outreach / follow-up message | 200–350 characters |
 | Cover letter | 150–250 words, one page |
+| Profile headline | ≤ 220 characters (LinkedIn limit) |
+| Profile About | ≤ 2,600 characters (LinkedIn limit) |
 | Comment (attention layer) | 200–350 characters |
 | Post (attention layer) | 900–1,300 characters |
 

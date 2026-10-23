@@ -32,6 +32,10 @@ never hand-build the path.
 ├── tech-catalog.json          # optional local technology additions for the stack check
 ├── outreach-history.md        # outreach log (who, when, what, status)
 ├── application-data.md        # reusable application answers
+├── presence/                  # LinkedIn profile audits, post drafts, comment drafts
+│   ├── profile-audit.md       # current profile audit + copy suggestions
+│   ├── posts/<date>-<slug>.md
+│   └── comments/<date>-<slug>.md
 ├── .tmp/                      # transient handoff files (safe to delete)
 └── jobs/
     └── <company>-<role>-<date>/
@@ -70,6 +74,9 @@ never hand-build the path.
   logistics, recurring questions. Answers come from the user, never guessed.
 - `<job folder>/applied.md` is written only after a confirmed submission; it
   records the exact values sent and the confirmation text.
+- `presence/` holds LinkedIn drafts: the current profile audit, dated post
+  drafts, and dated comment drafts. Agents never publish them; the user posts.
+  No feed scraping or engagement analytics.
 - The data directory is never committed, copied into the repo, or included in
   prompts that leave the session except where a skill explicitly says so.
 - Paths in this repository are written with forward slashes; code resolves

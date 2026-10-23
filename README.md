@@ -29,8 +29,9 @@ Today it covers the full application loop: LinkedIn search with fit scoring,
 resume review and tailoring, cover letters, assisted apply, and outreach
 drafts. The attention layer — profile, posts, comments, engagement — is next.
 
-Apply fills a LinkedIn Easy Apply form and shows you every field, file, and
-answer before anything is sent. Submit happens only after your OK.
+Apply fills LinkedIn Easy Apply, Greenhouse, and Lever forms and shows you
+every field, file, and answer before anything is sent. Submit happens only
+after your OK. Other ATS are out of scope for now.
 
 Before drafting a batch of resumes or letters, Coach checks each posting
 against your profile and asks for any missing evidence in one batch. Documents

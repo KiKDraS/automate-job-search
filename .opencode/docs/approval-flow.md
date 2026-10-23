@@ -53,7 +53,8 @@ draft:
   the applied-jobs list first; the recovery steps live in the `apply` skill.
 
 Only the user's explicit request starts an application; the agent never
-applies on its own.
+applies on its own. The same gate applies to LinkedIn Easy Apply, Greenhouse,
+and Lever; other ATS are out of scope.
 
 ## What does not need approval
 

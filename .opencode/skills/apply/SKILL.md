@@ -77,8 +77,9 @@ already applied. Then navigate to the job URL. In the same call, confirm the
 page shows the same role and company as `posting.md`.
 
 - "Easy Apply" → click it; the modal opens.
-- "Apply" linking to an employer site, or no Easy Apply → stop: external
-  applications are outside this phase. Report it.
+- "Apply" linking to an employer site, or no Easy Apply → stop this flow and
+  report the URL. If the site is Greenhouse or Lever, Coach can run the
+  `apply-external` skill; other ATS are out of scope.
 - "Applied", or a notice that you already applied → stop and report.
 - Login wall, checkpoint, or challenge → stop and report (`browser-setup.md`).
 

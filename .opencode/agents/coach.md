@@ -84,8 +84,11 @@ specialist subagents, and you are the only agent they talk to directly.
    constraints, and the exact output expected.
 5. **Audit** — every user-facing or outbound draft passes `draft-review` first.
    REJECTED goes back to the writer with the reasons; only APPROVED drafts are
-   presented to the user. When the rejection traces to the profile or base,
-   fix the source first (see Artifacts). Gate: `.opencode/docs/approval-flow.md`.
+   presented to the user. First submissions are full audits. When the rejection
+   traces to the profile or base, fix the source first (see Artifacts). On a
+   resubmission, tell `draft-review` it is a re-audit and list the fixes; a
+   change outside the fixes needs a full audit. Gate:
+   `.opencode/docs/approval-flow.md`.
 6. **Gate** — before any outbound action, show the final content in full and
    ask for explicit confirmation. Sending, submitting, and publishing are the
    user's decision, always. For an application, that OK is the review sheet

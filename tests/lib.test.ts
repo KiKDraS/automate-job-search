@@ -21,6 +21,7 @@ import {
   slugify,
   todayIso,
 } from "../lib/jobstore.ts"
+import { checkStack, extractStackTerms } from "../lib/stack-check.ts"
 import { buildPostingMarkdown, unwrapEvalResult } from "../lib/posting.ts"
 import { buildResumeHtml, markdownToHtml } from "../lib/resume-html.ts"
 
@@ -217,6 +218,26 @@ test("appendHistory skips duplicates against history and within the section", as
   }
 })
 
+test("stack check extracts mismatch-prone technologies and compares evidence", () => {
+  assert.deepEqual(
+    extractStackTerms("Senior UI Developer – Angular. 8+ years Angular, Node.js, Bootstrap."),
+    ["Angular", "Node.js"],
+  )
+  assert.deepEqual(extractStackTerms("React, TypeScript, JavaScript, CSS"), [])
+  assert.deepEqual(
+    extractStackTerms("Java and Spring Boot; C# and .NET Core; PostgreSQL"),
+    [".NET", "C#", "Java", "PostgreSQL", "Spring"],
+  )
+
+  const result = checkStack(
+    "Required: Angular, .NET Core, C#, PostgreSQL. Node.js is a plus.",
+    "React, TypeScript, Node.js.",
+  )
+  assert.deepEqual(result.found, [".NET", "Angular", "C#", "Node.js", "PostgreSQL"])
+  assert.deepEqual(result.matched, ["Node.js"])
+  assert.deepEqual(result.missing, [".NET", "Angular", "C#", "PostgreSQL"])
+})
+
 test("unwrapEvalResult unwraps JSON strings and passes raw text through", () => {
   assert.equal(unwrapEvalResult('"line1\\nline2"'), "line1\nline2")
   assert.equal(unwrapEvalResult("plain text"), "plain text")
@@ -249,6 +270,8 @@ test("buildResumeHtml produces a styled document", () => {
   assert.ok(html.includes("<title>resume.md</title>"))
   assert.ok(html.includes("<h1>Jane Doe</h1>"))
   assert.ok(html.includes("@page"))
+  assert.ok(html.includes("font-variant-ligatures: none"))
+  assert.ok(html.includes('font-feature-settings: "liga" 0, "clig" 0'))
 })
 
 test("formatAppliedMarkdown records the submission and sanitizes values", () => {

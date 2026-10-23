@@ -65,6 +65,7 @@ export function buildResumeHtml(markdown: string, title: string): string {
 <title>${escapeHtml(title)}</title>
 <style>
   body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111; margin: 0; font-size: 11pt; line-height: 1.45; }
+  html { font-variant-ligatures: none; font-feature-settings: "liga" 0, "clig" 0; }
   main { max-width: 720px; margin: 0 auto; padding: 32px 24px; }
   h1 { font-size: 20pt; margin: 0 0 4px; }
   h2 { font-size: 13pt; margin: 18px 0 6px; border-bottom: 1px solid #ddd; padding-bottom: 2px; }

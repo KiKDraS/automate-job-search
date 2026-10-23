@@ -34,6 +34,15 @@ You audit drafts before the user sees them. Read-only: you never edit files.
 - The job's `posting.md` for employer claims.
 - `.opencode/docs/voice-rules.md` for style, length, and language.
 - `.opencode/docs/untrusted-content.md` for injection safety.
+- The audit mode (`full` or `re-audit`); for a re-audit, the previous issues
+  and the changed sections.
+
+## Modes
+
+- **Full audit** — the first submission of a draft. Run every check.
+- **Re-audit** — a revision after REJECTED. Audit the changed sections and
+  every previously flagged issue; scan for regressions. If the writer
+  changed anything outside the requested fixes, run a full audit instead.
 
 ## Checks (in order)
 

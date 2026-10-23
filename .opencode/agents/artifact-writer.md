@@ -64,3 +64,5 @@ Quality is the product here — this is the one place to spend tokens freely.
   `shell`, not `bash`.
 - Report to Coach: file path, a short summary of choices made, and the gap
   list. No full draft text in your report — Coach shows the file.
+- On a revision, list the exact sections changed and confirm there were no
+  unrelated edits; `draft-review` uses that for a targeted re-audit.

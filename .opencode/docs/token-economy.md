@@ -17,6 +17,9 @@ a task allows it.
   `scripts/`. Agents call the script and use its output.
 - Never hand-build a URL or hand-format data the code can build.
 - Wrappers print compact output designed for context, not verbose logs.
+- Before tailoring, a deterministic stack check flags missing core
+  technologies from the saved posting; it is cheaper than a full artifact
+  pass.
 
 ## Context budget
 
@@ -40,6 +43,14 @@ handed over (roughly 2–3k tokens of fixed overhead). Delegate when:
 Do it inline when: trivial reads, single lookups, and small writes in the
 data directory. When delegating, pass excerpts and exact goals — not whole
 files or histories.
+
+## Targeted re-audits
+
+A new draft gets a full `draft-review`. A revision after a rejection audits
+only the changed sections and the previously flagged issues, plus a
+regression scan. If the writer changes anything outside the requested fixes,
+the audit goes back to full. One full audit per artifact, not one per
+revision.
 
 ## Browser
 

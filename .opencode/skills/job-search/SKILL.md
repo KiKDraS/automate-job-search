@@ -90,6 +90,14 @@ Then move it into the job folder (never read the file yourself):
 
     npx tsx scripts/save-posting.ts --file .playwright-mcp/posting.txt --company "<company>" --role "<role>" --url "<url>"
 
+Then run the deterministic stack check before calling the fit High:
+
+    npx tsx scripts/stack-check.ts --posting <job folder>/posting.md --profile <data dir>/profile.md --resume <data dir>/resume/base.md
+
+Include `--resume` when the base text exists. If `missing` includes the
+posting's primary stack, downgrade the fit to Medium at most, note the gap,
+and do not tailor. The check flags terms; the requirements still decide.
+
 If a posting shows a login wall or is gone, note it and continue.
 
 ### 7. Append history (the filtered new candidates)
@@ -122,6 +130,8 @@ Return to Coach:
   `npx tsx scripts/linkedin.ts normalize-job "<url>"`, and include the
   employer URL when one was resolved. Medium fits get their job URL too.
 - Anything skipped or failed (login walls, missing postings).
+- Stack check for each saved fit: `matched` and `missing`; a missing primary
+  stack belongs in the why.
 - If you hit the step limit, report the partial result: what is saved, what
   is missing, and the `candidates.json` path. Do not restart the search.
 - Verify saved folders with `read`/`glob`. Never re-run `save-posting` just

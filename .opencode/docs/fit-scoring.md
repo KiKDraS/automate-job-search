@@ -23,6 +23,20 @@ Score each dimension strong / partial / weak:
 | Compensation | Meets or exceeds target, or not stated | Clearly below target when stated |
 | Constraints | No conflicts (visa, travel, schedule) | Violates a stated hard constraint |
 
+## Stack check
+
+Before scoring a fit High, run the deterministic stack check on the saved
+posting:
+
+    npx tsx scripts/stack-check.ts --posting <job folder>/posting.md \
+      --profile <data dir>/profile.md [--resume <data dir>/resume/base.md]
+
+It extracts a curated set of mismatch-prone technologies (Angular, .NET,
+C#, Java, PHP, Vue, Svelte, Unity, PixiJS, Flutter, Node.js, AWS, ...) and
+reports which are absent from the profile/base resume. A missing primary
+stack is a weak Skills dimension: score Medium at most and do not tailor.
+The check is a heuristic, not a verdict — the requirements still decide.
+
 ## Verdicts
 
 - **High** — no weak dimensions; at most one partial. Save the full posting.

@@ -117,9 +117,10 @@ Only when the user explicitly asks to apply to a saved job.
 1. Confirm the job and its folder. The tailored resume must exist
    (`resume.pdf`); missing drafts go through artifact-writer and
    `draft-review` first.
-2. Delegate the fill to job-scout with the `apply` skill. It returns the
-   review sheet: every field, file, and answer, plus any unanswered required
-   questions.
+2. Delegate the fill to job-scout with the ATS-appropriate skill: `apply` for
+   LinkedIn Easy Apply, `apply-external` for Greenhouse or Lever. It returns
+   the review sheet: every field, file, and answer, plus any unanswered
+   required questions.
 3. Show the sheet in full and wait for an explicit OK (Gate 3). Ask missing
    answers in one batch; never fill around a gap.
 4. After the OK, delegate the submit with the approved sheet. job-scout

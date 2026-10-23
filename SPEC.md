@@ -44,8 +44,8 @@ out — on OpenCode's free models, with no subscription required.
 - **Agents** — Coach leads; job-scout, artifact-writer, draft-review,
   release-manager, presence-coach (Phase 8). Roster: `AGENTS.md`
 - **Skills** — job-setup, job-search, resume-review, tailor-resume,
-  cover-letter, outreach, apply; craft skills no-ai-slop and write-root-readme
-  (`.opencode/skills/`)
+  cover-letter, outreach, apply, apply-external; craft skills no-ai-slop and
+  write-root-readme (`.opencode/skills/`)
 - **Plugins** — coach-greeting (server + TUI halves): greets on launch
   (`.opencode/plugins/coach-greeting/`)
 - **Helpers** — deterministic wrappers over `lib/` (`scripts/`)

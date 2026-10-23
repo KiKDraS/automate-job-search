@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- External ATS apply: the `apply-external` skill fills Greenhouse and Lever
+  applications with the same review-and-approve gate, resume/cover-letter
+  upload, and `applied.md` logging. `lib/ats.ts` and `scripts/ats.ts` detect
+  the ATS from the URL; other ATS stay out of scope.
+
+### Changed
+
+- `applied.md` records the actual ATS method (LinkedIn Easy Apply,
+  Greenhouse, or Lever) instead of always LinkedIn.
+
 ## [0.2.0] - 2026-10-23
 
 ### Added

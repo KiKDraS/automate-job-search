@@ -1,7 +1,7 @@
 /**
  * applied.md — the per-job record of a submitted application.
  *
- * Written only after LinkedIn confirms the submission. Records the exact
+ * Written only after the ATS confirms the submission. Records the exact
  * values sent, so the user can see what an employer received.
  */
 import { todayIso } from "./jobstore.ts"
@@ -15,6 +15,7 @@ export interface AppliedEntry {
   role: string
   company: string
   url: string
+  method?: string
   resume: string
   coverLetter?: string
   confirmation: string
@@ -31,7 +32,7 @@ export function formatAppliedMarkdown(entry: AppliedEntry, date = todayIso()): s
     "",
     `- Date: ${date}`,
     `- Job URL: ${oneLine(entry.url)}`,
-    "- Method: LinkedIn Easy Apply",
+    `- Method: ${oneLine(entry.method ?? "LinkedIn Easy Apply")}`,
     "- Status: submitted",
     `- Confirmation: "${oneLine(entry.confirmation)}"`,
     `- Resume: ${oneLine(entry.resume)}`,
@@ -71,6 +72,7 @@ export function parseAppliedEntry(source: string): AppliedEntry | null {
     role: record["role"] as string,
     company: record["company"] as string,
     url: record["url"] as string,
+    method: typeof record["method"] === "string" ? record["method"] : undefined,
     resume: record["resume"] as string,
     confirmation: record["confirmation"] as string,
     coverLetter: typeof record["coverLetter"] === "string" ? record["coverLetter"] : undefined,

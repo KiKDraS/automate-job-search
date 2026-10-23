@@ -5,7 +5,7 @@
  * Usage:
  *   npx tsx scripts/apply-log.ts --folder <job folder> --file <entry.json>
  *
- * The JSON entry: role, company, url, resume, confirmation, optional
+ * The JSON entry: role, company, url, resume, confirmation, optional method,
  * coverLetter and fields [{ label, value }]. Prints the written path.
  */
 import { promises as fs } from "node:fs"

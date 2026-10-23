@@ -13,6 +13,7 @@
     "doctor": "tsx scripts/doctor.ts",
     "check:skills": "tsx scripts/check-skills.ts",
     "data-dir": "tsx scripts/data-dir.ts",
+    "ats": "tsx scripts/ats.ts",
     "linkedin": "tsx scripts/linkedin.ts",
     "history": "tsx scripts/history.ts",
     "save-posting": "tsx scripts/save-posting.ts",

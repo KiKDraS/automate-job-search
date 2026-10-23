@@ -60,7 +60,8 @@ live UI.
 - Confirmation: the modal switches to "Your application was sent…" — capture
   the exact text before closing. Never click Submit twice.
 - "Easy Apply" missing, "Applied" shown, or a redirect to an employer site →
-  stop and report; external applications are outside this phase.
+  stop and report. Greenhouse/Lever redirects go to `apply-external`; other
+  ATS are out of scope.
 
 ## Messaging and connections (attention layer)
 

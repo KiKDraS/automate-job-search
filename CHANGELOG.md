@@ -7,6 +7,114 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-23
+
+### Added
+
+- Assisted apply (LinkedIn Easy Apply): `/job/apply` fills a saved job's
+  application from `profile.md`, the tailored `resume.pdf`, and reusable
+  answers in `application-data.md`; it stops at the Review step and shows
+  every field, file, and answer for the user's explicit OK, then submits,
+  verifies the confirmation, and writes `applied.md`. New `apply` skill and
+  `apply-log` helper; `job-scout` gains the apply flow and
+  `browser_file_upload` scoped to the approved files; approval flow, browser
+  setup, LinkedIn patterns, and data-directory docs updated. SPEC.md: assisted
+  apply moves to In; the out-of-scope line is now autonomous outbound
+  (user-approved). Coach's menu gains Apply.
+- Language preferences: first contact asks for the chat language (bilingual
+  EN/ES) and records it in `<data dir>/language.md`; every session greets
+  and replies in it. Tailored resumes and letters follow each posting's
+  language, with a per-job user override (`voice-rules.md` → Language).
+  When no data directory has been chosen yet, first contact asks for it
+  right after the language and records the answer — including the default —
+  via `jobsearch_set_data_dir`; setup confirms instead of re-asking.
+- Craft skills ship with the toolkit: `no-ai-slop` (house style for prose)
+  and `write-root-readme` (README conventions — no generic emoji headings),
+  both adapted with notices recorded in `THIRD_PARTY_NOTICES.md`.
+- Resume text extraction: `scripts/resume-text.ts` (+ `lib/resume-text.ts`,
+  pdfjs-dist) turns a text-layer resume PDF into `resume/base.txt` — the
+  canonical readable source for review and tailoring, so free models without
+  document support can work with any resume. Scanned/image PDFs are detected
+  and reported; the skills fall back to asking for pasted text.
+- Resume quality: the `resume-review` skill and `/job/resume-review` command,
+  plus `.opencode/docs/resume-standards.md` — the canonical rules for
+  structure, ATS, impact, consistency, and a human-reading voice. Creation
+  flows (`job-setup`, `tailor-resume`) write to the standards and ask one
+  batched clarification round instead of writing around missing data;
+  rewrites pass `draft-review`.
+- SPEC.md: resumes scope now includes review (user-approved).
+- Data directory automation: setup asks where data should live and calls
+  `jobsearch_set_data_dir` — the new `data-dir` plugin validates the path,
+  creates the folder, stores the choice
+  (`~/.config/opencode/jobsearch.json`), and grants the session access. No
+  manual config edits, shell profiles, or restarts; doctor reports the
+  resolved path and its source.
+- `SPEC.md`: new principle — the simplest path for the user; no manual setup.
+- `SPEC.md`: the project's single intent document — mission, principles
+  (warmth, token economy, approval-first, deterministic-first, no rule
+  copies, data privacy), system map, scope (in / deferred / out), and how we
+  work. Modifications require explicit user approval; `check:skills`
+  validates its doc pointers; the PR template carries the approval gate.
+- Greeting on launch: `coach-greeting` now ships as a two-part plugin
+  package. The server half nudges fresh Coach sessions; the TUI half opens a
+  greeted welcome session when OpenCode starts (reusing it while the user
+  has not typed in it). README documents an `opencode --prompt "/job"`
+  alias as an alternative.
+- Coach greets new sessions: a session-start plugin (`coach-greeting`) nudges
+  fresh top-level Coach sessions with a synthetic message; the greeting menu
+  lives in the Coach contract, and `/job` shows it on demand.
+
+### Changed
+
+- Scope: SPEC moves external ATS (Greenhouse, Lever) and the attention layer
+  (profile audit, post drafts, comment drafts) into In; external ATS beyond
+  those two and attention-layer analytics stay deferred (user-approved).
+- Token economy: the deterministic stack check compares a posting's
+  required/optional technologies with the stack the user confirmed in
+  `profile.md`; it never assumes one and the result is advisory. Unknown
+  terms come back as `candidates`; the user can add them to a local
+  `tech-catalog.json` overlay, while common terms join the shipped catalog in
+  releases. Setup asks for the stack once and shows `profile.md` for explicit
+  approval. `draft-review` re-audits revisions against the changed sections.
+  SPEC adds the no-assumptions principle and the technology-role focus;
+  fit-scoring, data-directory, approval, token-economy, job-setup, and resume
+  docs updated.
+- Artifact facts: before drafting a batch, Coach runs one gap scan over the
+  saved postings, asks for missing evidence in one batch, and writes the
+  answers to `profile.md` (and the base resume) before tailoring. Rejections
+  that trace to the profile or base are fixed at the source and propagated.
+  Cover letters close with a neutral availability line instead of an
+  unverified start date.
+- Job search: `job-scout` gets 50 steps, postings are saved as each High fit
+  is confirmed, and history appends the filtered list. Subagent shell
+  contracts point to `read`/`glob` and the allowed scripts.
+- `README.md` is now user documentation — what the project is and how to use
+  it. The documentation split is recorded in `SPEC.md` and enforced by the PR
+  checklist: README updates ride with user-visible changes.
+- Prose craft rules (vocabulary, em dashes, patterns) now have one source —
+  the `no-ai-slop` skill; `voice-rules.md` keeps the project-specific rules
+  and points there.
+
+### Fixed
+
+- Resume PDF export disables font ligatures, so ATS text extraction no longer
+  splits words like "flow" or "verifications".
+- Apply submit-timeout recovery: verify the job page and applied-jobs list
+  before retrying; never click Submit twice.
+- Outreach: `<job folder>/outreach.md` is now the documented draft file, and
+  `outreach-history.md` records every draft version and status change
+  (`drafted`, `rejected`, `approved`, `sent`) instead of leaving rejected and
+  approved drafts indistinguishable.
+- `slugify` truncates on a word boundary, so folder names no longer end in
+  fragments like `...-flutt`.
+- `history.ts append` drops duplicates already in history or repeated within
+  the section, and reports how many it skipped.
+- Greeting self-heals when the welcome session is gone: the TUI half no
+  longer stores a session id between launches. Each launch finds an unused
+  "Welcome" session from the server (or creates one), so deleting, renaming,
+  or using the welcome session can never wedge the greeting with
+  "Session not found" again.
+
 ## [0.1.0] - 2026-10-15
 
 ### Added

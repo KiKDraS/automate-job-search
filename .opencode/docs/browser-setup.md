@@ -45,10 +45,13 @@ profile page.
 
 ## Etiquette and safety
 
-- Human-paced, read-mostly usage: small batches, pauses between navigations.
+- Human-paced, low-volume usage: small batches, pauses between navigations.
+  Assisted apply leaves the Review modal open between the fill and the
+  approved submit; that wait is expected.
 - Never use `browser_run_code_unsafe` (also blocked by permissions).
-- `browser_file_upload` is blocked until the assisted-apply phase; do not
-  work around it.
+- `browser_file_upload` is allowed only inside the assisted-apply flow, and
+  only after the user approved the exact files (Gate 3). Never upload
+  anything else.
 - No credential entry, no CAPTCHA solving, no challenge bypass.
 - If a page behaves unexpectedly (redirect to login, rate-limit notice),
   stop and report; do not retry in a loop.

@@ -9,7 +9,7 @@ never enters this repository.
 | Agent | Mode | Role | Defined in |
 | --- | --- | --- | --- |
 | `coach` | primary | User-facing. Plans, gates, delegates. | `.opencode/agents/coach.md` |
-| `job-scout` | subagent | Browser work: search, fit scoring, saving postings. | `.opencode/agents/job-scout.md` |
+| `job-scout` | subagent | Browser work: search, fit scoring, saving postings, assisted apply. | `.opencode/agents/job-scout.md` |
 | `artifact-writer` | subagent | Resumes, cover letters, outreach drafts. | `.opencode/agents/artifact-writer.md` |
 | `draft-review` | subagent | Audit gate for anything outbound. | `.opencode/agents/draft-review.md` |
 | `release-manager` | subagent | Git lifecycle of this repository. | `.opencode/agents/release-manager.md` |
@@ -31,16 +31,22 @@ Pipeline: **Plan → user approval → delegate → draft-review → user approv
 6. All user-facing text — chat replies, reports, and artifacts — follows
    `.opencode/docs/voice-rules.md`. Artifacts additionally pass `draft-review`
    before the user sees them.
+7. No assumptions — facts, preferences, stacks, and scope come from the user
+   or the data directory; ask when missing. See `SPEC.md` → Principles.
 
 ## Rule ownership — no copies
 
 | Scope | Lives in |
 | --- | --- |
 | All agents | this file |
+| Project intent and scope | `SPEC.md` |
 | Two or more agents | `.opencode/docs/` (referenced by pointer) |
 | One agent | that agent's file in `.opencode/agents/` |
 
 Never copy a rule between documents. Edit the source.
+
+`SPEC.md` changes require explicit user approval — propose the exact change
+first, and update it in the same change as the decision that caused it.
 
 ## Shared documents
 
@@ -56,3 +62,5 @@ Never copy a rule between documents. Edit the source.
 | LinkedIn UI patterns | `.opencode/docs/linkedin-ui-patterns.md` |
 | Untrusted content | `.opencode/docs/untrusted-content.md` |
 | Voice rules | `.opencode/docs/voice-rules.md` |
+| Resume standards | `.opencode/docs/resume-standards.md` |
+| Root README (user docs) | `SPEC.md` — audience and sync rule; `write-root-readme` skill — format |

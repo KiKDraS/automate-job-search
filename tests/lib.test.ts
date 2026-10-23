@@ -1,5 +1,11 @@
 import assert from "node:assert/strict"
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import os from "node:os"
+import path from "node:path"
 import { test } from "node:test"
+import { parseDataDirConfig, resolveDataDirWithSource } from "../lib/data-dir.ts"
+import { formatAppliedMarkdown, parseAppliedEntry } from "../lib/apply.ts"
+import { isLikelyScanned, joinPages } from "../lib/resume-text.ts"
 import {
   buildJobSearchUrl,
   jobIdFromUrl,
@@ -7,6 +13,7 @@ import {
   normalizeUrl,
 } from "../lib/linkedin-url.ts"
 import {
+  appendHistory,
   duplicateKey,
   filterNew,
   formatHistorySection,
@@ -14,6 +21,13 @@ import {
   slugify,
   todayIso,
 } from "../lib/jobstore.ts"
+import { checkStack, extractTerms, parseDeclaredStack, splitPostingSections } from "../lib/stack-check.ts"
+import {
+  mergeCatalog,
+  parseCatalog,
+  TECH_CATALOG,
+  validateCatalog,
+} from "../lib/tech-catalog.ts"
 import { buildPostingMarkdown, unwrapEvalResult } from "../lib/posting.ts"
 import { buildResumeHtml, markdownToHtml } from "../lib/resume-html.ts"
 
@@ -74,6 +88,17 @@ test("slugify is filesystem-safe and never empty", () => {
   assert.ok(slugify("x".repeat(80)).length <= 40)
 })
 
+test("slugify truncates on a word boundary", () => {
+  assert.equal(
+    slugify("Web Frontend Engineer — JS, CSS, React, Flutter"),
+    "web-frontend-engineer-js-css-react",
+  )
+  assert.equal(
+    jobFolderName("Canonical", "Web Frontend Engineer — JS, CSS, React, Flutter", "2026-10-22"),
+    "canonical-web-frontend-engineer-js-css-react-2026-10-22",
+  )
+})
+
 test("duplicateKey ignores case and punctuation", () => {
   const a = duplicateKey({ title: "Senior Engineer, Backend", company: "Acme", location: "Remote" })
   const b = duplicateKey({ title: "senior engineer backend", company: "ACME", location: "remote" })
@@ -106,6 +131,55 @@ test("todayIso formats local dates", () => {
   assert.equal(todayIso(new Date(2026, 0, 5)), "2026-01-05")
 })
 
+test("parseDataDirConfig accepts valid configs and rejects invalid ones", () => {
+  assert.equal(parseDataDirConfig('{"dataDir":"/tmp/x"}'), "/tmp/x")
+  assert.equal(parseDataDirConfig('{"dataDir":"  "}'), null)
+  assert.equal(parseDataDirConfig('{"other":1}'), null)
+  assert.equal(parseDataDirConfig("not json"), null)
+})
+
+test("joinPages normalizes whitespace and drops empty pages", () => {
+  assert.equal(joinPages(["  Hello   world ", "", "Second\r\npage"]), "Hello world\n\nSecond\npage")
+})
+
+test("isLikelyScanned flags near-empty extraction output", () => {
+  assert.equal(isLikelyScanned(""), true)
+  assert.equal(isLikelyScanned("short"), true)
+  assert.equal(isLikelyScanned("x".repeat(300)), false)
+})
+
+test("data dir resolution: env wins, config second, default last", () => {
+  const prevEnv = process.env["JOBSEARCH_HOME"]
+  const prevXdg = process.env["XDG_CONFIG_HOME"]
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "jobsearch-datadir-"))
+  try {
+    mkdirSync(path.join(tmp, "opencode"), { recursive: true })
+    const configFile = path.join(tmp, "opencode", "jobsearch.json")
+    writeFileSync(configFile, '{"dataDir":"/tmp/from-config"}')
+    process.env["XDG_CONFIG_HOME"] = tmp
+
+    process.env["JOBSEARCH_HOME"] = "/tmp/from-env"
+    const fromEnv = resolveDataDirWithSource()
+    assert.equal(fromEnv.source, "env")
+    assert.equal(fromEnv.dir, "/tmp/from-env")
+
+    delete process.env["JOBSEARCH_HOME"]
+    const fromConfig = resolveDataDirWithSource()
+    assert.equal(fromConfig.source, "config")
+    assert.equal(fromConfig.dir, "/tmp/from-config")
+
+    writeFileSync(configFile, "{}")
+    const fromDefault = resolveDataDirWithSource()
+    assert.equal(fromDefault.source, "default")
+  } finally {
+    if (prevEnv === undefined) delete process.env["JOBSEARCH_HOME"]
+    else process.env["JOBSEARCH_HOME"] = prevEnv
+    if (prevXdg === undefined) delete process.env["XDG_CONFIG_HOME"]
+    else process.env["XDG_CONFIG_HOME"] = prevXdg
+    rmSync(tmp, { recursive: true, force: true })
+  }
+})
+
 test("filterNew removes duplicates against history and within the batch", () => {
   const seen = new Set([duplicateKey({ title: "A", company: "X", location: "R" })])
   const candidates = [
@@ -120,6 +194,187 @@ test("filterNew removes duplicates against history and within the batch", () => 
     ["B", "C"],
   )
   assert.equal(fresh[0]?.url, "https://example.com/b")
+})
+
+test("appendHistory skips duplicates against history and within the section", async () => {
+  const prevEnv = process.env["JOBSEARCH_HOME"]
+  const tmp = mkdtempSync(path.join(os.tmpdir(), "jobsearch-history-"))
+  process.env["JOBSEARCH_HOME"] = tmp
+  try {
+    const record = {
+      title: "Senior Software Engineer, Build Loop",
+      company: "Webflow",
+      location: "Buenos Aires y alrededores (En remoto)",
+      salary: "not stated",
+      fit: "Low" as const,
+      notes: "duplicate check",
+    }
+    const first = await appendHistory("2026-10-22", "test", [record, { ...record }])
+    assert.deepEqual(first, { appended: 1, skipped: 1 })
+
+    const second = await appendHistory("2026-10-22", "test", [record])
+    assert.deepEqual(second, { appended: 0, skipped: 1 })
+
+    const text = readFileSync(path.join(tmp, "job-history.md"), "utf8")
+    assert.equal(text.match(/\| Senior Software Engineer, Build Loop \|/g)?.length, 1)
+  } finally {
+    if (prevEnv === undefined) delete process.env["JOBSEARCH_HOME"]
+    else process.env["JOBSEARCH_HOME"] = prevEnv
+    rmSync(tmp, { recursive: true, force: true })
+  }
+})
+
+const FRONTEND_PROFILE = `# Profile
+
+## Stack
+- Primary: TypeScript, React, CSS, HTML
+- Working knowledge: Node.js, Vite, Figma
+`
+
+const ANGULAR_PROFILE = `# Profile
+
+## Stack
+- Primary: Angular, TypeScript, CSS
+`
+
+const JAVA_PROFILE = `# Profile
+
+## Stack
+- Primary: Java, Spring Boot, SQL
+`
+
+const PREFERENCES = `# Job Preferences
+
+- Target roles: Front-End Developer / Desarrollador Front-End; React Developer
+`
+
+test("stack check reads the declared stack instead of assuming one", () => {
+  assert.deepEqual(parseDeclaredStack(FRONTEND_PROFILE), {
+    primary: ["TypeScript", "React", "CSS", "HTML"],
+    working: ["Node.js", "Vite", "Figma"],
+  })
+  assert.equal(parseDeclaredStack("# Profile\n\n## Skills\n\nReact, TypeScript"), null)
+})
+
+test("stack check classifies required and optional posting terms", () => {
+  const sections = splitPostingSections(
+    "## Requirements\n\nAngular, TypeScript, CSS.\n\n## Nice to have\n\nVue.",
+  )
+  assert.equal(sections.sectionsFound, true)
+  assert.ok(sections.required.includes("Requirements"))
+  assert.ok(sections.required.includes("Angular, TypeScript, CSS."))
+  assert.ok(sections.optional.includes("Nice to have"))
+  assert.ok(sections.optional.includes("Vue."))
+  assert.deepEqual(
+    extractTerms("Angular, .NET Core, C#, Java, JavaScript, TypeScript, PostgreSQL"),
+    [".NET", "Angular", "C#", "Java", "JavaScript", "PostgreSQL", "TypeScript"],
+  )
+})
+
+test("stack check adapts to different user stacks", () => {
+  const posting =
+    "## Requirements\n\nAngular, TypeScript, CSS.\n\n## Nice to have\n\nVue."
+
+  const frontend = checkStack(posting, FRONTEND_PROFILE, PREFERENCES)
+  assert.ok(frontend !== null)
+  assert.deepEqual(frontend.targetRoles, [
+    "Front-End Developer / Desarrollador Front-End",
+    "React Developer",
+  ])
+  assert.equal(frontend.sectionsFound, true)
+  assert.deepEqual(frontend.required, ["Angular", "CSS", "TypeScript"])
+  assert.deepEqual(frontend.optional, ["Vue"])
+  assert.deepEqual(frontend.matched, ["CSS", "TypeScript"])
+  assert.deepEqual(frontend.requiredNotInStack, ["Angular"])
+  assert.deepEqual(frontend.optionalNotInStack, ["Vue"])
+
+  const angular = checkStack(posting, ANGULAR_PROFILE)
+  assert.ok(angular !== null)
+  assert.deepEqual(angular.matched, ["Angular", "CSS", "TypeScript"])
+  assert.deepEqual(angular.requiredNotInStack, [])
+  assert.deepEqual(angular.optionalNotInStack, ["Vue"])
+
+  const java = checkStack("## Requirements\n\nJava, Spring Boot, SQL.", JAVA_PROFILE)
+  assert.ok(java !== null)
+  assert.deepEqual(java.requiredNotInStack, [])
+
+  assert.equal(checkStack(posting, "# Profile\n\n## Skills\n\nReact"), null)
+})
+
+test("stack check marks sectionsFound false when the posting has no headings", () => {
+  const result = checkStack("We use Angular and React.", FRONTEND_PROFILE)
+  assert.ok(result !== null)
+  assert.equal(result.sectionsFound, false)
+  assert.deepEqual(result.required, [])
+  assert.deepEqual(result.optional, [])
+  assert.deepEqual(result.mentioned, ["Angular", "React"])
+  assert.deepEqual(result.requiredNotInStack, [])
+  assert.deepEqual(result.optionalNotInStack, [])
+})
+
+test("tech catalog validation catches duplicate names and alias collisions", () => {
+  assert.deepEqual(validateCatalog(TECH_CATALOG), [])
+  assert.ok(
+    validateCatalog([
+      { name: "A", aliases: ["a"] },
+      { name: "A", aliases: ["b"] },
+    ]).some((error) => error.includes("duplicate name")),
+  )
+  assert.ok(
+    validateCatalog([
+      { name: "A", aliases: ["x"] },
+      { name: "B", aliases: ["x"] },
+    ]).some((error) => error.includes("used by")),
+  )
+  assert.ok(
+    validateCatalog([{ name: "A", aliases: [] }]).some((error) => error.includes("no aliases")),
+  )
+})
+
+test("tech catalog merges the local overlay and parses its JSON", () => {
+  const merged = mergeCatalog(
+    [{ name: "React", aliases: ["react"] }],
+    [
+      { name: "React", aliases: ["react.js"] },
+      { name: "Stake Engine", aliases: ["stake engine"] },
+    ],
+  )
+  assert.deepEqual(merged, [
+    { name: "React", aliases: ["react", "react.js"] },
+    { name: "Stake Engine", aliases: ["stake engine"] },
+  ])
+  assert.deepEqual(validateCatalog(merged), [])
+
+  assert.deepEqual(
+    parseCatalog('{"terms":[{"name":"Stake Engine","aliases":["stake engine"]}]}'),
+    [{ name: "Stake Engine", aliases: ["stake engine"] }],
+  )
+  assert.throws(() => parseCatalog('{"terms":"nope"}'))
+  assert.throws(() => parseCatalog('{"terms":[{"name":"","aliases":[]}]}'))
+})
+
+test("stack check surfaces unknown terms as candidates and accepts an overlay", () => {
+  const profile = "# Profile\n\n## Stack\n- Primary: React, TypeScript\n"
+  const posting =
+    "## Requirements\n\nExperience with Stake Engine and PixiJS.\nStrong knowledge of Angular and React.\n\n## Nice to have\n\nFamiliarity with Stake Engine."
+
+  const base = checkStack(posting, profile)
+  assert.ok(base !== null)
+  assert.deepEqual(base.requiredNotInStack, ["Angular", "PixiJS"])
+  assert.deepEqual(
+    base.candidates.map((candidate) => candidate.term),
+    ["Stake Engine"],
+  )
+  assert.equal(base.candidates[0]?.section, "required")
+  assert.ok(base.candidates[0]?.context.includes("Stake Engine"))
+
+  const overlay = mergeCatalog(TECH_CATALOG, [
+    { name: "Stake Engine", aliases: ["stake engine"] },
+  ])
+  const withOverlay = checkStack(posting, profile, "", overlay)
+  assert.ok(withOverlay !== null)
+  assert.deepEqual(withOverlay.candidates, [])
+  assert.deepEqual(withOverlay.requiredNotInStack, ["Angular", "PixiJS", "Stake Engine"])
 })
 
 test("unwrapEvalResult unwraps JSON strings and passes raw text through", () => {
@@ -154,4 +409,45 @@ test("buildResumeHtml produces a styled document", () => {
   assert.ok(html.includes("<title>resume.md</title>"))
   assert.ok(html.includes("<h1>Jane Doe</h1>"))
   assert.ok(html.includes("@page"))
+  assert.ok(html.includes("font-variant-ligatures: none"))
+  assert.ok(html.includes('font-feature-settings: "liga" 0, "clig" 0'))
+})
+
+test("formatAppliedMarkdown records the submission and sanitizes values", () => {
+  const markdown = formatAppliedMarkdown(
+    {
+      role: "Staff Engineer",
+      company: "Acme",
+      url: "https://www.linkedin.com/jobs/view/123/",
+      resume: "resume.pdf",
+      confirmation: "Your application was sent\nto Acme",
+      fields: [
+        { label: "Authorized to work?", value: "Yes" },
+        { label: "Expected salary", value: "90,000 USD\nannually" },
+      ],
+    },
+    "2026-10-22",
+  )
+  assert.ok(markdown.startsWith("# Application — Staff Engineer at Acme"))
+  assert.ok(markdown.includes("- Date: 2026-10-22"))
+  assert.ok(markdown.includes('- Confirmation: "Your application was sent to Acme"'))
+  assert.ok(markdown.includes("- Cover letter: not requested"))
+  assert.ok(markdown.includes("- Expected salary: 90,000 USD annually"))
+})
+
+test("parseAppliedEntry accepts valid entries and rejects incomplete ones", () => {
+  const entry = parseAppliedEntry(
+    JSON.stringify({
+      role: "Staff Engineer",
+      company: "Acme",
+      url: "https://example.com/job",
+      resume: "resume.pdf",
+      confirmation: "sent",
+      fields: [{ label: "Email", value: "a@b.c" }, { label: "ignored" }],
+    }),
+  )
+  assert.equal(entry?.company, "Acme")
+  assert.deepEqual(entry?.fields, [{ label: "Email", value: "a@b.c" }])
+  assert.equal(parseAppliedEntry('{"role":"x"}'), null)
+  assert.equal(parseAppliedEntry("not json"), null)
 })

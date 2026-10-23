@@ -17,6 +17,12 @@ a task allows it.
   `scripts/`. Agents call the script and use its output.
 - Never hand-build a URL or hand-format data the code can build.
 - Wrappers print compact output designed for context, not verbose logs.
+- Before tailoring, a deterministic stack check compares the saved posting
+  with the stack the user confirmed in `profile.md`; it never assumes one.
+  It merges the optional local catalog and returns compact `candidates` for
+  unknown terms. It is cheaper than a full artifact pass.
+- The shared tech catalog ships with releases; user-specific additions live
+  in the data directory. Neither is loaded into the model context.
 
 ## Context budget
 
@@ -28,6 +34,8 @@ a task allows it.
 - Prefer targeted `grep` and partial reads over full-file reads.
 - Summarize long tool output immediately; never carry raw pages through a
   conversation.
+- `profile.md` is shown once for explicit approval in setup; the stack is
+  confirmed, not inferred. Do not re-ask on every search.
 
 ## Delegation economics
 
@@ -40,6 +48,14 @@ handed over (roughly 2–3k tokens of fixed overhead). Delegate when:
 Do it inline when: trivial reads, single lookups, and small writes in the
 data directory. When delegating, pass excerpts and exact goals — not whole
 files or histories.
+
+## Targeted re-audits
+
+A new draft gets a full `draft-review`. A revision after a rejection audits
+only the changed sections and the previously flagged issues, plus a
+regression scan. If the writer changes anything outside the requested fixes,
+the audit goes back to full. One full audit per artifact, not one per
+revision.
 
 ## Browser
 

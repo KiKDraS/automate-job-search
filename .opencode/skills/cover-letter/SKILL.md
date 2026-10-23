@@ -11,6 +11,7 @@ Produces `cover-letter.md` in the job folder. Short, specific, human.
 
 - Job folder (`posting.md`, and `resume.md` if it exists).
 - `<data dir>/profile.md`.
+- `<data dir>/language.md` for any document-language override.
 - Length target: 150–250 words, one page (`voice-rules.md`).
 
 ## Steps
@@ -25,7 +26,10 @@ Produces `cover-letter.md` in the job folder. Short, specific, human.
      stated requirement.
    - One short paragraph on why this role/company specifically, grounded in
      the posting — not generic praise.
-   - Close with availability. No pressure, no "I am eager to".
+   - Close with a neutral availability line: open to discussing the role and
+     coordinating a start date. Never state a start date, notice period, or
+     immediate availability unless `profile.md` says it. No pressure, no
+     "I am eager to".
 3. Report to Coach: file path, the one-line reason chosen, and gaps.
 
 ## Rules
@@ -34,4 +38,6 @@ Produces `cover-letter.md` in the job folder. Short, specific, human.
   posting.
 - 150–250 words. If it does not fit, cut — do not cram.
 - No AI vocabulary; em-dash density per `voice-rules.md`.
+- Language follows the posting; the user's override wins (`voice-rules.md`
+  → Language).
 - `draft-review` before the user sees it (`approval-flow.md`, Gate 2).

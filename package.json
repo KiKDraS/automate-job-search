@@ -1,6 +1,6 @@
 {
   "name": "automate-job-search",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "OpenCode-native job-search toolkit: LinkedIn search, resume tailoring, cover letters, outreach, and profile growth — orchestrated by the Coach agent.",
   "type": "module",
@@ -16,12 +16,17 @@
     "linkedin": "tsx scripts/linkedin.ts",
     "history": "tsx scripts/history.ts",
     "save-posting": "tsx scripts/save-posting.ts",
+    "stack-check": "tsx scripts/stack-check.ts",
+    "tech-catalog": "tsx scripts/tech-catalog.ts",
+    "apply-log": "tsx scripts/apply-log.ts",
     "render-resume": "tsx scripts/render-resume.ts",
+    "resume-text": "tsx scripts/resume-text.ts",
     "test": "tsx --test tests/lib.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
+    "pdfjs-dist": "^6.4.299",
     "playwright-core": "^1.64.1",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"

@@ -18,16 +18,27 @@ reads. Keep it to one batch of questions at a time.
 
 ### 1. Data folder and existing setup
 
-Ask: "Where should I keep your job-search data?" Default: `~/.jobsearch`
-(recommended — outside this repository, so nothing personal can be
-committed). Warn against any path inside the repo.
+Run `npx tsx scripts/data-dir.ts` first — it prints the path and its source.
+If the source is `env` or `config`, the user already chose: confirm the path
+in one line, and change it only if they want (then call
+`jobsearch_set_data_dir` with the new absolute path). If the source is
+`default`, ask: "Where should I keep your job-search data?" Default:
+`~/.jobsearch` (recommended — outside this repository, so nothing personal
+can be committed). Never accept a path inside the repo, and always call
+`jobsearch_set_data_dir` with the chosen path — it validates, creates the
+folder, records the choice, and grants this session access. No manual
+configuration, no restarts.
 
-For a custom path, guide the user through the one-time config change in
-`.opencode/docs/data-directory.md` § Custom location, then verify with
-`npm run doctor` before continuing.
+Then confirm the chat language: read `<data dir>/language.md`. If it is
+missing, ask the bilingual question (`coach.md`, "First contact") and write
+the file; if present, confirm it in one line and change it only if the user
+wants.
 
 If `profile.md` and `preferences.md` already exist, summarize their current
-values and ask what to change. Only touch what the user wants changed.
+values and ask what to change. Only touch what the user wants changed. If
+`profile.md` exists but has no `## Stack`, ask the stack question once
+(step 4). Before the first search, show the profile for explicit approval
+(step 5).
 
 ### 2. Resume — have one, or build one?
 
@@ -36,12 +47,25 @@ work history?"
 
 - **Has one**: ask them to copy it into `<data dir>/resume/`, then verify
   the file exists with the glob/read tools — never shell (it is denied for
-  this flow).
-- **No resume**: run the extended interview — for each role: company, title,
-  dates, one line of scope, 2–3 bullets with real numbers; plus education,
-  certifications, and a contact line (name, city, email, LinkedIn URL).
-  Write `<data dir>/resume/base.md` with `assets/resume-template.md`
-  (ATS-plain markdown). Then offer the PDF export:
+  this flow). If it is a PDF, extract the text once so every later step can
+  read it:
+
+      npx tsx scripts/resume-text.ts --file <data dir>/resume/<name>.pdf
+
+  It writes `<name>.txt` beside the PDF. Scanned or image-only PDFs are
+  reported, not written — then ask the user to paste the resume text or
+  share a text-based export (DOCX included). Offer a `resume-review` pass
+  before continuing.
+- **No resume**: ask which language the resume should be in — English is
+  common for international roles; the chat language works for local markets.
+  Then run the extended interview — for each role: company, title,
+  dates, one line of scope, 2–3 bullets with real numbers; plus education
+  (with institution), certifications (with issuer and year), and a contact
+  line (name, city, email, LinkedIn URL). Write `<data dir>/resume/base.md`
+  with `assets/resume-template.md`, following
+  `.opencode/docs/resume-standards.md`. Before finalizing, run one batched
+  clarification round for anything vague or missing (standards: "Missing
+  data: ask, never guess"). Then offer the PDF export:
 
       npx tsx scripts/render-resume.ts --file <data dir>/resume/base.md
 
@@ -65,10 +89,27 @@ Ask for, in one batch: current/most recent role (company, title, dates),
 2–3 previous roles, top 8 skills, and 3–5 concrete achievements with real
 numbers where possible.
 
+Then propose the `## Stack` split from the resume and the skills answer:
+which technologies are **Primary** and which are **Working knowledge**. Show
+the proposal and ask the user to confirm, correct, or add missing terms.
+Never write the section from inference alone; write only what the user
+confirms.
+
 Write `profile.md` using `assets/profile-template.md`. Structured and
 factual: tailoring may only use what is in this file.
 
-### 5. Wrap up
+### 5. Profile approval
+
+Show `<data dir>/profile.md` in full and ask for explicit approval in the
+user's chat language (for example, "Does this look right?"). Only after the
+explicit OK, use it for tailoring or search. If the user changes anything,
+update the file and show the changed lines again.
+
+For an existing profile, do this once before the first search that uses it.
+If `## Stack` is missing, propose it from the resume and ask for confirmation
+first.
+
+### 6. Wrap up
 
 Summarize the files written (including any PDF) and remind the user that the
 first search opens a browser window where they log into LinkedIn manually,
@@ -77,5 +118,8 @@ once.
 ## Rules
 
 - Never invent history details; write only what the user states.
+- Never write `## Stack` from inference alone; write only the user's
+  confirmed Primary / Working knowledge split.
+- Show `profile.md` for explicit approval before any skill uses it.
 - Keep both files compact — they are read often.
 - Data lives in `~/.jobsearch` (or `JOBSEARCH_HOME`) — never in the repo.

@@ -35,8 +35,32 @@ manually in the UI and update this document.
   careers-page URL.
 - Extract the description body once into `posting.md`, URL at the top. Full
   text, not a summary, delimited as untrusted content.
-- Some postings offer "Easy Apply"; note it, but never submit. Assisted apply
-  (later phase) stops before Submit by contract.
+- Some postings offer "Easy Apply". The apply skill fills it and stops at the
+  Review step; the submit happens only after the user's OK on the review
+  sheet (`approval-flow.md`, Gate 3).
+
+## Assisted apply (Easy Apply)
+
+The `apply` skill drives this flow. Selectors are hints — verify against the
+live UI.
+
+- Apply controls: the job page shows "Easy Apply" in the top card and the
+  bottom bar (`button.jobs-apply-button`). If it says "Applied", stop.
+- Modal: `[role="dialog"]` containing the form; the header shows
+  "Apply to <Company>" and "X of Y" progress.
+- Steps: Contact info (email, phone, country, resume) → additional questions
+  (dynamic: text, textarea, select, radio, checkbox) → Review. Footer
+  controls: "Back", "Review"/"Next", "Submit application", "Dismiss".
+- Resume: an "Upload resume" control inside the Contact info step opens the
+  file chooser; `browser_file_upload` takes the absolute path. Previously
+  uploaded resumes can also be selected.
+- Review: the form's own summary of every field, the resume filename, and an
+  optional cover-letter text area. This summary is the review sheet the user
+  approves.
+- Confirmation: the modal switches to "Your application was sent…" — capture
+  the exact text before closing. Never click Submit twice.
+- "Easy Apply" missing, "Applied" shown, or a redirect to an employer site →
+  stop and report; external applications are outside this phase.
 
 ## Messaging and connections (attention layer)
 

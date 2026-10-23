@@ -23,6 +23,40 @@ Score each dimension strong / partial / weak:
 | Compensation | Meets or exceeds target, or not stated | Clearly below target when stated |
 | Constraints | No conflicts (visa, travel, schedule) | Violates a stated hard constraint |
 
+## Stack check
+
+The check compares the posting's required and optional technologies with the
+stack the user explicitly confirmed in `profile.md` (`## Stack`). It never
+assumes a stack: if the section is missing, the check stops and Coach asks
+the user to confirm it.
+
+    npx tsx scripts/stack-check.ts --posting <job folder>/posting.md \
+      --profile <data dir>/profile.md \
+      --preferences <data dir>/preferences.md
+
+The script also merges an optional local catalog at
+`<data dir>/tech-catalog.json` with the shipped `lib/tech-catalog.ts`. The
+local file adds niche terms; it is personal data and never part of the repo.
+
+It returns `targetRoles`, `sectionsFound`, `required`, `optional`, `matched`,
+`requiredNotInStack`, `optionalNotInStack`, `mentioned`, and `candidates`.
+`candidates` are terms in the required/optional sections that the catalog does
+not recognize; they are questions for the Coach, not confirmed gaps.
+
+A required primary-stack gap is a weak Skills dimension; usually Medium at
+most. The check is advisory: the fit scorer and the user decide, and the
+job-scout does not auto-tailor a primary-stack gap. If `sectionsFound` is
+false, use `mentioned` as a hint and read the posting; do not treat every
+term as required. When a candidate is real, the Coach asks the user whether
+to add it to their local catalog (and to `## Stack` only if they have it).
+
+To add a confirmed term:
+
+    npx tsx scripts/tech-catalog.ts add --name "<Name>" --aliases "<alias,alias>"
+
+The shipped catalog is updated by PR/release; the local overlay stays in the
+data directory.
+
 ## Verdicts
 
 - **High** — no weak dimensions; at most one partial. Save the full posting.

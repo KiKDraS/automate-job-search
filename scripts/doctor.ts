@@ -11,7 +11,7 @@ import { constants, promises as fs } from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { promisify } from "node:util"
-import { DATA_DIR_ENV, ensureDataDir, resolveDataDir } from "../lib/data-dir.ts"
+import { DATA_DIR_ENV, ensureDataDir, resolveDataDirWithSource } from "../lib/data-dir.ts"
 
 const execFileAsync = promisify(execFile)
 
@@ -57,13 +57,13 @@ async function checkGh(): Promise<CheckResult> {
 }
 
 async function checkDataDir(): Promise<CheckResult> {
-  const dir = resolveDataDir()
+  const { dir, source } = resolveDataDirWithSource()
   try {
     await ensureDataDir()
     const probe = path.join(dir, ".doctor-probe")
     await fs.writeFile(probe, new Date().toISOString())
     await fs.rm(probe, { force: true })
-    return check("Data directory", "ok", `${dir} (writable)`)
+    return check("Data directory", "ok", `${dir} (writable, ${source})`)
   } catch (error) {
     return check(
       "Data directory",

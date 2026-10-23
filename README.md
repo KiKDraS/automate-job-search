@@ -27,11 +27,15 @@ submits, or publishes anything without your explicit approval.
 Built for technology roles — software, data, DevOps, QA, design engineering.
 Today it covers the full application loop: LinkedIn search with fit scoring,
 resume review and tailoring, cover letters, assisted apply, and outreach
-drafts. The attention layer — profile, posts, comments, engagement — is next.
+drafts. The attention layer covers profile audits, post drafts, and comment
+drafts; engagement analytics is deferred.
 
 Apply fills LinkedIn Easy Apply, Greenhouse, and Lever forms and shows you
 every field, file, and answer before anything is sent. Submit happens only
 after your OK. Other ATS are out of scope for now.
+
+Ask Coach for a profile audit, a post, or a comment draft. Everything is
+draft-only; you post.
 
 Before drafting a batch of resumes or letters, Coach checks each posting
 against your profile and asks for any missing evidence in one batch. Documents
@@ -83,6 +87,7 @@ browser window — log into LinkedIn there, once.
 | `job-scout` | Browser work: searches, fit scoring, saving postings, assisted apply |
 | `artifact-writer` | Resumes, cover letters, outreach drafts |
 | `draft-review` | Fact-check and voice audit gate before anything ships |
+| `presence-coach` | LinkedIn profile audits, post drafts, comment drafts (draft-only) |
 | `release-manager` | Git lifecycle for this repo: branches, PRs, tags, releases |
 
 Pipeline: **plan → your approval → delegate → audit → your approval → done.**
@@ -104,8 +109,9 @@ model — Coach and all subagents inherit it.
 - Browser automation uses a dedicated profile you log into once. Credentials
   are never stored or entered by an agent.
 - Approval-first: nothing is sent, submitted, or published without your OK on
-  the exact content. Outreach stays draft-only; applications submit only
-  after you approve the full review sheet.
+  the exact content. Outreach, profile audits, posts, and comments stay
+  draft-only; applications submit only after you approve the full review
+  sheet.
 - LinkedIn automation is low-volume and human-paced. Apply runs only when you
   ask, one application at a time. Review LinkedIn's Terms of Service; your
   account is your responsibility.

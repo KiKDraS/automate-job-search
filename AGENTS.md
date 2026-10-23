@@ -13,7 +13,7 @@ never enters this repository.
 | `artifact-writer` | subagent | Resumes, cover letters, outreach drafts. | `.opencode/agents/artifact-writer.md` |
 | `draft-review` | subagent | Audit gate for anything outbound. | `.opencode/agents/draft-review.md` |
 | `release-manager` | subagent | Git lifecycle of this repository. | `.opencode/agents/release-manager.md` |
-| `presence-coach` | subagent | LinkedIn attention layer (profile, posts, comments). | Phase 8 |
+| `presence-coach` | subagent | LinkedIn attention layer: profile audit, post drafts, comment drafts. Draft-only. | `.opencode/agents/presence-coach.md` |
 
 Pipeline: **Plan → user approval → delegate → draft-review → user approval → done.**
 

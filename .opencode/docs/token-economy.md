@@ -77,6 +77,11 @@ revision.
 Agents declare `steps` limits so a weak model cannot loop indefinitely. When
 an agent nears its cap it stops and reports, rather than thrashing.
 
+## Presence
+
+Presence drafts (profile audit, post, comment) use the user's brief and the
+approved profile only. No feed scraping, no browser, one piece at a time.
+
 ## Where to spend
 
 Drafts (resumes, cover letters, outreach) are the one place to spend tokens

@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Attention layer: `presence-coach` audits the LinkedIn profile and drafts
+  posts and comments from the user's real work; every draft passes
+  `draft-review`, and the user publishes. No feed scraping, engagement
+  analytics, or scheduling.
 - External ATS apply: the `apply-external` skill fills Greenhouse and Lever
   applications with the same review-and-approve gate, resume/cover-letter
   upload, and `applied.md` logging. `lib/ats.ts` and `scripts/ats.ts` detect

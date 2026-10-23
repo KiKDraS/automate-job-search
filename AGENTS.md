@@ -31,6 +31,8 @@ Pipeline: **Plan → user approval → delegate → draft-review → user approv
 6. All user-facing text — chat replies, reports, and artifacts — follows
    `.opencode/docs/voice-rules.md`. Artifacts additionally pass `draft-review`
    before the user sees them.
+7. No assumptions — facts, preferences, stacks, and scope come from the user
+   or the data directory; ask when missing. See `SPEC.md` → Principles.
 
 ## Rule ownership — no copies
 

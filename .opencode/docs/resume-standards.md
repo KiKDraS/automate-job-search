@@ -8,6 +8,8 @@ these rules.
 ## Structure and ATS
 
 - Plain, ATS-friendly markdown: no tables, no columns, no graphics, no icons.
+- The PDF export disables ligatures so ATS text extraction does not split
+  words like "flow" or "verifications".
 - Standard sections, in this order when present: contact line, summary
   (optional), experience, skills, education, certifications.
 - Contact line: city/country · email · LinkedIn URL.

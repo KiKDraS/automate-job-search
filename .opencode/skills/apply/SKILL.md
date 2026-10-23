@@ -208,6 +208,12 @@ explicit OK. Do not navigate; use the dialog that is already open. One
 3. Wait for the confirmation ("Your application was sent…"). If it does not
    appear within a few seconds, return what is visible — never click twice.
 
+**Timeout recovery.** If the click times out or no confirmation appears, do
+not click Submit again. Check the job page for "Applied" / "Solicitud
+enviada" and the applied-jobs list. If the application is there, log it with
+that confirmation. If it is not, re-open the form, re-fill from the approved
+sheet, compare the Review step, and submit once.
+
 ### 8. Log it
 
 Write `<data dir>/.tmp/application.json`:

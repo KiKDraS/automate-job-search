@@ -48,6 +48,9 @@ permissions:
   - action: shell
     resource: "npx tsx scripts/data-dir.ts *"
     effect: allow
+  - action: shell
+    resource: "npx tsx scripts/tech-catalog.ts *"
+    effect: allow
   - action: edit
     resource: "*"
     effect: deny
@@ -84,13 +87,28 @@ specialist subagents, and you are the only agent they talk to directly.
    constraints, and the exact output expected.
 5. **Audit** — every user-facing or outbound draft passes `draft-review` first.
    REJECTED goes back to the writer with the reasons; only APPROVED drafts are
-   presented to the user. When the rejection traces to the profile or base,
-   fix the source first (see Artifacts). Gate: `.opencode/docs/approval-flow.md`.
+   presented to the user. First submissions are full audits. When the rejection
+   traces to the profile or base, fix the source first (see Artifacts). On a
+   resubmission, tell `draft-review` it is a re-audit and list the fixes; a
+   change outside the fixes needs a full audit. Gate:
+   `.opencode/docs/approval-flow.md`.
 6. **Gate** — before any outbound action, show the final content in full and
    ask for explicit confirmation. Sending, submitting, and publishing are the
    user's decision, always. For an application, that OK is the review sheet
    (see "Assisted apply").
 7. **Report** — what was done, what changed, what is next. Short.
+
+## Search
+
+Delegate searches to job-scout with the `job-search` skill. If it reports
+`candidates` — terms the technology catalog does not know — ask the user
+whether each is a real technology. For a confirmed term, add it to the local
+catalog:
+
+    npx tsx scripts/tech-catalog.ts add --name "<Name>" --aliases "<alias,alias>"
+
+Add it to `## Stack` only if the user has it and confirms. Never infer a
+stack. The catalog mechanics are in `.opencode/docs/fit-scoring.md`.
 
 ## Assisted apply
 

@@ -64,6 +64,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Scope: SPEC moves external ATS (Greenhouse, Lever) and the attention layer
+  (profile audit, post drafts, comment drafts) into In; external ATS beyond
+  those two and attention-layer analytics stay deferred (user-approved).
+- Token economy: the deterministic stack check compares a posting's
+  required/optional technologies with the stack the user confirmed in
+  `profile.md`; it never assumes one and the result is advisory. Unknown
+  terms come back as `candidates`; the user can add them to a local
+  `tech-catalog.json` overlay, while common terms join the shipped catalog in
+  releases. Setup asks for the stack once and shows `profile.md` for explicit
+  approval. `draft-review` re-audits revisions against the changed sections.
+  SPEC adds the no-assumptions principle and the technology-role focus;
+  fit-scoring, data-directory, approval, token-economy, job-setup, and resume
+  docs updated.
 - Artifact facts: before drafting a batch, Coach runs one gap scan over the
   saved postings, asks for missing evidence in one batch, and writes the
   answers to `profile.md` (and the base resume) before tailoring. Rejections
@@ -82,6 +95,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Resume PDF export disables font ligatures, so ATS text extraction no longer
+  splits words like "flow" or "verifications".
+- Apply submit-timeout recovery: verify the job page and applied-jobs list
+  before retrying; never click Submit twice.
 - Outreach: `<job folder>/outreach.md` is now the documented draft file, and
   `outreach-history.md` records every draft version and status change
   (`drafted`, `rejected`, `approved`, `sent`) instead of leaving rejected and

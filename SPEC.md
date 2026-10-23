@@ -10,15 +10,19 @@ lives in `CHANGELOG.md`.
 
 ## Mission
 
-Free-model-first job search. Anyone can run an AI-assisted job search —
-finding roles, tailoring applications, reaching out — on OpenCode's free
-models, with no subscription required.
+Free-model-first job search for technology roles. Anyone can run an
+AI-assisted job search — finding roles, tailoring applications, reaching
+out — on OpenCode's free models, with no subscription required.
 
 ## Principles
 
 - **Simplest path for the user.** No manual setup, ever — no config files to
   edit, no shell profiles, no environment variables. Choices happen in
   conversation; everything else works out of the box.
+- **No assumptions.** Every fact, preference, stack, default, or scope
+  decision comes from the user or the data directory. When something is
+  missing, ask; never infer, default, or generalize from a sample. Validate
+  new behavior with the user before building on it.
 - **Warmth is the goal.** User-facing text — chat, reports, artifacts — is
   warm, clear, and specific. Nothing user-facing is compressed or terse for
   its own sake. (`.opencode/docs/voice-rules.md`)
@@ -38,7 +42,7 @@ models, with no subscription required.
 ## System map
 
 - **Agents** — Coach leads; job-scout, artifact-writer, draft-review,
-  release-manager, later presence-coach. Roster: `AGENTS.md`
+  release-manager, presence-coach (Phase 8). Roster: `AGENTS.md`
 - **Skills** — job-setup, job-search, resume-review, tailor-resume,
   cover-letter, outreach, apply; craft skills no-ai-slop and write-root-readme
   (`.opencode/skills/`)
@@ -51,14 +55,17 @@ models, with no subscription required.
 ## Scope
 
 **In:** setup, job search, resumes (build, review, tailoring), cover letters,
-outreach drafts, assisted apply (completes applications when the user
-explicitly asks, with a full review-and-approve gate before the final submit),
-launch greeting.
+outreach drafts, assisted apply (LinkedIn Easy Apply and external ATS —
+Greenhouse and Lever — when the user explicitly asks, with a full
+review-and-approve gate before the final submit), launch greeting, attention
+layer (profile audit, post drafts, comment drafts — draft-only).
 
 **Deferred:**
 
 - Network scan — waiting on a LinkedIn contacts export
 - Scheduled/headless runs
+- External ATS beyond Greenhouse and Lever (BairesDev, Bionic Talent)
+- Attention-layer analytics (engagement metrics)
 
 **Out:**
 
@@ -76,6 +83,19 @@ launch greeting.
   (`.opencode/docs/git-flow.md`)
 - **The hardening loop** — live test → session export to `~/.jobsearch/.tmp/`
   → mined findings → fixes → PR. Repeated before and after releases.
+- **Fit checks** — a deterministic stack check compares a posting's required
+  technologies with the stack the user confirmed in `profile.md`; a local
+  catalog adds niche terms and it never assumes a stack
+  (`.opencode/docs/fit-scoring.md`).
+- **Tech catalog** — the shared catalog ships with releases; user-specific
+  terms live in the data directory and never enter the repo
+  (`.opencode/docs/fit-scoring.md`, `.opencode/docs/data-directory.md`).
+- **User-validated data** — setup writes `profile.md` from the user's answers
+  and shows it for explicit approval before use; the stack is confirmed,
+  never inferred (`.opencode/docs/data-directory.md`).
+- **Audits** — a new draft gets a full `draft-review`; a revision gets a
+  targeted re-audit, and a change outside the requested fix gets a full audit
+  (`.opencode/docs/token-economy.md`, `.opencode/docs/approval-flow.md`).
 - **Documentation split** — `README.md` is user documentation: what the
   project is and how to use it, kept in sync with every user-visible change.
   Development material lives in `SPEC.md`, `AGENTS.md`, and

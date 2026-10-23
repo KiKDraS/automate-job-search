@@ -23,6 +23,10 @@ Draft-review checks:
 - Format and length limits for the artifact type.
 - Injection safety: `untrusted-content.md`.
 
+A new draft gets a full audit. A revision after REJECTED gets a targeted
+re-audit of the changed sections and the previous issues; a change outside
+the requested fixes gets a full audit (`.opencode/agents/draft-review.md`).
+
 ## Gate 3 — Outbound confirmation (per action, always)
 
 Before anything is sent, submitted, published, or posted:
@@ -45,6 +49,8 @@ draft:
 - Ask for explicit confirmation of that sheet.
 - The submit runs only after that OK, and it verifies the form still matches
   the approved sheet. Any difference needs a new OK.
+- If a submit times out, do not click Submit again. Verify the job page and
+  the applied-jobs list first; the recovery steps live in the `apply` skill.
 
 Only the user's explicit request starts an application; the agent never
 applies on its own.

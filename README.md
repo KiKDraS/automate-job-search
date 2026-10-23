@@ -20,10 +20,11 @@
 
 ## What it is
 
-An OpenCode-native job-search toolkit. A **Coach** agent plans the work with
-you, delegates to specialist subagents, and never sends, submits, or publishes
-anything without your explicit approval.
+An OpenCode-native job-search toolkit for technology roles. A **Coach** agent
+plans the work with you, delegates to specialist subagents, and never sends,
+submits, or publishes anything without your explicit approval.
 
+Built for technology roles — software, data, DevOps, QA, design engineering.
 Today it covers the full application loop: LinkedIn search with fit scoring,
 resume review and tailoring, cover letters, assisted apply, and outreach
 drafts. The attention layer — profile, posts, comments, engagement — is next.
@@ -34,6 +35,11 @@ answer before anything is sent. Submit happens only after your OK.
 Before drafting a batch of resumes or letters, Coach checks each posting
 against your profile and asks for any missing evidence in one batch. Documents
 are built on verified facts, not guesses.
+
+Setup asks for your core stack once and shows your profile for approval;
+fit checks compare each posting against that stack, never an assumed one. If
+a posting mentions a technology the catalog doesn't know, Coach can add it to
+your local catalog; common terms join the shared catalog in releases.
 
 Talk in your language. Coach chats in whatever language you choose at first
 contact, and resumes and letters follow each posting's language.

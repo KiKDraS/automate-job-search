@@ -25,17 +25,24 @@ Score each dimension strong / partial / weak:
 
 ## Stack check
 
-Before scoring a fit High, run the deterministic stack check on the saved
-posting:
+The check compares the posting's required and optional technologies with the
+stack the user explicitly confirmed in `profile.md` (`## Stack`). It never
+assumes a stack: if the section is missing, the check stops and Coach asks
+the user to confirm it.
 
     npx tsx scripts/stack-check.ts --posting <job folder>/posting.md \
-      --profile <data dir>/profile.md [--resume <data dir>/resume/base.md]
+      --profile <data dir>/profile.md \
+      --preferences <data dir>/preferences.md
 
-It extracts a curated set of mismatch-prone technologies (Angular, .NET,
-C#, Java, PHP, Vue, Svelte, Unity, PixiJS, Flutter, Node.js, AWS, ...) and
-reports which are absent from the profile/base resume. A missing primary
-stack is a weak Skills dimension: score Medium at most and do not tailor.
-The check is a heuristic, not a verdict — the requirements still decide.
+It returns `targetRoles`, `sectionsFound`, `required`, `optional`, `matched`,
+`requiredNotInStack`, `optionalNotInStack`, and `mentioned`. The catalog is a
+neutral dictionary of technologies, not a list of "bad" stacks.
+
+A required primary-stack gap is a weak Skills dimension; usually Medium at
+most. The check is advisory: the fit scorer and the user decide, and the
+job-scout does not auto-tailor a primary-stack gap. If `sectionsFound` is
+false, use `mentioned` as a hint and read the posting; do not treat every
+term as required.
 
 ## Verdicts
 

@@ -35,7 +35,10 @@ the file; if present, confirm it in one line and change it only if the user
 wants.
 
 If `profile.md` and `preferences.md` already exist, summarize their current
-values and ask what to change. Only touch what the user wants changed.
+values and ask what to change. Only touch what the user wants changed. If
+`profile.md` exists but has no `## Stack`, ask the stack question once
+(step 4). Before the first search, show the profile for explicit approval
+(step 5).
 
 ### 2. Resume — have one, or build one?
 
@@ -86,10 +89,27 @@ Ask for, in one batch: current/most recent role (company, title, dates),
 2–3 previous roles, top 8 skills, and 3–5 concrete achievements with real
 numbers where possible.
 
+Then propose the `## Stack` split from the resume and the skills answer:
+which technologies are **Primary** and which are **Working knowledge**. Show
+the proposal and ask the user to confirm, correct, or add missing terms.
+Never write the section from inference alone; write only what the user
+confirms.
+
 Write `profile.md` using `assets/profile-template.md`. Structured and
 factual: tailoring may only use what is in this file.
 
-### 5. Wrap up
+### 5. Profile approval
+
+Show `<data dir>/profile.md` in full and ask for explicit approval in the
+user's chat language (for example, "Does this look right?"). Only after the
+explicit OK, use it for tailoring or search. If the user changes anything,
+update the file and show the changed lines again.
+
+For an existing profile, do this once before the first search that uses it.
+If `## Stack` is missing, propose it from the resume and ask for confirmation
+first.
+
+### 6. Wrap up
 
 Summarize the files written (including any PDF) and remind the user that the
 first search opens a browser window where they log into LinkedIn manually,
@@ -98,5 +118,8 @@ once.
 ## Rules
 
 - Never invent history details; write only what the user states.
+- Never write `## Stack` from inference alone; write only the user's
+  confirmed Primary / Working knowledge split.
+- Show `profile.md` for explicit approval before any skill uses it.
 - Keep both files compact — they are read often.
 - Data lives in `~/.jobsearch` (or `JOBSEARCH_HOME`) — never in the repo.

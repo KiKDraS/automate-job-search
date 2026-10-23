@@ -9,6 +9,11 @@
 
 <top 8, comma-separated>
 
+## Stack
+
+- Primary: <confirmed primary technologies, comma-separated>
+- Working knowledge: <confirmed working technologies, comma-separated>
+
 ## Achievements
 
 - <achievement with a real number where possible>

@@ -19,6 +19,10 @@ models, with no subscription required.
 - **Simplest path for the user.** No manual setup, ever — no config files to
   edit, no shell profiles, no environment variables. Choices happen in
   conversation; everything else works out of the box.
+- **No assumptions.** Every fact, preference, stack, default, or scope
+  decision comes from the user or the data directory. When something is
+  missing, ask; never infer, default, or generalize from a sample. Validate
+  new behavior with the user before building on it.
 - **Warmth is the goal.** User-facing text — chat, reports, artifacts — is
   warm, clear, and specific. Nothing user-facing is compressed or terse for
   its own sake. (`.opencode/docs/voice-rules.md`)
@@ -79,8 +83,12 @@ layer (profile audit, post drafts, comment drafts — draft-only).
   (`.opencode/docs/git-flow.md`)
 - **The hardening loop** — live test → session export to `~/.jobsearch/.tmp/`
   → mined findings → fixes → PR. Repeated before and after releases.
-- **Fit checks** — a deterministic stack check flags missing core
-  technologies before an artifact is drafted (`.opencode/docs/fit-scoring.md`).
+- **Fit checks** — a deterministic stack check compares a posting's required
+  technologies with the stack the user confirmed in `profile.md`; it never
+  assumes a stack (`.opencode/docs/fit-scoring.md`).
+- **User-validated data** — setup writes `profile.md` from the user's answers
+  and shows it for explicit approval before use; the stack is confirmed,
+  never inferred (`.opencode/docs/data-directory.md`).
 - **Audits** — a new draft gets a full `draft-review`; a revision gets a
   targeted re-audit, and a change outside the requested fix gets a full audit
   (`.opencode/docs/token-economy.md`, `.opencode/docs/approval-flow.md`).

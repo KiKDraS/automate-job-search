@@ -24,7 +24,7 @@ never hand-build the path.
 ```text
 <data dir>/
 ├── resume/                    # source resume files (PDF) + extracted base.txt
-├── profile.md                 # work-history interview output
+├── profile.md                 # approved work-history profile (stack, roles, achievements)
 ├── preferences.md             # target roles, locations, compensation, constraints
 ├── language.md                # chat language + optional document-language override
 ├── job-history.md             # append-only log of every job seen
@@ -49,6 +49,9 @@ never hand-build the path.
 - `language.md` is tiny and read at the start of every session: the chat
   language plus an optional document-language override. First contact (or
   setup) writes it; users may edit it by hand.
+- `profile.md` is the approved work history. Its `## Stack` section is only
+  what the user confirmed; setup shows the profile for explicit approval
+  before any skill uses it. Never infer a stack.
 - `job-history.md` and `outreach-history.md` are append-only. Never rewrite
   history; corrections get new entries. Outreach rows use the statuses
   defined in the `outreach` skill.

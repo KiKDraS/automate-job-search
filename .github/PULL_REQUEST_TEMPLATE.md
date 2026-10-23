@@ -10,4 +10,5 @@
 - [ ] Docs updated where behavior changed
 - [ ] README.md updated for user-visible changes (or none in this PR)
 - [ ] SPEC.md changes (if any) were explicitly approved by the user
+- [ ] No unvalidated assumptions (`SPEC.md` → Principles)
 - [ ] Adapted third-party content is noted in `THIRD_PARTY_NOTICES.md`

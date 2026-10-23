@@ -21,7 +21,12 @@ import {
   slugify,
   todayIso,
 } from "../lib/jobstore.ts"
-import { checkStack, extractStackTerms } from "../lib/stack-check.ts"
+import {
+  checkStack,
+  extractTerms,
+  parseDeclaredStack,
+  splitPostingSections,
+} from "../lib/stack-check.ts"
 import { buildPostingMarkdown, unwrapEvalResult } from "../lib/posting.ts"
 import { buildResumeHtml, markdownToHtml } from "../lib/resume-html.ts"
 
@@ -218,24 +223,92 @@ test("appendHistory skips duplicates against history and within the section", as
   }
 })
 
-test("stack check extracts mismatch-prone technologies and compares evidence", () => {
-  assert.deepEqual(
-    extractStackTerms("Senior UI Developer – Angular. 8+ years Angular, Node.js, Bootstrap."),
-    ["Angular", "Node.js"],
-  )
-  assert.deepEqual(extractStackTerms("React, TypeScript, JavaScript, CSS"), [])
-  assert.deepEqual(
-    extractStackTerms("Java and Spring Boot; C# and .NET Core; PostgreSQL"),
-    [".NET", "C#", "Java", "PostgreSQL", "Spring"],
-  )
+const FRONTEND_PROFILE = `# Profile
 
-  const result = checkStack(
-    "Required: Angular, .NET Core, C#, PostgreSQL. Node.js is a plus.",
-    "React, TypeScript, Node.js.",
+## Stack
+- Primary: TypeScript, React, CSS, HTML
+- Working knowledge: Node.js, Vite, Figma
+`
+
+const ANGULAR_PROFILE = `# Profile
+
+## Stack
+- Primary: Angular, TypeScript, CSS
+`
+
+const JAVA_PROFILE = `# Profile
+
+## Stack
+- Primary: Java, Spring Boot, SQL
+`
+
+const PREFERENCES = `# Job Preferences
+
+- Target roles: Front-End Developer / Desarrollador Front-End; React Developer
+`
+
+test("stack check reads the declared stack instead of assuming one", () => {
+  assert.deepEqual(parseDeclaredStack(FRONTEND_PROFILE), {
+    primary: ["TypeScript", "React", "CSS", "HTML"],
+    working: ["Node.js", "Vite", "Figma"],
+  })
+  assert.equal(parseDeclaredStack("# Profile\n\n## Skills\n\nReact, TypeScript"), null)
+})
+
+test("stack check classifies required and optional posting terms", () => {
+  const sections = splitPostingSections(
+    "## Requirements\n\nAngular, TypeScript, CSS.\n\n## Nice to have\n\nVue.",
   )
-  assert.deepEqual(result.found, [".NET", "Angular", "C#", "Node.js", "PostgreSQL"])
-  assert.deepEqual(result.matched, ["Node.js"])
-  assert.deepEqual(result.missing, [".NET", "Angular", "C#", "PostgreSQL"])
+  assert.equal(sections.sectionsFound, true)
+  assert.ok(sections.required.includes("Requirements"))
+  assert.ok(sections.required.includes("Angular, TypeScript, CSS."))
+  assert.ok(sections.optional.includes("Nice to have"))
+  assert.ok(sections.optional.includes("Vue."))
+  assert.deepEqual(
+    extractTerms("Angular, .NET Core, C#, Java, JavaScript, TypeScript, PostgreSQL"),
+    [".NET", "Angular", "C#", "Java", "JavaScript", "PostgreSQL", "TypeScript"],
+  )
+})
+
+test("stack check adapts to different user stacks", () => {
+  const posting =
+    "## Requirements\n\nAngular, TypeScript, CSS.\n\n## Nice to have\n\nVue."
+
+  const frontend = checkStack(posting, FRONTEND_PROFILE, PREFERENCES)
+  assert.ok(frontend !== null)
+  assert.deepEqual(frontend.targetRoles, [
+    "Front-End Developer / Desarrollador Front-End",
+    "React Developer",
+  ])
+  assert.equal(frontend.sectionsFound, true)
+  assert.deepEqual(frontend.required, ["Angular", "CSS", "TypeScript"])
+  assert.deepEqual(frontend.optional, ["Vue"])
+  assert.deepEqual(frontend.matched, ["CSS", "TypeScript"])
+  assert.deepEqual(frontend.requiredNotInStack, ["Angular"])
+  assert.deepEqual(frontend.optionalNotInStack, ["Vue"])
+
+  const angular = checkStack(posting, ANGULAR_PROFILE)
+  assert.ok(angular !== null)
+  assert.deepEqual(angular.matched, ["Angular", "CSS", "TypeScript"])
+  assert.deepEqual(angular.requiredNotInStack, [])
+  assert.deepEqual(angular.optionalNotInStack, ["Vue"])
+
+  const java = checkStack("## Requirements\n\nJava, Spring Boot, SQL.", JAVA_PROFILE)
+  assert.ok(java !== null)
+  assert.deepEqual(java.requiredNotInStack, [])
+
+  assert.equal(checkStack(posting, "# Profile\n\n## Skills\n\nReact"), null)
+})
+
+test("stack check marks sectionsFound false when the posting has no headings", () => {
+  const result = checkStack("We use Angular and React.", FRONTEND_PROFILE)
+  assert.ok(result !== null)
+  assert.equal(result.sectionsFound, false)
+  assert.deepEqual(result.required, [])
+  assert.deepEqual(result.optional, [])
+  assert.deepEqual(result.mentioned, ["Angular", "React"])
+  assert.deepEqual(result.requiredNotInStack, [])
+  assert.deepEqual(result.optionalNotInStack, [])
 })
 
 test("unwrapEvalResult unwraps JSON strings and passes raw text through", () => {

@@ -10,9 +10,9 @@ lives in `CHANGELOG.md`.
 
 ## Mission
 
-Free-model-first job search. Anyone can run an AI-assisted job search —
-finding roles, tailoring applications, reaching out — on OpenCode's free
-models, with no subscription required.
+Free-model-first job search for technology roles. Anyone can run an
+AI-assisted job search — finding roles, tailoring applications, reaching
+out — on OpenCode's free models, with no subscription required.
 
 ## Principles
 
@@ -84,8 +84,12 @@ layer (profile audit, post drafts, comment drafts — draft-only).
 - **The hardening loop** — live test → session export to `~/.jobsearch/.tmp/`
   → mined findings → fixes → PR. Repeated before and after releases.
 - **Fit checks** — a deterministic stack check compares a posting's required
-  technologies with the stack the user confirmed in `profile.md`; it never
-  assumes a stack (`.opencode/docs/fit-scoring.md`).
+  technologies with the stack the user confirmed in `profile.md`; a local
+  catalog adds niche terms and it never assumes a stack
+  (`.opencode/docs/fit-scoring.md`).
+- **Tech catalog** — the shared catalog ships with releases; user-specific
+  terms live in the data directory and never enter the repo
+  (`.opencode/docs/fit-scoring.md`, `.opencode/docs/data-directory.md`).
 - **User-validated data** — setup writes `profile.md` from the user's answers
   and shows it for explicit approval before use; the stack is confirmed,
   never inferred (`.opencode/docs/data-directory.md`).

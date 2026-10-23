@@ -125,3 +125,114 @@ export const TECH_CATALOG: readonly TechTerm[] = [
   { name: "Salesforce", aliases: ["salesforce"] },
   { name: "SAP", aliases: ["sap"] },
 ]
+
+function normalize(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, " ")
+}
+
+/**
+ * Validate names and aliases. Returns a list of errors; empty means valid.
+ * Aliases are case-insensitive, so collisions are checked on the normalized
+ * form.
+ */
+export function validateCatalog(terms: readonly TechTerm[]): string[] {
+  const errors: string[] = []
+  const names = new Map<string, string>()
+  const aliases = new Map<string, string>()
+
+  for (const term of terms) {
+    const name = term.name.trim()
+    if (name === "") {
+      errors.push("empty term name")
+      continue
+    }
+    const nameKey = normalize(name)
+    if (names.has(nameKey)) errors.push(`duplicate name: ${name}`)
+    names.set(nameKey, name)
+    if (term.aliases.length === 0) errors.push(`no aliases: ${name}`)
+
+    const ownAliases = new Set<string>()
+    for (const raw of term.aliases) {
+      const alias = normalize(raw)
+      if (alias === "") {
+        errors.push(`empty alias for ${name}`)
+        continue
+      }
+      if (ownAliases.has(alias)) errors.push(`duplicate alias in ${name}: ${raw}`)
+      ownAliases.add(alias)
+      const owner = aliases.get(alias)
+      if (owner !== undefined && normalize(owner) !== nameKey) {
+        errors.push(`alias "${raw}" is used by ${owner} and ${name}`)
+      }
+      aliases.set(alias, name)
+    }
+  }
+
+  for (const [nameKey, name] of names) {
+    const owner = aliases.get(nameKey)
+    if (owner !== undefined && normalize(owner) !== nameKey) {
+      errors.push(`name "${name}" collides with an alias of ${owner}`)
+    }
+  }
+
+  return errors
+}
+
+/**
+ * Merge the shipped catalog with the user's local overlay. Overlay terms with
+ * an existing name extend that term's aliases; new names are appended.
+ */
+export function mergeCatalog(
+  base: readonly TechTerm[],
+  overlay: readonly TechTerm[],
+): TechTerm[] {
+  const merged = base.map((term) => ({ name: term.name, aliases: [...term.aliases] }))
+  const byName = new Map(merged.map((term) => [normalize(term.name), term]))
+
+  for (const term of overlay) {
+    const name = term.name.trim()
+    const key = normalize(name)
+    const existing = byName.get(key)
+    if (existing !== undefined) {
+      for (const raw of term.aliases) {
+        const alias = raw.trim()
+        if (alias === "") continue
+        if (!existing.aliases.some((current) => normalize(current) === normalize(alias))) {
+          existing.aliases.push(alias)
+        }
+      }
+      continue
+    }
+    const copy = { name, aliases: term.aliases.map((alias) => alias.trim()).filter(Boolean) }
+    merged.push(copy)
+    byName.set(key, copy)
+  }
+
+  return merged
+}
+
+/** Parse the local overlay JSON (or a catalog-shaped JSON file). */
+export function parseCatalog(source: string): TechTerm[] {
+  const parsed: unknown = JSON.parse(source)
+  if (typeof parsed !== "object" || parsed === null || !Array.isArray((parsed as { terms?: unknown }).terms)) {
+    throw new Error("catalog must be an object with a terms array")
+  }
+
+  return (parsed as { terms: unknown[] }).terms.map((item, index) => {
+    if (typeof item !== "object" || item === null) {
+      throw new Error(`terms[${index}] must be an object`)
+    }
+    const name = (item as { name?: unknown }).name
+    const aliases = (item as { aliases?: unknown }).aliases
+    if (typeof name !== "string" || name.trim() === "") {
+      throw new Error(`terms[${index}].name must be a non-empty string`)
+    }
+    if (!Array.isArray(aliases) || aliases.some((alias) => typeof alias !== "string")) {
+      throw new Error(`terms[${index}].aliases must be an array of strings`)
+    }
+    return {
+      name: name.trim(),
+      aliases: aliases.map((alias) => alias.trim()).filter((alias) => alias !== ""),
+    }
+  })
+}

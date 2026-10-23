@@ -29,6 +29,7 @@ never hand-build the path.
 ├── language.md                # chat language + optional document-language override
 ├── job-history.md             # append-only log of every job seen
 ├── company-careers.json       # cache: company → careers page URL
+├── tech-catalog.json          # optional local technology additions for the stack check
 ├── outreach-history.md        # outreach log (who, when, what, status)
 ├── application-data.md        # reusable application answers
 ├── .tmp/                      # transient handoff files (safe to delete)
@@ -52,6 +53,9 @@ never hand-build the path.
 - `profile.md` is the approved work history. Its `## Stack` section is only
   what the user confirmed; setup shows the profile for explicit approval
   before any skill uses it. Never infer a stack.
+- `tech-catalog.json` is optional and additive: the user/Coach adds technology
+  terms the shipped catalog does not know. The stack check merges it with
+  `lib/tech-catalog.ts`; it never overrides the user's `## Stack`.
 - `job-history.md` and `outreach-history.md` are append-only. Never rewrite
   history; corrections get new entries. Outreach rows use the statuses
   defined in the `outreach` skill.

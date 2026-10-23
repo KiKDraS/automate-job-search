@@ -17,6 +17,7 @@
     "history": "tsx scripts/history.ts",
     "save-posting": "tsx scripts/save-posting.ts",
     "stack-check": "tsx scripts/stack-check.ts",
+    "tech-catalog": "tsx scripts/tech-catalog.ts",
     "apply-log": "tsx scripts/apply-log.ts",
     "render-resume": "tsx scripts/render-resume.ts",
     "resume-text": "tsx scripts/resume-text.ts",

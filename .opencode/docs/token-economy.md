@@ -19,7 +19,10 @@ a task allows it.
 - Wrappers print compact output designed for context, not verbose logs.
 - Before tailoring, a deterministic stack check compares the saved posting
   with the stack the user confirmed in `profile.md`; it never assumes one.
-  It is cheaper than a full artifact pass.
+  It merges the optional local catalog and returns compact `candidates` for
+  unknown terms. It is cheaper than a full artifact pass.
+- The shared tech catalog ships with releases; user-specific additions live
+  in the data directory. Neither is loaded into the model context.
 
 ## Context budget
 

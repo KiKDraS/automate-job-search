@@ -97,6 +97,10 @@ Then run the adaptive stack check before calling the fit High:
 If it exits with "no ## Stack section", stop and tell Coach to confirm the
 user's stack with `job-setup`. Never guess a stack.
 
+The script merges the optional local catalog at
+`<data dir>/tech-catalog.json`. `candidates` are terms the catalog does not
+know: report them so Coach can ask the user, but do not treat them as gaps.
+
 If `requiredNotInStack` includes the posting's primary stack, note the gap;
 do not auto-tailor. Report it so Coach can ask the user whether to proceed.
 The check is advisory; the fit scorer decides.
@@ -133,8 +137,8 @@ Return to Coach:
   `npx tsx scripts/linkedin.ts normalize-job "<url>"`, and include the
   employer URL when one was resolved. Medium fits get their job URL too.
 - Anything skipped or failed (login walls, missing postings).
-- Stack check for each saved fit: `requiredNotInStack` and
-  `optionalNotInStack`; a missing primary stack belongs in the why.
+- Stack check for each saved fit: `requiredNotInStack`, `optionalNotInStack`,
+  and `candidates`; a missing primary stack belongs in the why.
 - If you hit the step limit, report the partial result: what is saved, what
   is missing, and the `candidates.json` path. Do not restart the search.
 - Verify saved folders with `read`/`glob`. Never re-run `save-posting` just

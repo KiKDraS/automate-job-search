@@ -21,12 +21,13 @@ import {
   slugify,
   todayIso,
 } from "../lib/jobstore.ts"
+import { checkStack, extractTerms, parseDeclaredStack, splitPostingSections } from "../lib/stack-check.ts"
 import {
-  checkStack,
-  extractTerms,
-  parseDeclaredStack,
-  splitPostingSections,
-} from "../lib/stack-check.ts"
+  mergeCatalog,
+  parseCatalog,
+  TECH_CATALOG,
+  validateCatalog,
+} from "../lib/tech-catalog.ts"
 import { buildPostingMarkdown, unwrapEvalResult } from "../lib/posting.ts"
 import { buildResumeHtml, markdownToHtml } from "../lib/resume-html.ts"
 
@@ -309,6 +310,71 @@ test("stack check marks sectionsFound false when the posting has no headings", (
   assert.deepEqual(result.mentioned, ["Angular", "React"])
   assert.deepEqual(result.requiredNotInStack, [])
   assert.deepEqual(result.optionalNotInStack, [])
+})
+
+test("tech catalog validation catches duplicate names and alias collisions", () => {
+  assert.deepEqual(validateCatalog(TECH_CATALOG), [])
+  assert.ok(
+    validateCatalog([
+      { name: "A", aliases: ["a"] },
+      { name: "A", aliases: ["b"] },
+    ]).some((error) => error.includes("duplicate name")),
+  )
+  assert.ok(
+    validateCatalog([
+      { name: "A", aliases: ["x"] },
+      { name: "B", aliases: ["x"] },
+    ]).some((error) => error.includes("used by")),
+  )
+  assert.ok(
+    validateCatalog([{ name: "A", aliases: [] }]).some((error) => error.includes("no aliases")),
+  )
+})
+
+test("tech catalog merges the local overlay and parses its JSON", () => {
+  const merged = mergeCatalog(
+    [{ name: "React", aliases: ["react"] }],
+    [
+      { name: "React", aliases: ["react.js"] },
+      { name: "Stake Engine", aliases: ["stake engine"] },
+    ],
+  )
+  assert.deepEqual(merged, [
+    { name: "React", aliases: ["react", "react.js"] },
+    { name: "Stake Engine", aliases: ["stake engine"] },
+  ])
+  assert.deepEqual(validateCatalog(merged), [])
+
+  assert.deepEqual(
+    parseCatalog('{"terms":[{"name":"Stake Engine","aliases":["stake engine"]}]}'),
+    [{ name: "Stake Engine", aliases: ["stake engine"] }],
+  )
+  assert.throws(() => parseCatalog('{"terms":"nope"}'))
+  assert.throws(() => parseCatalog('{"terms":[{"name":"","aliases":[]}]}'))
+})
+
+test("stack check surfaces unknown terms as candidates and accepts an overlay", () => {
+  const profile = "# Profile\n\n## Stack\n- Primary: React, TypeScript\n"
+  const posting =
+    "## Requirements\n\nExperience with Stake Engine and PixiJS.\nStrong knowledge of Angular and React.\n\n## Nice to have\n\nFamiliarity with Stake Engine."
+
+  const base = checkStack(posting, profile)
+  assert.ok(base !== null)
+  assert.deepEqual(base.requiredNotInStack, ["Angular", "PixiJS"])
+  assert.deepEqual(
+    base.candidates.map((candidate) => candidate.term),
+    ["Stake Engine"],
+  )
+  assert.equal(base.candidates[0]?.section, "required")
+  assert.ok(base.candidates[0]?.context.includes("Stake Engine"))
+
+  const overlay = mergeCatalog(TECH_CATALOG, [
+    { name: "Stake Engine", aliases: ["stake engine"] },
+  ])
+  const withOverlay = checkStack(posting, profile, "", overlay)
+  assert.ok(withOverlay !== null)
+  assert.deepEqual(withOverlay.candidates, [])
+  assert.deepEqual(withOverlay.requiredNotInStack, ["Angular", "PixiJS", "Stake Engine"])
 })
 
 test("unwrapEvalResult unwraps JSON strings and passes raw text through", () => {

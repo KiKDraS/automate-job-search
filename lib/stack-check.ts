@@ -9,7 +9,7 @@
  * The catalog is a neutral recognition dictionary, not a list of "bad"
  * stacks. Results are advisory: the fit scorer and the user decide.
  */
-import { TECH_CATALOG } from "./tech-catalog.ts"
+import { TECH_CATALOG, type TechTerm } from "./tech-catalog.ts"
 
 export interface DeclaredStack {
   primary: string[]
@@ -22,6 +22,12 @@ export interface PostingSections {
   sectionsFound: boolean
 }
 
+export interface StackCandidate {
+  term: string
+  section: "required" | "optional"
+  context: string
+}
+
 export interface StackCheckResult {
   targetRoles: string[]
   sectionsFound: boolean
@@ -31,6 +37,7 @@ export interface StackCheckResult {
   requiredNotInStack: string[]
   optionalNotInStack: string[]
   mentioned: string[]
+  candidates: StackCandidate[]
 }
 
 const STACK_HEADING = /^#{1,6}\s+.*\bstack\b/i
@@ -140,9 +147,9 @@ export function splitPostingSections(text: string): PostingSections {
   return { required, optional, sectionsFound: required !== "" || optional !== "" }
 }
 
-function canonicalize(term: string): string {
+function canonicalize(term: string, catalog: readonly TechTerm[]): string {
   const normalized = term.trim().toLowerCase()
-  const catalogTerm = TECH_CATALOG.find(
+  const catalogTerm = catalog.find(
     (candidate) =>
       candidate.name.toLowerCase() === normalized ||
       candidate.aliases.some((alias) => alias.toLowerCase() === normalized),
@@ -150,24 +157,140 @@ function canonicalize(term: string): string {
   return catalogTerm?.name ?? term.trim()
 }
 
-function isCatalogTerm(term: string): boolean {
-  return TECH_CATALOG.some((candidate) => candidate.name === term)
+function isCatalogTerm(term: string, catalog: readonly TechTerm[]): boolean {
+  return catalog.some((candidate) => candidate.name === term)
 }
 
 /** Technology names found in `text`; the catalog plus the user's extra terms. */
-export function extractTerms(text: string, extraTerms: readonly string[] = []): string[] {
+export function extractTerms(
+  text: string,
+  extraTerms: readonly string[] = [],
+  catalog: readonly TechTerm[] = TECH_CATALOG,
+): string[] {
   const found = new Set<string>()
-  for (const term of TECH_CATALOG) {
+  for (const term of catalog) {
     if (term.aliases.some((alias) => aliasPattern(alias).test(text))) {
       found.add(term.name)
     }
   }
   for (const raw of extraTerms) {
-    const term = canonicalize(raw)
-    if (term === "" || found.has(term) || isCatalogTerm(term)) continue
+    const term = canonicalize(raw, catalog)
+    if (term === "" || found.has(term) || isCatalogTerm(term, catalog)) continue
     if (aliasPattern(raw).test(text)) found.add(term)
   }
   return [...found].sort()
+}
+
+const CANDIDATE_TRIGGER =
+  /(?:experience|proficiency|proficient|knowledge|familiarity|expertise|understanding|hands-on)\s+(?:with|in|of)\s+([^.;\n]+)/gi
+const MUST_HAVE_TRIGGER = /must[- ]have\s+([^.;\n]+)/gi
+const CANDIDATE_SPLIT = /\s*(?:,|;|\s+and\s+|\s+or\s+)\s*/i
+const CANDIDATE_LEADING =
+  /^(?:strong|solid|proven|hands-on|professional|demonstrated|working|practical|advanced|modern)\s+/i
+const CANDIDATE_ROLE =
+  /^(?:experience|proficiency|knowledge|familiarity|expertise|understanding)\s+(?:with|in|of)\s+/i
+const CANDIDATE_TRAILING =
+  /\s+(?:experience|skills?|knowledge|tools?|technologies|frameworks?|pipelines?|apis?|applications?|services?|platforms?|development|practices?|animations?|concepts?)$/i
+const CANDIDATE_IGNORE = new Set([
+  "and",
+  "or",
+  "with",
+  "including",
+  "such",
+  "for",
+  "in",
+  "of",
+  "at",
+  "the",
+  "a",
+  "an",
+  "e.g.",
+  "etc",
+  "years",
+  "year",
+  "least",
+  "modern",
+  "strong",
+  "solid",
+  "proven",
+  "experience",
+  "knowledge",
+  "familiarity",
+  "expertise",
+  "understanding",
+  "ui",
+  "ux",
+  "api",
+  "apis",
+  "spa",
+  "js",
+  "ts",
+  "ci",
+  "cd",
+  "qa",
+  "ml",
+  "ai",
+])
+
+function isCandidateShape(term: string): boolean {
+  if (term.includes("/")) return false
+  const words = term.split(/\s+/).filter((word) => word !== "")
+  if (words.length === 0 || words.length > 3) return false
+  for (const word of words) {
+    const cleaned = word
+      .replace(/^[("'\[]+/, "")
+      .replace(/[)\]"'\\,.;:]+$/, "")
+    if (cleaned === "") return false
+    if (!/^[A-Z0-9]/.test(cleaned)) return false
+    if (CANDIDATE_IGNORE.has(cleaned.toLowerCase())) return false
+  }
+  return true
+}
+
+function cleanCandidate(raw: string): string {
+  let value = raw.replace(/\s+/g, " ").trim()
+  value = value.replace(CANDIDATE_LEADING, "")
+  value = value.replace(CANDIDATE_ROLE, "")
+  value = value.replace(/^must[- ]have\s+/i, "")
+  value = value.replace(CANDIDATE_TRAILING, "")
+  return value.replace(/^[\s:;,.-]+|[\s:;,.-]+$/g, "").trim()
+}
+
+function candidateContext(text: string, index: number): string {
+  const lineStart = text.lastIndexOf("\n", index) + 1
+  const lineEnd = text.indexOf("\n", index)
+  return text
+    .slice(lineStart, lineEnd === -1 ? undefined : lineEnd)
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 120)
+}
+
+function extractCandidates(
+  text: string,
+  section: "required" | "optional",
+  known: ReadonlySet<string>,
+): StackCandidate[] {
+  const candidates: StackCandidate[] = []
+  const seen = new Set<string>()
+  for (const pattern of [CANDIDATE_TRIGGER, MUST_HAVE_TRIGGER]) {
+    pattern.lastIndex = 0
+    let match: RegExpExecArray | null
+    while ((match = pattern.exec(text)) !== null) {
+      const phrase = match[1] ?? ""
+      for (const raw of phrase.split(CANDIDATE_SPLIT)) {
+        const term = cleanCandidate(raw)
+        if (term.length < 2 || term.length > 60) continue
+        if (!isCandidateShape(term)) continue
+        const key = term.toLowerCase()
+        if (known.has(key) || seen.has(key)) continue
+        seen.add(key)
+        candidates.push({ term, section, context: candidateContext(text, match.index) })
+        if (candidates.length >= 10) return candidates
+      }
+    }
+  }
+  return candidates
 }
 
 /**
@@ -180,25 +303,50 @@ export function checkStack(
   postingText: string,
   profileText: string,
   preferencesText = "",
+  catalog: readonly TechTerm[] = TECH_CATALOG,
 ): StackCheckResult | null {
   const stack = parseDeclaredStack(profileText)
   if (stack === null) return null
 
-  const extraTerms = [...stack.primary, ...stack.working].map(canonicalize)
-  const stackTerms = new Set(extraTerms)
+  const extraTerms = [...stack.primary, ...stack.working].map((term) => canonicalize(term, catalog))
+  const stackTerms = new Set(extraTerms.map((term) => term.toLowerCase()))
   const sections = splitPostingSections(postingText)
-  const mentioned = extractTerms(postingText, extraTerms)
-  const required = extractTerms(sections.required, extraTerms)
-  const optional = extractTerms(sections.optional, extraTerms)
+  const mentioned = extractTerms(postingText, extraTerms, catalog)
+  const required = extractTerms(sections.required, extraTerms, catalog)
+  const optional = extractTerms(sections.optional, extraTerms, catalog)
+
+  const known = new Set(
+    [
+      ...catalog.flatMap((term) => [term.name, ...term.aliases]),
+      ...extraTerms,
+      ...mentioned,
+      ...required,
+      ...optional,
+    ].map((term) => term.toLowerCase()),
+  )
+  const candidates = [
+    ...extractCandidates(sections.required, "required", known),
+    ...extractCandidates(sections.optional, "optional", known),
+  ]
+  const seenCandidates = new Set<string>()
+  const uniqueCandidates = candidates
+    .filter((candidate) => {
+      const key = candidate.term.toLowerCase()
+      if (seenCandidates.has(key)) return false
+      seenCandidates.add(key)
+      return true
+    })
+    .slice(0, 10)
 
   return {
     targetRoles: parseTargetRoles(preferencesText),
     sectionsFound: sections.sectionsFound,
     required,
     optional,
-    matched: mentioned.filter((term) => stackTerms.has(term)),
-    requiredNotInStack: required.filter((term) => !stackTerms.has(term)),
-    optionalNotInStack: optional.filter((term) => !stackTerms.has(term)),
+    matched: mentioned.filter((term) => stackTerms.has(term.toLowerCase())),
+    requiredNotInStack: required.filter((term) => !stackTerms.has(term.toLowerCase())),
+    optionalNotInStack: optional.filter((term) => !stackTerms.has(term.toLowerCase())),
     mentioned,
+    candidates: uniqueCandidates,
   }
 }

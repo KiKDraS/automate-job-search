@@ -34,15 +34,28 @@ the user to confirm it.
       --profile <data dir>/profile.md \
       --preferences <data dir>/preferences.md
 
+The script also merges an optional local catalog at
+`<data dir>/tech-catalog.json` with the shipped `lib/tech-catalog.ts`. The
+local file adds niche terms; it is personal data and never part of the repo.
+
 It returns `targetRoles`, `sectionsFound`, `required`, `optional`, `matched`,
-`requiredNotInStack`, `optionalNotInStack`, and `mentioned`. The catalog is a
-neutral dictionary of technologies, not a list of "bad" stacks.
+`requiredNotInStack`, `optionalNotInStack`, `mentioned`, and `candidates`.
+`candidates` are terms in the required/optional sections that the catalog does
+not recognize; they are questions for the Coach, not confirmed gaps.
 
 A required primary-stack gap is a weak Skills dimension; usually Medium at
 most. The check is advisory: the fit scorer and the user decide, and the
 job-scout does not auto-tailor a primary-stack gap. If `sectionsFound` is
 false, use `mentioned` as a hint and read the posting; do not treat every
-term as required.
+term as required. When a candidate is real, the Coach asks the user whether
+to add it to their local catalog (and to `## Stack` only if they have it).
+
+To add a confirmed term:
+
+    npx tsx scripts/tech-catalog.ts add --name "<Name>" --aliases "<alias,alias>"
+
+The shipped catalog is updated by PR/release; the local overlay stays in the
+data directory.
 
 ## Verdicts
 

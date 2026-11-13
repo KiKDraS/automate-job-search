@@ -8,7 +8,9 @@ Canonical criteria for evaluating a job against the candidate. Used by
 - `preferences.md` — target roles, locations, work mode, compensation,
   constraints.
 - `profile.md` — work history, skills, seniority.
-- The posting itself.
+- The posting itself. For a feed hiring post, use the post text; a missing
+  role, company, location, or remote status is not strong. Use `not stated`
+  and never open the author's profile.
 
 ## Dimensions
 

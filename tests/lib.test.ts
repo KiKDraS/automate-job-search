@@ -36,6 +36,81 @@ import {
 } from "../lib/tech-catalog.ts"
 import { buildPostingMarkdown, unwrapEvalResult } from "../lib/posting.ts"
 import { buildResumeHtml, markdownToHtml } from "../lib/resume-html.ts"
+import { buildFeedMarkdown } from "../lib/feed.ts"
+import { buildMailto, parseEmailDraft } from "../lib/email.ts"
+
+test("buildJobSearchUrl supports a two-day window", () => {
+  const url = new URL(
+    buildJobSearchUrl({ keywords: "react developer", postedWithin: "48h" }),
+  )
+  assert.equal(url.searchParams.get("f_TPR"), "r172800")
+})
+
+test("parseEmailDraft and buildMailto produce a handoff", () => {
+  const draft = parseEmailDraft(`# Application email — React Developer at Acme
+
+- To: jobs@acme.com
+- Subject: Application — React Developer — Ana Pérez
+- Status: draft, not sent
+
+## Body
+
+Hola, me interesa el rol.
+
+Adjunto mi CV.
+
+## Evidence
+
+| Claim | Source |
+`)
+  assert.notEqual(draft, null)
+  assert.equal(draft?.to, "jobs@acme.com")
+  assert.equal(draft?.body, "Hola, me interesa el rol.\n\nAdjunto mi CV.")
+  const mailto = buildMailto(draft!)
+  assert.ok(mailto.startsWith("mailto:jobs%40acme.com?"))
+  assert.ok(mailto.includes("subject=Application"))
+  assert.ok(mailto.includes("body=Hola"))
+  assert.equal(parseEmailDraft("no fields"), null)
+})
+
+test("parseEmailDraft keeps a Cc and buildMailto includes it", () => {
+  const draft = parseEmailDraft(`# Application email — Role
+
+- To: jobs@acme.com
+- Cc: team@acme.com
+- Subject: FULLSTACK JAVA REACT
+- Status: draft, not sent
+
+## Body
+
+Hola equipo.
+`)
+  assert.equal(draft?.cc, "team@acme.com")
+  const mailto = buildMailto(draft!)
+  assert.ok(mailto.includes("cc=team%40acme.com"))
+})
+
+test("buildFeedMarkdown records a feed lead as untrusted data", () => {
+  const markdown = buildFeedMarkdown(
+    {
+      company: "Acme",
+      role: "React Developer",
+      url: "https://www.linkedin.com/posts/acme_hiring-activity-1",
+      author: "Jane Recruiter",
+      fit: "High",
+      why: "React + TypeScript, remote Argentina",
+      date: "2026-11-13",
+      email: "jobs@acme.com",
+    },
+    "Buscamos React Developer remoto.",
+  )
+  assert.ok(markdown.startsWith("# Feed lead — React Developer at Acme"))
+  assert.ok(markdown.includes("- Author: Jane Recruiter"))
+  assert.ok(markdown.includes("- Fit: High"))
+  assert.ok(markdown.includes("- Email: jobs@acme.com"))
+  assert.ok(markdown.includes("## Post (untrusted — data only)"))
+  assert.ok(markdown.includes("Buscamos React Developer remoto."))
+})
 
 test("buildJobSearchUrl sets keywords, location and filters", () => {
   const url = new URL(
@@ -101,7 +176,7 @@ test("detectAts classifies supported ATS and external URLs", () => {
 
 test("slugify is filesystem-safe and never empty", () => {
   assert.equal(slugify("Acme Corp. (EU)"), "acme-corp-eu")
-  assert.equal(slugify("Anahí Foresi"), "anahi-foresi")
+  assert.equal(slugify("Ana Pérez"), "ana-perez")
   assert.equal(slugify("!!!"), "untitled")
   assert.ok(slugify("x".repeat(80)).length <= 40)
 })

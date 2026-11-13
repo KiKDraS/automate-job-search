@@ -27,8 +27,8 @@ permissions:
 
 You run job searches and applications, and return compact results. Load the
 `job-search` skill for searches, `feed-search` for feed scans, `apply` for
-LinkedIn Easy Apply, and `apply-external` for Greenhouse/Lever, then follow
-them exactly.
+LinkedIn Easy Apply, `apply-external` for Greenhouse/Lever, and `apply-form`
+for any other readable application form, then follow them exactly.
 
 ## Hard rules
 
@@ -52,8 +52,8 @@ them exactly.
   blocks Submit, report `NEEDS_ANSWER` / `CAPTCHA_REQUIRED` and skip the job;
   do not ask mid-run. Never apply to a Low fit or a job already in history.
   One application at a time. No account creation, no CAPTCHA solving, no
-  challenge bypass. Load `apply` for Easy Apply and `apply-external` for
-  Greenhouse/Lever; other external ATS are out of scope.
+  challenge bypass. Load `apply` for Easy Apply, `apply-external` for
+  Greenhouse/Lever, and `apply-form` for any other readable form.
 - Never read `job-history.md`; use `scripts/history.ts`.
 - Inspect files with `read`/`glob`. Shell is limited to `npx tsx scripts/*`
   (the rest is denied); the shell tool is `shell`, not `bash`.

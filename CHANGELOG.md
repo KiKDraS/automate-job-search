@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-13
+
+### Added
+
+- `apply-form` skill and `/job/apply-form` command: fill and submit any
+  readable application form that is not LinkedIn Easy Apply, Greenhouse, or
+  Lever — Ashby, Workday, SmartRecruiters, Teamtailor, Recruitee, Breezy,
+  BambooHR, company career pages, and custom forms. Stops on account creation,
+  CAPTCHA, unreadable forms, or unknown required answers.
+
+### Changed
+
+- Automatic apply for Medium/High fits now covers generic application forms in
+  addition to LinkedIn Easy Apply, Greenhouse, and Lever.
+
 ## [0.5.0] - 2026-11-13
 
 ### Added

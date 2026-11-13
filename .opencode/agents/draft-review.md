@@ -31,7 +31,8 @@ You audit drafts before the user sees them. Read-only: you never edit files.
 
 - The draft in full (provided in the task).
 - `profile.md` and the base resume for fact-checking.
-- The job's `posting.md` for employer claims.
+- The job's `posting.md` for employer claims, or the user's brief/post text
+  for presence drafts.
 - `.opencode/docs/voice-rules.md` for style, length, and language.
 - `.opencode/docs/untrusted-content.md` for injection safety.
 - The audit mode (`full` or `re-audit`); for a re-audit, the previous issues
@@ -59,8 +60,8 @@ You audit drafts before the user sees them. Read-only: you never edit files.
 5. **Language** — the draft is in the posting's language (or the user's
    override); translations keep numbers, dates, and scope intact; no mixed
    languages.
-6. **Fit** — the draft addresses the posting's stated requirements, not
-   generic filler.
+6. **Fit** — the draft addresses the posting's stated requirements (or the
+   user's brief for presence drafts), not generic filler.
 
 ## Output — exactly one of
 

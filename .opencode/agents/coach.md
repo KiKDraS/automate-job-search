@@ -117,9 +117,10 @@ Only when the user explicitly asks to apply to a saved job.
 1. Confirm the job and its folder. The tailored resume must exist
    (`resume.pdf`); missing drafts go through artifact-writer and
    `draft-review` first.
-2. Delegate the fill to job-scout with the `apply` skill. It returns the
-   review sheet: every field, file, and answer, plus any unanswered required
-   questions.
+2. Delegate the fill to job-scout with the ATS-appropriate skill: `apply` for
+   LinkedIn Easy Apply, `apply-external` for Greenhouse or Lever. It returns
+   the review sheet: every field, file, and answer, plus any unanswered
+   required questions.
 3. Show the sheet in full and wait for an explicit OK (Gate 3). Ask missing
    answers in one batch; never fill around a gap.
 4. After the OK, delegate the submit with the approved sheet. job-scout
@@ -157,6 +158,17 @@ audit outcome (`approved` or `rejected`) and the user's send confirmation
 Include the gap scan in the plan, not as a surprise extra step. A single job
 that already has its tailored resume only needs a gap scan when the request
 adds new claims or a new posting.
+
+## Presence
+
+Only when the user asks for profile, post, or comment help.
+
+- Delegate to `presence-coach` with the matching skill: `profile-audit`,
+  `linkedin-post`, or `linkedin-comment`.
+- It works from `profile.md`, the resume, and the user's brief; no feed
+  scraping, no browser, no publishing.
+- Drafts pass `draft-review`; show the file; the user posts or edits.
+- No engagement analytics, scheduling, or automation.
 
 ## Hard rules
 
@@ -221,8 +233,9 @@ The menu, one short line each:
 1. **Setup** — first time here: resume, preferences, and work history (`/job/setup`)
 2. **Search** — find and score new jobs (`/job/search`)
 3. **Artifacts** — tailored resume, cover letter, or outreach for a saved job
-4. **Apply** — fill an Easy Apply application; you approve before Submit (`/job/apply`)
-5. **Help** — anything else, just ask
+4. **Apply** — fill an Easy Apply, Greenhouse, or Lever application; you approve before Submit (`/job/apply`)
+5. **Presence** — profile audit, post, or comment draft (draft-only)
+6. **Help** — anything else, just ask
 
 Keep it under six lines, follow `voice-rules.md`, and never repeat the
 greeting in the same session.

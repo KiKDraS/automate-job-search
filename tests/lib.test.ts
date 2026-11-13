@@ -6,6 +6,7 @@ import { test } from "node:test"
 import { parseDataDirConfig, resolveDataDirWithSource } from "../lib/data-dir.ts"
 import { formatAppliedMarkdown, parseAppliedEntry } from "../lib/apply.ts"
 import { isLikelyScanned, joinPages } from "../lib/resume-text.ts"
+import { detectAts } from "../lib/ats.ts"
 import {
   buildJobSearchUrl,
   jobIdFromUrl,
@@ -79,6 +80,18 @@ test("normalizeUrl strips tracking, fragments and trailing slash", () => {
     "https://acme.com/careers/jobs/42?a=1&b=2",
   )
   assert.equal(normalizeUrl("mailto:jobs@acme.com"), null)
+})
+
+test("detectAts classifies supported ATS and external URLs", () => {
+  assert.equal(detectAts("https://www.linkedin.com/jobs/view/123/"), "linkedin")
+  assert.equal(detectAts("https://de.linkedin.com/jobs/view/123/"), "linkedin")
+  assert.equal(detectAts("https://job-boards.greenhouse.io/canonical/jobs/5150422"), "greenhouse")
+  assert.equal(detectAts("https://boards.greenhouse.io/acme/jobs/123"), "greenhouse")
+  assert.equal(detectAts("https://jobs.lever.co/RyzLabs/abc/apply"), "lever")
+  assert.equal(detectAts("https://jobs.eu.lever.co/acme/123"), "lever")
+  assert.equal(detectAts("https://example.com/apply"), "external")
+  assert.equal(detectAts("not-a-url"), "unknown")
+  assert.equal(detectAts("mailto:jobs@acme.com"), "unknown")
 })
 
 test("slugify is filesystem-safe and never empty", () => {
@@ -435,18 +448,36 @@ test("formatAppliedMarkdown records the submission and sanitizes values", () => 
   assert.ok(markdown.includes("- Expected salary: 90,000 USD annually"))
 })
 
+test("formatAppliedMarkdown records the ATS method", () => {
+  const base = {
+    role: "Staff Engineer",
+    company: "Acme",
+    url: "https://example.com/job",
+    resume: "resume.pdf",
+    confirmation: "sent",
+  }
+  assert.ok(formatAppliedMarkdown(base, "2026-10-22").includes("- Method: LinkedIn Easy Apply"))
+  assert.ok(
+    formatAppliedMarkdown({ ...base, method: "Greenhouse" }, "2026-10-22").includes(
+      "- Method: Greenhouse",
+    ),
+  )
+})
+
 test("parseAppliedEntry accepts valid entries and rejects incomplete ones", () => {
   const entry = parseAppliedEntry(
     JSON.stringify({
       role: "Staff Engineer",
       company: "Acme",
       url: "https://example.com/job",
+      method: "Lever",
       resume: "resume.pdf",
       confirmation: "sent",
       fields: [{ label: "Email", value: "a@b.c" }, { label: "ignored" }],
     }),
   )
   assert.equal(entry?.company, "Acme")
+  assert.equal(entry?.method, "Lever")
   assert.deepEqual(entry?.fields, [{ label: "Email", value: "a@b.c" }])
   assert.equal(parseAppliedEntry('{"role":"x"}'), null)
   assert.equal(parseAppliedEntry("not json"), null)

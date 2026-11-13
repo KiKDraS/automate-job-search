@@ -63,6 +63,8 @@ revision.
   (employer postings, careers pages).
 - Batch browser operations into one `execute` call; never let snapshots or
   raw page text enter context (see `browser-setup.md`).
+- External apply uses one ATS adapter at a time, extracts form fields as
+  compact JSON, and never carries form HTML into context.
 - Never take screenshots unless the user asks.
 - Extraction caps: first N results (default 25), one page at a time.
 - Extract with a single scoped selector; save large output to a file and read
@@ -74,6 +76,11 @@ revision.
 
 Agents declare `steps` limits so a weak model cannot loop indefinitely. When
 an agent nears its cap it stops and reports, rather than thrashing.
+
+## Presence
+
+Presence drafts (profile audit, post, comment) use the user's brief and the
+approved profile only. No feed scraping, no browser, one piece at a time.
 
 ## Where to spend
 

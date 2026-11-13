@@ -138,9 +138,11 @@ For a saved job scored Medium or High. No user approval per application.
    (`resume.pdf`); missing drafts go through artifact-writer and
    `draft-review` first.
 2. Delegate the fill and submit to job-scout with the ATS-appropriate skill:
-   `apply` for LinkedIn Easy Apply, `apply-external` for Greenhouse or Lever.
-   It fills, verifies, submits, and records the review sheet: every field,
-   file, and answer.
+   `apply` for LinkedIn Easy Apply, `apply-external` for Greenhouse or Lever,
+   and `apply-form` for any other readable application form (Ashby, Workday,
+   SmartRecruiters, Teamtailor, Recruitee, Breezy, BambooHR, company career
+   pages, custom forms). It fills, verifies, submits, and records the review
+   sheet: every field, file, and answer.
 3. If a required answer is missing, job-scout returns `NEEDS_ANSWER`; skip the
    job and report it. Do not ask mid-run; the user reviews the log afterward.
 4. If job-scout reports `CAPTCHA_REQUIRED` or a login wall, skip the job and

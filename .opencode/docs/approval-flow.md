@@ -58,8 +58,8 @@ resume, fills the form, and submits without asking. Low fits are skipped.
   history.
 - If a submit times out, do not click Submit again. Verify the job page and
   the applied-jobs list first; the recovery steps live in the `apply` skill.
-- The same rule applies to LinkedIn Easy Apply, Greenhouse, and Lever; other
-  ATS are out of scope.
+- The same rule applies to LinkedIn Easy Apply, Greenhouse, Lever, and any
+  other readable form via `apply-form`.
 
 ### Posts
 

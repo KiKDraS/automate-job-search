@@ -1,8 +1,9 @@
 /**
  * ATS detection from a URL.
  *
- * Supported assisted-apply flows: LinkedIn Easy Apply, Greenhouse, and Lever.
- * Everything else is external and out of scope for v1.
+ * Known ATS with dedicated apply flows: LinkedIn Easy Apply, Greenhouse, and
+ * Lever. Everything else is `external` and can go through the generic
+ * `apply-form` skill.
  */
 
 export type AtsKind = "linkedin" | "greenhouse" | "lever" | "external" | "unknown"
@@ -27,7 +28,7 @@ export function detectAts(value: string): AtsKind {
   return "external"
 }
 
-/** True for the ATSs the assisted apply flows support. */
+/** True for the ATSs with dedicated apply skills. */
 export function isSupportedAts(kind: AtsKind): kind is "linkedin" | "greenhouse" | "lever" {
   return kind === "linkedin" || kind === "greenhouse" || kind === "lever"
 }

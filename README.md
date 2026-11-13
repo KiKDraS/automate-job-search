@@ -33,10 +33,13 @@ outreach drafts. The attention layer covers profile audits, post drafts, and
 comment drafts; an approved post can be published for you. Engagement
 analytics is deferred.
 
-Apply fills LinkedIn Easy Apply, Greenhouse, and Lever forms and records every
-field, file, and answer. For every saved job scored Medium or High, it tailors
-the resume, submits, and logs the application in `applied.md` and
-`applications.md`. Other ATS are out of scope for now.
+Apply fills LinkedIn Easy Apply, Greenhouse, Lever, and any other readable
+application form (Ashby, Workday, SmartRecruiters, Teamtailor, Recruitee,
+Breezy, BambooHR, company career pages, custom forms) and records every field,
+file, and answer. For every saved job scored Medium or High, it tailors the
+resume, submits, and logs the application in `applied.md` and
+`applications.md`. Account creation, CAPTCHA, or unknown required answers stop
+the flow and are reported.
 
 Every submitted application is in `<data dir>/applications.md`: date, company,
 role, fit, method, confirmation, job URL, and folder. The per-job `applied.md`
@@ -89,6 +92,7 @@ browser window — log into LinkedIn there, once.
 | `/job/resume-review` | CV feedback with concrete improvements |
 | `/job/cover-letter` | Cover letter for a saved job |
 | `/job/apply` | Apply to a saved Medium/High fit — fills, submits, and logs it |
+| `/job/apply-form` | Fill a generic application form when the ATS is not LinkedIn/Greenhouse/Lever |
 | `/job/log-application` | Record an application you sent manually |
 | `/job/outreach` | Connection notes and follow-ups (draft-only) |
 | `/job` | Show the menu anytime |

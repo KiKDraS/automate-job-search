@@ -65,7 +65,8 @@ and filled from a previous run, resume at step 5.
 
   - `linkedin` → stop; use the `apply` skill for Easy Apply.
   - `greenhouse` or `lever` → continue.
-  - `external` or `unknown` → stop; other ATS are out of scope.
+  - `external` or `unknown` → stop; use the `apply-form` skill for any readable
+    application form.
 - Confirm the page shows the same role and company as `posting.md`.
 - If a login wall, account creation, CAPTCHA, or challenge appears, stop and
   report. Never create an account or bypass anything.

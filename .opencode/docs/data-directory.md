@@ -83,8 +83,10 @@ never hand-build the path.
   and folder. It is written by `scripts/apply-log.ts` alongside `applied.md`.
   Manual submissions use `source: user` and `status: submitted (manual)`.
 - `feed/` holds one file per High or Medium hiring post found in the LinkedIn
-  feed: author, post URL, fit, why, and the post text delimited as untrusted
-  data. Discovery only; no likes, comments, connections, or messages.
+  feed: author, post URL, fit, why, email if published, and the post text
+  delimited as untrusted data. A matching `<lead>-email.md` holds the
+  application email draft when the post publishes an address. Discovery and
+  drafts only; no likes, comments, connections, messages, or sends.
 - `presence/` holds LinkedIn drafts: the current profile audit, dated post
   drafts, dated comment drafts, and `story-bank.md` with confirmed moments the
   user has told. An approved post records its published status and URL;

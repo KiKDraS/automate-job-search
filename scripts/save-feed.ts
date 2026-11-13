@@ -6,7 +6,7 @@
  *   npx tsx scripts/save-feed.ts --file <.playwright-mcp/feed.txt>
  *     --company "<company>" --role "<role>"
  *     --author "<name>" --fit "High|Medium" --why "<one line>"
- *     [--url "<post url>"] [--date YYYY-MM-DD]
+ *     [--email "<address>"] [--url "<post url>"] [--date YYYY-MM-DD]
  *
  * Reads the file (an artifact of browser_evaluate's `filename` option),
  * unwraps JSON-string encoding when present, and writes
@@ -32,6 +32,7 @@ async function main(): Promise<void> {
   const author = flagValue(SCRIPT, args, "--author")
   const fit = flagValue(SCRIPT, args, "--fit")
   const why = flagValue(SCRIPT, args, "--why")
+  const email = flagValue(SCRIPT, args, "--email")
   if (
     file === undefined ||
     company === undefined ||
@@ -42,7 +43,7 @@ async function main(): Promise<void> {
   ) {
     return fail(
       SCRIPT,
-      "usage: --file <path> --company <c> --role <r> --author <a> --fit <High|Medium> --why <text> [--url <u>] [--date YYYY-MM-DD]",
+      "usage: --file <path> --company <c> --role <r> --author <a> --fit <High|Medium> --why <text> [--email <address>] [--url <u>] [--date YYYY-MM-DD]",
     )
   }
   const date = flagValue(SCRIPT, args, "--date") ?? todayIso()
@@ -64,7 +65,7 @@ async function main(): Promise<void> {
   const target = path.join(dir, `${date}-${slugify(company)}-${slugify(role)}.md`)
   await fs.writeFile(
     target,
-    buildFeedMarkdown({ company, role, url, author, fit, why, date }, content),
+    buildFeedMarkdown({ company, role, url, author, fit, why, date, email }, content),
   )
   console.log(target)
 }

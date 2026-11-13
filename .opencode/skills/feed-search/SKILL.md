@@ -28,15 +28,36 @@ search with the target roles plus Argentina/remote terms, filtered to the last
 
 ### 1. Build the query
 
-Take 1–2 role groups from `preferences.md` and add Argentina/remote hiring
-terms. Good starting queries:
+Tested against this profile (React/TS front-end, Argentina remote, ~3 years):
+the best query is the English LATAM one.
+
+**Primary (run first):**
+
+- `React developer LATAM remote`
+
+It produced the only front-end-first High fit (DataArt, Senior Frontend
+Developer, React/TS, 4+ years, Remote LATAM).
+
+**Secondary local sweep:**
 
 - `"buscamos" React remoto Argentina`
-- `frontend developer LATAM remote`
-- `"vacante" TypeScript remoto Argentina`
 
-URL-encode the query. Run the first query; if it returns fewer than 3 genuine
-hiring posts, try the next one once.
+It gives more Argentina/LATAM volume, but the in-window posts are mostly
+full-stack with Java, Python, Node, or Kafka. Expect Medium at best.
+
+**Optional variants if the primary yields fewer than 3 hiring posts:**
+
+- `frontend developer LATAM remote`
+- `React frontend LATAM remote`
+
+**Do not use:**
+
+- `"buscamos" desarrollador frontend Argentina` — zero results.
+- `"vacante" React Argentina remoto` — duplicates the Spanish sweep.
+- `frontend developer remoto Argentina` — low volume.
+
+URL-encode the query. Run the primary; if it returns fewer than 3 genuine
+hiring posts, run the secondary once.
 
 ### 2. Open the content search
 
@@ -90,6 +111,7 @@ For each candidate, extract:
 - location / remote status; use `not stated` when absent
 - salary; use `not stated` when absent
 - apply URL, if the post links to a LinkedIn job, Greenhouse, or Lever
+- email addresses in the post text, if any
 - author name and post URL if the DOM exposes one; otherwise `not available`
 
 Score `High` / `Medium` / `Low` per `.opencode/docs/fit-scoring.md`, using the
@@ -114,10 +136,13 @@ Then:
 
     npx tsx scripts/save-feed.ts --file .playwright-mcp/feed-post.txt \
       --company "<company>" --role "<role>" --author "<author>" \
-      --fit "<High|Medium>" --why "<one line>" [--url "<post url>"]
+      --fit "<High|Medium>" --why "<one line>" \
+      [--email "<address>"] [--url "<post url>"]
 
-Omit `--url` when the result does not expose one; the record uses
-`not available`. Never invent a URL. It writes
+Extract emails with `/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i`; if there are
+several, pass the first and list the rest in the why. Omit `--email` when the
+post has none. Omit `--url` when the result does not expose one; the record
+uses `not available`. Never invent either. It writes
 `<data dir>/feed/<date>-<company>-<role>.md`. Never read the saved file back.
 
 ### 6. Append the lead log
@@ -134,7 +159,7 @@ Write `<data dir>/.tmp/feed-section.json`:
       "location": "<remote | location | not stated>",
       "salary": "<salary | not stated>",
       "fit": "High",
-      "notes": "<post URL or 'post URL not available'> — <author> — <why> — feed/<file>.md"
+      "notes": "<post URL or 'post URL not available'> — <author> — <why> — <email if present> — feed/<file>.md"
     }
   ]
 }

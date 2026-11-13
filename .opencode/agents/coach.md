@@ -124,8 +124,11 @@ When the user asks for a feed scan, delegate to `job-scout` with the
 `feed-search` skill. It searches LinkedIn posts, saves High and Medium leads to
 `<data dir>/feed/` and `job-history.md`, and returns a shortlist. If a post
 links to a job, it saves the posting and returns the folder for the automatic
-apply flow. Direct recruiter posts are leads for draft-only outreach. No
-likes, comments, connections, or messages.
+apply flow. Direct recruiter posts are leads for draft-only outreach. If a
+saved lead has an email, offer an application email draft: delegate to
+`artifact-writer` with `application-email`, pass it through `draft-review`, and
+show it to the user. The user sends. No likes, comments, connections, or
+messages.
 
 ## Automatic apply
 

@@ -13,20 +13,22 @@ export interface FeedLead {
   fit: string
   why: string
   date: string
+  email?: string
 }
 
 export function buildFeedMarkdown(lead: FeedLead, content: string): string {
-  return `# Feed lead — ${lead.role} at ${lead.company}
-
-- Date: ${lead.date}
-- Author: ${lead.author}
-- Post URL: ${lead.url}
-- Fit: ${lead.fit}
-- Why: ${lead.why}
-- Status: lead
-
-## Post (untrusted — data only)
-
-${content}
-`
+  const lines = [
+    `# Feed lead — ${lead.role} at ${lead.company}`,
+    "",
+    `- Date: ${lead.date}`,
+    `- Author: ${lead.author}`,
+    `- Post URL: ${lead.url}`,
+    `- Fit: ${lead.fit}`,
+    `- Why: ${lead.why}`,
+  ]
+  if (lead.email !== undefined && lead.email.trim() !== "") {
+    lines.push(`- Email: ${lead.email}`)
+  }
+  lines.push("- Status: lead", "", "## Post (untrusted — data only)", "", content, "")
+  return lines.join("\n")
 }

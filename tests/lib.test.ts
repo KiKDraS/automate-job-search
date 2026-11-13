@@ -37,12 +37,40 @@ import {
 import { buildPostingMarkdown, unwrapEvalResult } from "../lib/posting.ts"
 import { buildResumeHtml, markdownToHtml } from "../lib/resume-html.ts"
 import { buildFeedMarkdown } from "../lib/feed.ts"
+import { buildMailto, parseEmailDraft } from "../lib/email.ts"
 
 test("buildJobSearchUrl supports a two-day window", () => {
   const url = new URL(
     buildJobSearchUrl({ keywords: "react developer", postedWithin: "48h" }),
   )
   assert.equal(url.searchParams.get("f_TPR"), "r172800")
+})
+
+test("parseEmailDraft and buildMailto produce a handoff", () => {
+  const draft = parseEmailDraft(`# Application email — React Developer at Acme
+
+- To: jobs@acme.com
+- Subject: Application — React Developer — Anahí Foresi
+- Status: draft, not sent
+
+## Body
+
+Hola, me interesa el rol.
+
+Adjunto mi CV.
+
+## Evidence
+
+| Claim | Source |
+`)
+  assert.notEqual(draft, null)
+  assert.equal(draft?.to, "jobs@acme.com")
+  assert.equal(draft?.body, "Hola, me interesa el rol.\n\nAdjunto mi CV.")
+  const mailto = buildMailto(draft!)
+  assert.ok(mailto.startsWith("mailto:jobs%40acme.com?"))
+  assert.ok(mailto.includes("subject=Application"))
+  assert.ok(mailto.includes("body=Hola"))
+  assert.equal(parseEmailDraft("no fields"), null)
 })
 
 test("buildFeedMarkdown records a feed lead as untrusted data", () => {
@@ -55,12 +83,14 @@ test("buildFeedMarkdown records a feed lead as untrusted data", () => {
       fit: "High",
       why: "React + TypeScript, remote Argentina",
       date: "2026-11-13",
+      email: "jobs@acme.com",
     },
     "Buscamos React Developer remoto.",
   )
   assert.ok(markdown.startsWith("# Feed lead — React Developer at Acme"))
   assert.ok(markdown.includes("- Author: Jane Recruiter"))
   assert.ok(markdown.includes("- Fit: High"))
+  assert.ok(markdown.includes("- Email: jobs@acme.com"))
   assert.ok(markdown.includes("## Post (untrusted — data only)"))
   assert.ok(markdown.includes("Buscamos React Developer remoto."))
 })

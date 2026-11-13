@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for hiring leads that match the target roles, score fit, dedupe, and save
   High/Medium leads under `<data dir>/feed/` and `job-history.md`. Low-volume,
   discovery only; no engagement actions.
+- `application-email` skill and `/job/application-email` command: when a feed
+  lead publishes an email, store the address and draft a short application
+  email. Draft-only; the user sends.
 
 ### Changed
 

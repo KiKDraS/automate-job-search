@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `feed-search` skill and `/job/feed-search` command: scan the LinkedIn home
+  feed for hiring posts that match the target roles, score fit, dedupe, and
+  save High/Medium leads under `<data dir>/feed/` and `job-history.md`.
+  Low-volume, discovery only; no engagement actions.
+
+### Changed
+
+- Job searches are limited to postings published in the last 48 hours
+  (`f_TPR=r172800`); the search skill skips anything older and does not widen
+  the window without an explicit user exception.
+
 ## [0.4.0] - 2026-11-13
 
 ### Added

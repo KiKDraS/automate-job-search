@@ -6,7 +6,7 @@
  * a filter, update that document and this module together.
  */
 
-export type PostedWithin = "24h" | "week" | "month"
+export type PostedWithin = "24h" | "48h" | "week" | "month"
 export type WorkMode = "on-site" | "remote" | "hybrid"
 export type ExperienceLevel =
   | "internship"
@@ -28,6 +28,7 @@ export interface JobSearchParams {
 
 const POSTED_WITHIN: Record<PostedWithin, string> = {
   "24h": "r86400",
+  "48h": "r172800",
   week: "r604800",
   month: "r2592000",
 }

@@ -36,6 +36,34 @@ import {
 } from "../lib/tech-catalog.ts"
 import { buildPostingMarkdown, unwrapEvalResult } from "../lib/posting.ts"
 import { buildResumeHtml, markdownToHtml } from "../lib/resume-html.ts"
+import { buildFeedMarkdown } from "../lib/feed.ts"
+
+test("buildJobSearchUrl supports a two-day window", () => {
+  const url = new URL(
+    buildJobSearchUrl({ keywords: "react developer", postedWithin: "48h" }),
+  )
+  assert.equal(url.searchParams.get("f_TPR"), "r172800")
+})
+
+test("buildFeedMarkdown records a feed lead as untrusted data", () => {
+  const markdown = buildFeedMarkdown(
+    {
+      company: "Acme",
+      role: "React Developer",
+      url: "https://www.linkedin.com/posts/acme_hiring-activity-1",
+      author: "Jane Recruiter",
+      fit: "High",
+      why: "React + TypeScript, remote Argentina",
+      date: "2026-11-13",
+    },
+    "Buscamos React Developer remoto.",
+  )
+  assert.ok(markdown.startsWith("# Feed lead — React Developer at Acme"))
+  assert.ok(markdown.includes("- Author: Jane Recruiter"))
+  assert.ok(markdown.includes("- Fit: High"))
+  assert.ok(markdown.includes("## Post (untrusted — data only)"))
+  assert.ok(markdown.includes("Buscamos React Developer remoto."))
+})
 
 test("buildJobSearchUrl sets keywords, location and filters", () => {
   const url = new URL(

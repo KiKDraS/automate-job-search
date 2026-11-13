@@ -45,7 +45,7 @@ out — on OpenCode's free models, with no subscription required.
 
 - **Agents** — Coach leads; job-scout, artifact-writer, draft-review,
   release-manager, presence-coach. Roster: `AGENTS.md`
-- **Skills** — job-setup, job-search, resume-review, tailor-resume,
+- **Skills** — job-setup, job-search, feed-search, resume-review, tailor-resume,
   cover-letter, outreach, apply, apply-external, log-application, profile-audit,
   linkedin-post, linkedin-comment; craft skills no-ai-slop and
   write-root-readme (`.opencode/skills/`)
@@ -57,9 +57,10 @@ out — on OpenCode's free models, with no subscription required.
 
 ## Scope
 
-**In:** setup, job search, resumes (build, review, tailoring), cover letters,
-outreach drafts, automatic apply for saved jobs scored Medium or High
-(LinkedIn Easy Apply, Greenhouse, Lever), with a consolidated log in
+**In:** setup, job search (postings from the last 48 hours), feed lead scan
+(hiring posts that match the target roles), resumes (build, review, tailoring),
+cover letters, outreach drafts, automatic apply for saved jobs scored Medium or
+High (LinkedIn Easy Apply, Greenhouse, Lever), with a consolidated log in
 `applications.md`, launch greeting, attention layer (profile audit, post
 drafts, comment drafts, and publishing a post the user approved — no
 autonomous publishing).

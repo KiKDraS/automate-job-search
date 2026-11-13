@@ -12,7 +12,7 @@ Useful query parameters:
 
 | Param | Meaning | Values |
 | --- | --- | --- |
-| `f_TPR` | Date posted | `r86400` (24h), `r604800` (week), `r2592000` (month) |
+| `f_TPR` | Date posted | `r86400` (24h), `r172800` (48h), `r604800` (week), `r2592000` (month) |
 | `f_WT` | Work mode | `1` on-site, `2` remote, `3` hybrid |
 | `f_E` | Experience level | `1` internship … `6` executive |
 | `f_AL` | Easy Apply only | `true` |
@@ -63,6 +63,21 @@ live UI.
   stop and report. Greenhouse/Lever redirects go to `apply-external`; other
   ATS are out of scope.
 
+## Feed hiring posts (job search)
+
+- Scan only the LinkedIn home feed, max 5 scrolls and 30 posts per run.
+- Current feed selector: `div[data-testid="mainFeed"] div[role="listitem"]`.
+  The feed scrolls inside `main`, not `window`; use `main.scrollBy(0, 800)`.
+  Save the post text to a file with the `filename` option.
+- Skip promoted posts and posts without a hiring signal.
+- Post URLs are sometimes absent in the current feed; use `not available`,
+  never invent one. Author + post text identify the lead.
+- Filter for hiring signals plus the target roles from `preferences.md`.
+- Save High/Medium leads under `<data dir>/feed/`; no likes, comments,
+  connection requests, messages, follows, or reposts.
+- If the post links to a job, save the posting and return the folder for the
+  automatic apply flow.
+
 ## Messaging and connections (attention layer)
 
 - Connection notes: 300-character maximum; the outreach skill supplies the
@@ -72,8 +87,8 @@ live UI.
 
 ## Never automate
 
-- Applications, sends, or posts without per-action user confirmation
-  (`approval-flow.md`).
+- Applications outside the automatic Medium/High flow; sends and posts without
+  per-action user confirmation (`approval-flow.md`).
 - CAPTCHA/challenge solving, auth bypass, or credential entry.
 - High-volume fetching, fake accounts, or engagement automation.
 - Profile scraping beyond what the current task needs.

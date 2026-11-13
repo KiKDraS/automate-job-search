@@ -26,11 +26,12 @@ messages or publishes posts without your approval. Applications for Medium and
 High fits run automatically and are logged for review.
 
 Built for technology roles — software, data, DevOps, QA, design engineering.
-Today it covers the full application loop: LinkedIn search with fit scoring,
-resume review and tailoring, cover letters, automatic apply for Medium and
-High fits, and outreach drafts. The attention layer covers profile audits,
-post drafts, and comment drafts; an approved post can be published for you.
-Engagement analytics is deferred.
+Today it covers the full application loop: LinkedIn search limited to the last
+48 hours, a feed scan for hiring posts, fit scoring, resume review and
+tailoring, cover letters, automatic apply for Medium and High fits, and
+outreach drafts. The attention layer covers profile audits, post drafts, and
+comment drafts; an approved post can be published for you. Engagement
+analytics is deferred.
 
 Apply fills LinkedIn Easy Apply, Greenhouse, and Lever forms and records every
 field, file, and answer. For every saved job scored Medium or High, it tailors
@@ -81,7 +82,8 @@ browser window — log into LinkedIn there, once.
 | Command | What it does |
 | --- | --- |
 | `/job/setup` | Onboarding: resume, preferences, work history |
-| `/job/search` | Find and score new jobs |
+| `/job/search` | Find and score jobs posted in the last 48 hours |
+| `/job/feed-search` | Scan your feed for hiring posts that match your roles |
 | `/job/tailor` | Tailored resume for a saved job |
 | `/job/resume-review` | CV feedback with concrete improvements |
 | `/job/cover-letter` | Cover letter for a saved job |

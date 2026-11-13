@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-13
+
 ### Added
 
 - `feed-search` skill and `/job/feed-search` command: search LinkedIn posts
@@ -16,12 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `application-email` skill and `/job/application-email` command: when a feed
   lead publishes an email, store the address and draft a short application
   email. Draft-only; the user sends.
+- `SECURITY.md`: private vulnerability reporting through GitHub Security
+  Advisories, scope, and response expectations.
 
 ### Changed
 
 - Job searches are limited to postings published in the last 48 hours
   (`f_TPR=r172800`); the search skill skips anything older and does not widen
   the window without an explicit user exception.
+- Test data uses fictional names; no personal data in the repository.
 
 ## [0.4.0] - 2026-11-13
 

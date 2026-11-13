@@ -7,29 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.3.0] - 2026-11-13
+## [0.4.0] - 2026-11-13
 
 ### Added
 
-- Attention layer: `presence-coach` audits the LinkedIn profile and drafts
-  posts and comments from the user's real work; every draft passes
-  `draft-review`, and a post publishes only after the user approves the exact
-  text. No feed scraping, engagement analytics, or scheduling.
 - Consolidated application log at `<data dir>/applications.md`: one row per
   submitted application with date, company, role, fit, method, confirmation,
   job URL, and folder. `applied.md` keeps the per-job detail.
 - `log-application` skill and `/job/log-application` command: record an
   application the user sent manually, marked `source: user` and
   `status: submitted (manual)`, without claiming the agent submitted it.
-- External ATS apply: the `apply-external` skill fills Greenhouse and Lever
-  applications, submits for Medium/High fits, uploads the resume/cover letter,
-  and logs both records. `lib/ats.ts` and `scripts/ats.ts` detect the ATS from
-  the URL; other ATS stay out of scope.
 
 ### Changed
 
-- `applied.md` records the actual ATS method (LinkedIn Easy Apply,
-  Greenhouse, or Lever) instead of always LinkedIn.
 - `presence-coach` can publish an approved LinkedIn post after Gate 3;
   comments and profile edits stay draft-only.
 - Applications for saved jobs scored Medium or High submit automatically;
@@ -41,6 +31,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - LinkedIn posts are story-first: `linkedin-post` interviews the user for one
   concrete moment and refuses to pad a fact list. Stories live in
   `presence/story-bank.md`.
+
+## [0.3.0] - 2026-11-13
+
+### Added
+
+- Attention layer: `presence-coach` audits the LinkedIn profile and drafts
+  posts and comments from the user's real work; every draft passes
+  `draft-review`, and the user publishes. No feed scraping, engagement
+  analytics, or scheduling.
+- External ATS apply: the `apply-external` skill fills Greenhouse and Lever
+  applications with the same review-and-approve gate, resume/cover-letter
+  upload, and `applied.md` logging. `lib/ats.ts` and `scripts/ats.ts` detect
+  the ATS from the URL; other ATS stay out of scope.
+
+### Changed
+
+- `applied.md` records the actual ATS method (LinkedIn Easy Apply,
+  Greenhouse, or Lever) instead of always LinkedIn.
 
 ## [0.2.0] - 2026-10-23
 

@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-13
+
+### Added
+
+- Consolidated application log at `<data dir>/applications.md`: one row per
+  submitted application with date, company, role, fit, method, confirmation,
+  job URL, and folder. `applied.md` keeps the per-job detail.
+- `log-application` skill and `/job/log-application` command: record an
+  application the user sent manually, marked `source: user` and
+  `status: submitted (manual)`, without claiming the agent submitted it.
+
+### Changed
+
+- `presence-coach` can publish an approved LinkedIn post after Gate 3;
+  comments and profile edits stay draft-only.
+- Applications for saved jobs scored Medium or High submit automatically;
+  every submission is appended to `applications.md` for review. Low fits are
+  skipped. Messages, comments, and posts keep their approval gate.
+- CAPTCHA handoff: when an ATS gates Submit behind a CAPTCHA, the agent stops
+  and reports it; in an autonomous run it skips the job so the user can
+  complete the challenge later. It never solves or bypasses one.
+- LinkedIn posts are story-first: `linkedin-post` interviews the user for one
+  concrete moment and refuses to pad a fact list. Stories live in
+  `presence/story-bank.md`.
+
 ## [0.3.0] - 2026-11-13
 
 ### Added

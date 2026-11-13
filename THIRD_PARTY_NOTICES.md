@@ -39,7 +39,35 @@ the originals.
   conventions, and validation hints — including its example README references
   to liblaf/grapes and lobehub/lobe-chat.
 
+## borghei/claude-skills
+
+- Source: <https://github.com/borghei/claude-skills>
+- License: MIT + Commons Clause — Copyright (c) 2025-2026 Amin Borghei. The
+  Commons Clause condition applies: this project does not sell the software.
+- Adapted: the story-first interview for LinkedIn posts — the premise that a
+  generic post is a material problem, the five single-post questions, and the
+  story-bank idea — rewritten for this project's `linkedin-post` skill.
+
+## harrymunro/claude-content-skills
+
+- Source: <https://github.com/harrymunro/claude-content-skills>
+- License: MIT — Copyright (c) 2026
+- Adapted: the hook / body / close post structure and the pre-publish quality
+  checklist, rewritten for this project's `linkedin-post` skill.
+
+## jamesgray007/hoai-course
+
+- Source: <https://github.com/jamesgray007/hoai-course>
+- License: no license file was present at the time of adaptation; only the
+  general story arc (scene, tension, turning point, insight) was adapted, with
+  no text copied.
+
 ---
+
+The MIT License text below applies to sergebulaev/linkedin-skills. The same
+MIT text applies to harrymunro/claude-content-skills with Copyright (c) 2026,
+and to borghei/claude-skills with Copyright (c) 2025-2026 Amin Borghei,
+subject to the Commons Clause condition stated above.
 
 The MIT License text below applies to sergebulaev/linkedin-skills:
 

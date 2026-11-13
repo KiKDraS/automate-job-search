@@ -70,12 +70,11 @@ Score each new candidate per `.opencode/docs/fit-scoring.md` using
 preferences and profile: High / Medium / Low plus a one-line why. Score from
 listing data first; do not open postings yet.
 
-### 6. Save postings as you go (High fits, cap 5)
+### 6. Save postings as you go (High and Medium fits)
 
-For each High fit (max 5 unless Coach asks for more), one `execute` call per
-posting that saves the body to a file. Save each one as soon as it is
-confirmed — do not wait for the whole list, so an interrupted run keeps what
-is already saved:
+For each High or Medium fit, one `execute` call per posting that saves the body
+to a file. Save each one as soon as it is confirmed — do not wait for the
+whole list, so an interrupted run keeps what is already saved:
 
 ```js
 const nav = await tools.playwright.browser_navigate({ url: POSTING_URL })
@@ -102,8 +101,8 @@ The script merges the optional local catalog at
 know: report them so Coach can ask the user, but do not treat them as gaps.
 
 If `requiredNotInStack` includes the posting's primary stack, note the gap;
-do not auto-tailor. Report it so Coach can ask the user whether to proceed.
-The check is advisory; the fit scorer decides.
+do not claim it in the resume. A Medium fit is still eligible for automatic
+application. The check is advisory; the fit scorer decides.
 
 If a posting shows a login wall or is gone, note it and continue.
 
@@ -132,10 +131,11 @@ Return to Coach:
 
 - Terms used, URLs searched, counts: new / High / Medium / Low, skipped
   duplicates.
-- Shortlist rows for High fits: role — company — location — job URL — why —
-  folder path. Canonicalize each URL first with
+- Shortlist rows for High and Medium fits: role — company — location — job
+  URL — why — folder path. Canonicalize each URL first with
   `npx tsx scripts/linkedin.ts normalize-job "<url>"`, and include the
-  employer URL when one was resolved. Medium fits get their job URL too.
+  employer URL when one was resolved. Both fits are eligible for automatic
+  application.
 - Anything skipped or failed (login walls, missing postings).
 - Stack check for each saved fit: `requiredNotInStack`, `optionalNotInStack`,
   and `candidates`; a missing primary stack belongs in the why.

@@ -27,9 +27,9 @@ A new draft gets a full audit. A revision after REJECTED gets a targeted
 re-audit of the changed sections and the previous issues; a change outside
 the requested fixes gets a full audit (`.opencode/agents/draft-review.md`).
 
-## Gate 3 — Outbound confirmation (per action, always)
+## Gate 3 — Outbound confirmation (messages and posts)
 
-Before anything is sent, submitted, published, or posted:
+Before anything is sent, published, or posted:
 
 1. Show the final content in full.
 2. State exactly what will happen and to whom or where.
@@ -39,22 +39,41 @@ Approval is per action, never per session. A "yes" for one message is not a
 "yes" for the next. If content changes after approval, the changed version
 needs a new confirmation.
 
-### Submissions (assisted apply)
+### Applications (automatic for Medium and High fits)
 
-An application is one more outbound action, with a review sheet instead of a
-draft:
+Every saved job scored Medium or High is eligible. The agent tailors the
+resume, fills the form, and submits without asking. Low fits are skipped.
 
-- Show the job (role, company, URL), every field with the exact value that
-  will be sent, the attached file names, and any cover-letter text in full.
-- Ask for explicit confirmation of that sheet.
-- The submit runs only after that OK, and it verifies the form still matches
-  the approved sheet. Any difference needs a new OK.
+- Record every submission in `<job folder>/applied.md` and in
+  `<data dir>/applications.md`; the consolidated log is what the user reviews.
+- Verify the form still matches the answers before clicking Submit. Any
+  difference needs to be resolved before submitting, not approved later.
+- Stop on a login wall, checkpoint, CAPTCHA, or challenge; never bypass one.
+  If a CAPTCHA blocks Submit, skip the job and report it
+  (`browser-setup.md`).
+- If a required answer is missing, a required cover letter is absent, or the
+  ATS is unsupported, skip the job and report it. Do not ask in the middle of
+  an autonomous run; the user reviews the log afterward.
+- One application at a time. Never apply to a Low fit or a job already in
+  history.
 - If a submit times out, do not click Submit again. Verify the job page and
   the applied-jobs list first; the recovery steps live in the `apply` skill.
+- The same rule applies to LinkedIn Easy Apply, Greenhouse, and Lever; other
+  ATS are out of scope.
 
-Only the user's explicit request starts an application; the agent never
-applies on its own. The same gate applies to LinkedIn Easy Apply, Greenhouse,
-and Lever; other ATS are out of scope.
+### Posts
+
+A LinkedIn post is one more outbound action:
+
+- Show the exact post text and state that it will be published to the user's
+  LinkedIn feed as them.
+- Ask for explicit confirmation of that text.
+- Publish only after that OK. The publisher verifies the composer contains the
+  approved text before clicking Post; any difference needs a new OK.
+- One post per confirmation. Never publish a comment, edit the profile, send a
+  connection request, or schedule a post.
+- If a click times out, do not click Post again; check the feed first. If
+  LinkedIn shows a login wall or challenge, stop and report it.
 
 ## What does not need approval
 
@@ -62,6 +81,8 @@ and Lever; other ATS are out of scope.
 - Writing to the data directory during an approved plan (saving postings,
   history entries, drafts in progress).
 - Internal subagent work inside the approved plan.
+- Submitting an application to a Medium or High fit, with the record in
+  `applied.md` and `applications.md`.
 
 ## Repo changes
 

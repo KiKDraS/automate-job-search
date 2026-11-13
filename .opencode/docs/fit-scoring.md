@@ -44,11 +44,12 @@ It returns `targetRoles`, `sectionsFound`, `required`, `optional`, `matched`,
 not recognize; they are questions for the Coach, not confirmed gaps.
 
 A required primary-stack gap is a weak Skills dimension; usually Medium at
-most. The check is advisory: the fit scorer and the user decide, and the
-job-scout does not auto-tailor a primary-stack gap. If `sectionsFound` is
-false, use `mentioned` as a hint and read the posting; do not treat every
-term as required. When a candidate is real, the Coach asks the user whether
-to add it to their local catalog (and to `## Stack` only if they have it).
+most. The check is advisory: the fit scorer decides. A Medium fit may still be
+tailored and applied to, but the resume must not claim the missing stack. If
+`sectionsFound` is false, use `mentioned` as a hint and read the posting; do
+not treat every term as required. When a candidate is real, the Coach asks the
+user whether to add it to their local catalog (and to `## Stack` only if they
+have it).
 
 To add a confirmed term:
 
@@ -59,9 +60,11 @@ data directory.
 
 ## Verdicts
 
-- **High** — no weak dimensions; at most one partial. Save the full posting.
+- **High** — no weak dimensions; at most one partial. Save the full posting;
+  eligible for automatic application.
 - **Medium** — core is fine, but one dimension is weak or two are partial.
-  Note the gap; do not save the full posting.
+  Save the full posting and note the gap; eligible for automatic application.
+  Tailor honestly and keep the gap visible.
 - **Low** — two or more weak dimensions, or any hard-constraint conflict.
   Log only.
 

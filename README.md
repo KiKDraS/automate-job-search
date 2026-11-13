@@ -21,21 +21,31 @@
 ## What it is
 
 An OpenCode-native job-search toolkit for technology roles. A **Coach** agent
-plans the work with you, delegates to specialist subagents, and never sends,
-submits, or publishes anything without your explicit approval.
+plans the work with you, delegates to specialist subagents, and never sends
+messages or publishes posts without your approval. Applications for Medium and
+High fits run automatically and are logged for review.
 
 Built for technology roles — software, data, DevOps, QA, design engineering.
 Today it covers the full application loop: LinkedIn search with fit scoring,
-resume review and tailoring, cover letters, assisted apply, and outreach
-drafts. The attention layer covers profile audits, post drafts, and comment
-drafts; engagement analytics is deferred.
+resume review and tailoring, cover letters, automatic apply for Medium and
+High fits, and outreach drafts. The attention layer covers profile audits,
+post drafts, and comment drafts; an approved post can be published for you.
+Engagement analytics is deferred.
 
-Apply fills LinkedIn Easy Apply, Greenhouse, and Lever forms and shows you
-every field, file, and answer before anything is sent. Submit happens only
-after your OK. Other ATS are out of scope for now.
+Apply fills LinkedIn Easy Apply, Greenhouse, and Lever forms and records every
+field, file, and answer. For every saved job scored Medium or High, it tailors
+the resume, submits, and logs the application in `applied.md` and
+`applications.md`. Other ATS are out of scope for now.
 
-Ask Coach for a profile audit, a post, or a comment draft. Everything is
-draft-only; you post.
+Every submitted application is in `<data dir>/applications.md`: date, company,
+role, fit, method, confirmation, job URL, and folder. The per-job `applied.md`
+has the full field-level record. Low fits are skipped. If you send one
+manually, `/job/log-application` records it as user-reported.
+
+Ask Coach for a profile audit, a post, or a comment draft. Posts start from
+one real moment, not a list of achievements: if you don't have one, Coach
+interviews you first. Every draft is audited; a post publishes only after you
+approve the exact text. Comments and profile edits stay in your hands.
 
 Before drafting a batch of resumes or letters, Coach checks each posting
 against your profile and asks for any missing evidence in one batch. Documents
@@ -75,7 +85,8 @@ browser window — log into LinkedIn there, once.
 | `/job/tailor` | Tailored resume for a saved job |
 | `/job/resume-review` | CV feedback with concrete improvements |
 | `/job/cover-letter` | Cover letter for a saved job |
-| `/job/apply` | Easy Apply application — fills, reviews, submits on your OK |
+| `/job/apply` | Apply to a saved Medium/High fit — fills, submits, and logs it |
+| `/job/log-application` | Record an application you sent manually |
 | `/job/outreach` | Connection notes and follow-ups (draft-only) |
 | `/job` | Show the menu anytime |
 
@@ -83,15 +94,16 @@ browser window — log into LinkedIn there, once.
 
 | Agent | Role |
 | --- | --- |
-| **Coach** (`coach`) | Talks with you, plans, delegates, gates every outbound action |
-| `job-scout` | Browser work: searches, fit scoring, saving postings, assisted apply |
+| **Coach** (`coach`) | Talks with you, plans, delegates, gates messages and posts |
+| `job-scout` | Browser work: searches, fit scoring, saving postings, automatic apply |
 | `artifact-writer` | Resumes, cover letters, outreach drafts |
 | `draft-review` | Fact-check and voice audit gate before anything ships |
-| `presence-coach` | LinkedIn profile audits, post drafts, comment drafts (draft-only) |
+| `presence-coach` | LinkedIn profile audits, post drafts, comment drafts; publishes an approved post |
 | `release-manager` | Git lifecycle for this repo: branches, PRs, tags, releases |
 
-Pipeline: **plan → your approval → delegate → audit → your approval → done.**
-Nothing leaves your hands without an explicit OK.
+Pipeline: **plan → your approval → delegate → audit → done.** Applications
+for Medium and High fits submit automatically; messages and posts get a final
+OK.
 
 ## Runs on free models
 
@@ -108,13 +120,15 @@ model — Coach and all subagents inherit it.
   repository, in a data folder you choose during setup.
 - Browser automation uses a dedicated profile you log into once. Credentials
   are never stored or entered by an agent.
-- Approval-first: nothing is sent, submitted, or published without your OK on
-  the exact content. Outreach, profile audits, posts, and comments stay
-  draft-only; applications submit only after you approve the full review
-  sheet.
-- LinkedIn automation is low-volume and human-paced. Apply runs only when you
-  ask, one application at a time. Review LinkedIn's Terms of Service; your
-  account is your responsibility.
+- Approval-first for messages, comments, and posts. Applications for Medium
+  and High fits submit automatically; every submission is recorded in
+  `applied.md` and `applications.md` so you can review the exact fields sent.
+  Outreach, profile audits, and comments stay draft-only; a post publishes
+  only after you approve its exact text.
+- Apply runs one application at a time. If an ATS gates Submit behind a
+  CAPTCHA, the agent skips the job and reports it; you can complete it later.
+  The agent never solves or bypasses a CAPTCHA. Review LinkedIn's Terms of
+  Service; your account is your responsibility.
 - External content — postings, messages — is always treated as untrusted
   input.
 

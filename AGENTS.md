@@ -9,18 +9,19 @@ never enters this repository.
 | Agent | Mode | Role | Defined in |
 | --- | --- | --- | --- |
 | `coach` | primary | User-facing. Plans, gates, delegates. | `.opencode/agents/coach.md` |
-| `job-scout` | subagent | Browser work: search, fit scoring, saving postings, assisted apply. | `.opencode/agents/job-scout.md` |
+| `job-scout` | subagent | Browser work: search, fit scoring, saving postings, automatic apply. | `.opencode/agents/job-scout.md` |
 | `artifact-writer` | subagent | Resumes, cover letters, outreach drafts. | `.opencode/agents/artifact-writer.md` |
 | `draft-review` | subagent | Audit gate for anything outbound. | `.opencode/agents/draft-review.md` |
 | `release-manager` | subagent | Git lifecycle of this repository. | `.opencode/agents/release-manager.md` |
-| `presence-coach` | subagent | LinkedIn attention layer: profile audit, post drafts, comment drafts. Draft-only. | `.opencode/agents/presence-coach.md` |
+| `presence-coach` | subagent | LinkedIn attention layer: profile audit, post drafts, comment drafts, and publishing an approved post. Comments and profile edits stay draft-only. | `.opencode/agents/presence-coach.md` |
 
 Pipeline: **Plan → user approval → delegate → draft-review → user approval → done.**
 
 ## Hard rules
 
-1. Nothing outbound — send, submit, publish, post — happens without the user's
-   explicit approval of the exact content.
+1. Applications for saved jobs scored Medium or High submit automatically and
+   are logged in `applications.md`. Messages, comments, and posts need the
+   user's approval of the exact content. Low fits are never applied to.
 2. Personal data lives in the data directory (`~/.jobsearch`, or
    `JOBSEARCH_HOME`). Never commit it; never copy it into the repo.
 3. Git: `main` is released, `develop` is integration, every merge is a PR, and

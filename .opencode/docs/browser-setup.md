@@ -1,7 +1,8 @@
 # Browser Setup
 
-How browser automation works in this project. Used by `job-scout` and later
-`presence-coach`. Canonical tool: the Playwright MCP server (`playwright`).
+How browser automation works in this project. Used by `job-scout` and
+`presence-coach` (publishing only). Canonical tool: the Playwright MCP server
+(`playwright`).
 
 ## Why MCP + Code Mode (spike decision)
 
@@ -29,6 +30,22 @@ only the returned value enters context.
   task, tell the user, and wait. Never attempt to bypass a challenge.
 - One browser instance at a time; finish or close tasks cleanly.
 
+## CAPTCHA handoff
+
+Some ATS gate Submit behind an invisible CAPTCHA. When the response token is
+empty, the submit will not fire no matter how many times the button is clicked.
+
+- Check for the widget and token before clicking Submit (`apply`,
+  `apply-external`). If it is empty, stop and report `CAPTCHA_REQUIRED`; do not
+  click repeatedly, inject a token, or use a solver. In an autonomous run,
+  Coach skips the job and the user can complete it later from the log.
+- If the user is present and asks to finish it, they complete the challenge in
+  the open browser window. After their confirmation, verify the token is
+  non-empty and submit once.
+- If the user is unavailable, leave the form open and report it. The
+  application is not submitted.
+- Never bypass a challenge. A CAPTCHA is the user's step, not the agent's.
+
 ## Token discipline (mandatory)
 
 Job pages are huge. Never capture a full page snapshot of a search results or
@@ -49,9 +66,11 @@ profile page.
   Assisted apply leaves the Review modal open between the fill and the
   approved submit; that wait is expected.
 - Never use `browser_run_code_unsafe` (also blocked by permissions).
-- `browser_file_upload` is allowed only inside the assisted-apply flow, and
-  only after the user approved the exact files (Gate 3). Never upload
-  anything else.
+- `browser_file_upload` is allowed only inside the application flow the user
+  asked for. Never upload anything else.
+- `presence-coach` uses the browser only to publish an approved post. It never
+  reads the feed or the profile, and never publishes without the user's OK on
+  the exact text.
 - No credential entry, no CAPTCHA solving, no challenge bypass.
 - If a page behaves unexpectedly (redirect to login, rate-limit notice),
   stop and report; do not retry in a loop.

@@ -29,8 +29,10 @@ out — on OpenCode's free models, with no subscription required.
 - **Token economy is a product requirement.** Free models are the primary
   audience; every design choice survives a tight context budget.
   (`.opencode/docs/token-economy.md`)
-- **Approval-first.** Nothing outbound — sent, submitted, published — without
-  the user's explicit OK on the exact content.
+- **Approval-first, except applications.** Messages, comments, and posts
+  require the user's explicit OK on the exact content. Applications for saved
+  jobs scored Medium or High submit automatically and are logged in
+  `applications.md`; there is no per-application gate.
   (`.opencode/docs/approval-flow.md`)
 - **Deterministic-first.** Mechanical work (URLs, dedupe, file shaping,
   rendering) lives in code; the model does judgment.
@@ -44,7 +46,7 @@ out — on OpenCode's free models, with no subscription required.
 - **Agents** — Coach leads; job-scout, artifact-writer, draft-review,
   release-manager, presence-coach. Roster: `AGENTS.md`
 - **Skills** — job-setup, job-search, resume-review, tailor-resume,
-  cover-letter, outreach, apply, apply-external, profile-audit,
+  cover-letter, outreach, apply, apply-external, log-application, profile-audit,
   linkedin-post, linkedin-comment; craft skills no-ai-slop and
   write-root-readme (`.opencode/skills/`)
 - **Plugins** — coach-greeting (server + TUI halves): greets on launch
@@ -56,10 +58,11 @@ out — on OpenCode's free models, with no subscription required.
 ## Scope
 
 **In:** setup, job search, resumes (build, review, tailoring), cover letters,
-outreach drafts, assisted apply (LinkedIn Easy Apply and external ATS —
-Greenhouse and Lever — when the user explicitly asks, with a full
-review-and-approve gate before the final submit), launch greeting, attention
-layer (profile audit, post drafts, comment drafts — draft-only).
+outreach drafts, automatic apply for saved jobs scored Medium or High
+(LinkedIn Easy Apply, Greenhouse, Lever), with a consolidated log in
+`applications.md`, launch greeting, attention layer (profile audit, post
+drafts, comment drafts, and publishing a post the user approved — no
+autonomous publishing).
 
 **Deferred:**
 
@@ -71,10 +74,12 @@ layer (profile audit, post drafts, comment drafts — draft-only).
 **Out:**
 
 - A standalone application — this is an OpenCode-native toolkit
-- Autonomous outbound — nothing sends, submits, or publishes unattended;
-  messages, posts, and outreach stay draft-only, and applications submit only
-  on the user's explicit request and approval
-- API-based publishing integrations — draft-only by design
+- Autonomous outbound beyond applications — applications for Medium and High
+  fits submit automatically and are logged; messages, comments, and outreach
+  stay draft-only; a post publishes only after the user approves the exact
+  text
+- API-based publishing integrations — publishing is browser-assisted, one post
+  at a time
 - The Playwright CLI as the browser layer — measured against MCP + Code Mode;
   decision and numbers in `.opencode/docs/browser-setup.md`
 

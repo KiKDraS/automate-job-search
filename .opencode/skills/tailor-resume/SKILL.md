@@ -60,6 +60,13 @@ compact list per posting — requirements with no evidence, and facts that are
 ambiguous. Write no files. It is not an artifact and does not go to
 `draft-review`.
 
+## Autonomous mode
+
+When Coach runs the automatic apply flow, do not stop to ask. Tailor with
+verified evidence only and leave gaps out. If the posting's core requirement
+cannot be supported and the draft would mislead, return `NEEDS_EVIDENCE` with
+the requirement; Coach skips the job. Do not ask the user mid-run.
+
 ## Rules
 
 - Never invent or inflate titles, dates, numbers, employers, or skills.

@@ -80,7 +80,32 @@ an agent nears its cap it stops and reports, rather than thrashing.
 ## Presence
 
 Presence drafts (profile audit, post, comment) use the user's brief and the
-approved profile only. No feed scraping, no browser, one piece at a time.
+approved profile only. No feed scraping, one piece at a time. The browser is
+used only to publish a post whose exact text the user approved (Gate 3); it
+never browses the feed or the profile.
+
+## Measured run — Phase 5 (free model)
+
+Fifteen free-model subagent sessions from Phase 5 were exported and summed
+(`opencode session export`): job search, profile/CV updates, resume tailoring,
+draft reviews, the teaching post, and the Lever fill. All ran on
+`opencode/deepseek-v4.1-flash-free` at $0.
+
+| Metric | Total | Per assistant call |
+| --- | ---: | ---: |
+| Assistant calls | 211 | — |
+| Fresh input tokens | 349,360 | 1,656 |
+| Cache-read tokens | 4,192,896 | 19,872 |
+| Output tokens | 53,214 | 252 |
+| Reasoning tokens | 68,948 | 327 |
+| Tokens processed | 4,664,418 | 22,106 |
+| Wall-clock span | ~20 min | — |
+
+The cache-read column is context replayed at a discount, not new work; fresh
+input is the number that tracks delegation overhead. Output plus reasoning
+averages 579 tokens per call, which is what keeps a free model inside its
+budget. The full main-session context is not included because it is not
+representative of a subagent run.
 
 ## Where to spend
 

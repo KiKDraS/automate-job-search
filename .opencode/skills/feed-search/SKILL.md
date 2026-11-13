@@ -18,8 +18,10 @@ search with the target roles plus Argentina/remote terms, filtered to the last
 ## Caps
 
 - Maximum 5 scrolls and 30 posts per run.
-- Save at most 10 leads per run. If more qualify, keep the newest and report
-  the rest as "not saved: cap".
+- Save at most 10 leads per run. Save High and Medium always; save a Low post
+  only when it publishes an email address, marked `Low` with `email contact`
+  in the why. If more qualify, keep the newest and report the rest as
+  "not saved: cap".
 - No raw result snapshots. Extract with a scoped selector; save post bodies to
   files with `filename`.
 - No engagement actions of any kind.
@@ -118,7 +120,7 @@ Score `High` / `Medium` / `Low` per `.opencode/docs/fit-scoring.md`, using the
 post text and the profile. A post without enough information is `Low`, with the
 missing field named in the why. Do not open the author's profile.
 
-### 5. Save High and Medium leads
+### 5. Save High and Medium leads, plus Low email contacts
 
 For each qualifying post, save the text to a file without reading it into
 context:
@@ -142,7 +144,10 @@ Then:
 Extract emails with `/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i`; if there are
 several, pass the first and list the rest in the why. Omit `--email` when the
 post has none. Omit `--url` when the result does not expose one; the record
-uses `not available`. Never invent either. It writes
+uses `not available`. Never invent either.
+
+A Low post with an email is saved as a contact lead: `--fit Low` and
+`--why "email contact — <why>"`. It is not an endorsement; the fit stays Low. It writes
 `<data dir>/feed/<date>-<company>-<role>.md`. Never read the saved file back.
 
 ### 6. Append the lead log

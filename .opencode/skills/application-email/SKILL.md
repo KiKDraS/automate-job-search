@@ -19,6 +19,8 @@ sends, never opens a mail client, and never handles credentials.
 ## Steps
 
 1. Confirm the feed lead has an email address. If it does not, stop and report.
+   If the lead is `Low`, say so before drafting and name the gap; the user
+   decides whether to send.
 2. Draft:
    - **To:** the address from the feed lead.
    - **Subject:** `Application — <role> — Anahí Foresi` in the post's language.
@@ -68,6 +70,7 @@ sends, never opens a mail client, and never handles credentials.
 - Use only the email address present in the feed lead; never guess or build
   one from a name and domain.
 - Every claim traces to `profile.md`, the resume, the post, or the user's
-  brief.
+  brief. For a Low lead, state the gap in the report; do not present the email
+  as a strong application.
 - Follow the post's language; the user's per-job override wins.
 - No attachments are created here. The user attaches `resume.pdf` when sending.

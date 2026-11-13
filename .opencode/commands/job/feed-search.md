@@ -1,5 +1,5 @@
 ---
-description: "Scan your LinkedIn feed for hiring posts that match your target roles"
+description: "Search LinkedIn posts for hiring leads that match your target roles"
 ---
 
 Load the `feed-search` skill. Keywords or focus (optional): $ARGUMENTS. Scan

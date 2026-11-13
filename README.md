@@ -83,7 +83,7 @@ browser window — log into LinkedIn there, once.
 | --- | --- |
 | `/job/setup` | Onboarding: resume, preferences, work history |
 | `/job/search` | Find and score jobs posted in the last 48 hours |
-| `/job/feed-search` | Scan your feed for hiring posts that match your roles |
+| `/job/feed-search` | Search LinkedIn posts for hiring leads that match your roles |
 | `/job/tailor` | Tailored resume for a saved job |
 | `/job/resume-review` | CV feedback with concrete improvements |
 | `/job/cover-letter` | Cover letter for a saved job |

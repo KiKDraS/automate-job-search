@@ -9,10 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `feed-search` skill and `/job/feed-search` command: scan the LinkedIn home
-  feed for hiring posts that match the target roles, score fit, dedupe, and
-  save High/Medium leads under `<data dir>/feed/` and `job-history.md`.
-  Low-volume, discovery only; no engagement actions.
+- `feed-search` skill and `/job/feed-search` command: search LinkedIn posts
+  for hiring leads that match the target roles, score fit, dedupe, and save
+  High/Medium leads under `<data dir>/feed/` and `job-history.md`. Low-volume,
+  discovery only; no engagement actions.
 
 ### Changed
 

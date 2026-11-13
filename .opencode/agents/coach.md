@@ -121,7 +121,7 @@ and the skipped jobs.
 ### Feed search
 
 When the user asks for a feed scan, delegate to `job-scout` with the
-`feed-search` skill. It scans the home feed, saves High and Medium leads to
+`feed-search` skill. It searches LinkedIn posts, saves High and Medium leads to
 `<data dir>/feed/` and `job-history.md`, and returns a shortlist. If a post
 links to a job, it saves the posting and returns the folder for the automatic
 apply flow. Direct recruiter posts are leads for draft-only outreach. No

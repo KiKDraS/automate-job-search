@@ -63,20 +63,22 @@ live UI.
   stop and report. Greenhouse/Lever redirects go to `apply-external`; other
   ATS are out of scope.
 
-## Feed hiring posts (job search)
+## Post search for hiring leads (job search)
 
-- Scan only the LinkedIn home feed, max 5 scrolls and 30 posts per run.
-- Current feed selector: `div[data-testid="mainFeed"] div[role="listitem"]`.
-  The feed scrolls inside `main`, not `window`; use `main.scrollBy(0, 800)`.
-  Save the post text to a file with the `filename` option.
-- Skip promoted posts and posts without a hiring signal.
-- Post URLs are sometimes absent in the current feed; use `not available`,
-  never invent one. Author + post text identify the lead.
-- Filter for hiring signals plus the target roles from `preferences.md`.
-- Save High/Medium leads under `<data dir>/feed/`; no likes, comments,
-  connection requests, messages, follows, or reposts.
-- If the post links to a job, save the posting and return the folder for the
-  automatic apply flow.
+- Default: LinkedIn content search,
+  `https://www.linkedin.com/search/results/content/?keywords=<encoded>&datePosted=%22past-week%22&sortBy=%22date_posted%22`.
+  LinkedIn has no 48-hour content filter; keep only posts whose relative time
+  is `min`, `h`, `1 d`, or `2 d`.
+- Results use `main div[role="listitem"]`; the page scrolls inside `main`.
+  Scroll to `scrollHeight - 300`, not the absolute bottom.
+- Save post text to a file with the `filename` option. Skip promoted posts and
+  candidate posts (`#OpenToWork`, "busco trabajo").
+- Post URLs are often absent in content results; use `not available`, never
+  invent one. Author + post text identify the lead.
+- Home feed fallback (only when asked): `https://www.linkedin.com/feed/`,
+  selector `div[data-testid="mainFeed"] div[role="listitem"]`, scroll `main`
+  with `main.scrollBy(0, 800)`.
+- No likes, comments, connection requests, messages, follows, or reposts.
 
 ## Messaging and connections (attention layer)
 

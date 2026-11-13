@@ -8,6 +8,7 @@
 
 export interface EmailDraft {
   to: string
+  cc?: string
   subject: string
   body: string
 }
@@ -21,13 +22,15 @@ export function parseEmailDraft(source: string): EmailDraft | null {
   const to = field(source, "To")
   const subject = field(source, "Subject")
   if (to === null || subject === null) return null
+  const cc = field(source, "Cc") ?? undefined
   const afterBody = source.split(/^## Body\s*$/m)[1]
   const body = afterBody?.split(/^## /m)[0]?.trim() ?? ""
   if (body === "") return null
-  return { to, subject, body }
+  return { to, cc, subject, body }
 }
 
 export function buildMailto(draft: EmailDraft): string {
   const params = new URLSearchParams({ subject: draft.subject, body: draft.body })
+  if (draft.cc !== undefined && draft.cc.trim() !== "") params.set("cc", draft.cc)
   return `mailto:${encodeURIComponent(draft.to)}?${params.toString()}`
 }

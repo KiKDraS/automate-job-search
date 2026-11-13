@@ -23,7 +23,10 @@ sends, never opens a mail client, and never handles credentials.
    decides whether to send.
 2. Draft:
    - **To:** the address from the feed lead.
-   - **Subject:** `Application — <role> — Anahí Foresi` in the post's language.
+   - **Cc:** include it only when the post asks to copy someone.
+   - **Subject:** `Application — <role> — Anahí Foresi` in the post's language,
+     unless the post requests a specific subject; use the post's exact subject
+     then.
    - **Body:** 120–180 words.
      - Greeting.
      - The role and where it was seen (the LinkedIn post).
@@ -41,6 +44,7 @@ sends, never opens a mail client, and never handles credentials.
    # Application email — <role> at <company>
 
    - To: <address>
+   - Cc: <address, only when the post asks>
    - Subject: <subject>
    - Status: draft, not sent
    - Source: feed/<lead-file>.md
@@ -68,7 +72,8 @@ sends, never opens a mail client, and never handles credentials.
 
 - Draft-only. Never send, never use SMTP/API, never open a mail client.
 - Use only the email address present in the feed lead; never guess or build
-  one from a name and domain.
+  one from a name and domain. A Cc is allowed only when the post asks for it.
+- If the post specifies a subject, use it exactly; do not reformat it.
 - Every claim traces to `profile.md`, the resume, the post, or the user's
   brief. For a Low lead, state the gap in the report; do not present the email
   as a strong application.

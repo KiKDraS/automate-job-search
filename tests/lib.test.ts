@@ -73,6 +73,23 @@ Adjunto mi CV.
   assert.equal(parseEmailDraft("no fields"), null)
 })
 
+test("parseEmailDraft keeps a Cc and buildMailto includes it", () => {
+  const draft = parseEmailDraft(`# Application email — Role
+
+- To: jobs@acme.com
+- Cc: team@acme.com
+- Subject: FULLSTACK JAVA REACT
+- Status: draft, not sent
+
+## Body
+
+Hola equipo.
+`)
+  assert.equal(draft?.cc, "team@acme.com")
+  const mailto = buildMailto(draft!)
+  assert.ok(mailto.includes("cc=team%40acme.com"))
+})
+
 test("buildFeedMarkdown records a feed lead as untrusted data", () => {
   const markdown = buildFeedMarkdown(
     {

@@ -50,7 +50,7 @@ test("parseEmailDraft and buildMailto produce a handoff", () => {
   const draft = parseEmailDraft(`# Application email — React Developer at Acme
 
 - To: jobs@acme.com
-- Subject: Application — React Developer — Anahí Foresi
+- Subject: Application — React Developer — Ana Pérez
 - Status: draft, not sent
 
 ## Body
@@ -176,7 +176,7 @@ test("detectAts classifies supported ATS and external URLs", () => {
 
 test("slugify is filesystem-safe and never empty", () => {
   assert.equal(slugify("Acme Corp. (EU)"), "acme-corp-eu")
-  assert.equal(slugify("Anahí Foresi"), "anahi-foresi")
+  assert.equal(slugify("Ana Pérez"), "ana-perez")
   assert.equal(slugify("!!!"), "untitled")
   assert.ok(slugify("x".repeat(80)).length <= 40)
 })

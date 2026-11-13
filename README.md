@@ -26,11 +26,12 @@ messages or publishes posts without your approval. Applications for Medium and
 High fits run automatically and are logged for review.
 
 Built for technology roles — software, data, DevOps, QA, design engineering.
-Today it covers the full application loop: LinkedIn search with fit scoring,
-resume review and tailoring, cover letters, automatic apply for Medium and
-High fits, and outreach drafts. The attention layer covers profile audits,
-post drafts, and comment drafts; an approved post can be published for you.
-Engagement analytics is deferred.
+Today it covers the full application loop: LinkedIn search limited to the last
+48 hours, a feed scan for hiring posts, fit scoring, resume review and
+tailoring, cover letters, automatic apply for Medium and High fits, and
+outreach drafts. The attention layer covers profile audits, post drafts, and
+comment drafts; an approved post can be published for you. Engagement
+analytics is deferred.
 
 Apply fills LinkedIn Easy Apply, Greenhouse, and Lever forms and records every
 field, file, and answer. For every saved job scored Medium or High, it tailors
@@ -81,7 +82,9 @@ browser window — log into LinkedIn there, once.
 | Command | What it does |
 | --- | --- |
 | `/job/setup` | Onboarding: resume, preferences, work history |
-| `/job/search` | Find and score new jobs |
+| `/job/search` | Find and score jobs posted in the last 48 hours |
+| `/job/feed-search` | Search LinkedIn posts for hiring leads that match your roles |
+| `/job/application-email` | Draft an application email for a feed lead with an email |
 | `/job/tailor` | Tailored resume for a saved job |
 | `/job/resume-review` | CV feedback with concrete improvements |
 | `/job/cover-letter` | Cover letter for a saved job |
@@ -123,8 +126,8 @@ model — Coach and all subagents inherit it.
 - Approval-first for messages, comments, and posts. Applications for Medium
   and High fits submit automatically; every submission is recorded in
   `applied.md` and `applications.md` so you can review the exact fields sent.
-  Outreach, profile audits, and comments stay draft-only; a post publishes
-  only after you approve its exact text.
+  Outreach, profile audits, comments, and application emails stay draft-only;
+  a post publishes only after you approve its exact text.
 - Apply runs one application at a time. If an ATS gates Submit behind a
   CAPTCHA, the agent skips the job and reports it; you can complete it later.
   The agent never solves or bypasses a CAPTCHA. Review LinkedIn's Terms of

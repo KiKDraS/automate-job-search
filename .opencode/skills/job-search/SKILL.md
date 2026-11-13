@@ -1,6 +1,6 @@
 ---
 name: Job Search
-description: "Search LinkedIn for new jobs matching preferences, score fit, dedupe against history, and save postings. Use for daily or ad-hoc searches. Not for first-time setup (use job-setup)."
+description: "Search LinkedIn for new jobs matching preferences, published in the last 48 hours, score fit, dedupe against history, and save postings. Use for daily or ad-hoc searches. Not for first-time setup (use job-setup)."
 ---
 
 # Job Search
@@ -36,7 +36,9 @@ Pick 1–3 keyword sets from the target roles in `preferences.md`. For each:
 
     npx tsx scripts/linkedin.ts search-url --keywords "<terms>" [--location "<place>"] [--posted week] [--mode remote] [--recent]
 
-Use `--posted week` for a first run, `--posted 24h` for daily runs.
+Use `--posted 48h` for every run. This is a hard limit: only postings
+published in the last 48 hours. Do not widen to week or month unless the user
+explicitly asks for an exception.
 
 ### 3. Extract candidates (one execute call per URL)
 
@@ -53,6 +55,9 @@ return r
 If the result is empty, take ONE `browser_snapshot` with a small `depth` to
 find the current list container, fix the selector, and retry once. If it is
 still empty, report the failure with the page URL.
+
+Skip any listing whose posted time is older than 2 days, even if LinkedIn
+includes it in the results. The posted label is the source of truth.
 
 ### 4. Dedupe
 

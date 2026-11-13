@@ -12,7 +12,7 @@ Useful query parameters:
 
 | Param | Meaning | Values |
 | --- | --- | --- |
-| `f_TPR` | Date posted | `r86400` (24h), `r604800` (week), `r2592000` (month) |
+| `f_TPR` | Date posted | `r86400` (24h), `r172800` (48h), `r604800` (week), `r2592000` (month) |
 | `f_WT` | Work mode | `1` on-site, `2` remote, `3` hybrid |
 | `f_E` | Experience level | `1` internship … `6` executive |
 | `f_AL` | Easy Apply only | `true` |
@@ -63,6 +63,23 @@ live UI.
   stop and report. Greenhouse/Lever redirects go to `apply-external`; other
   ATS are out of scope.
 
+## Post search for hiring leads (job search)
+
+- Default: LinkedIn content search,
+  `https://www.linkedin.com/search/results/content/?keywords=<encoded>&datePosted=%22past-week%22&sortBy=%22date_posted%22`.
+  LinkedIn has no 48-hour content filter; keep only posts whose relative time
+  is `min`, `h`, `1 d`, or `2 d`.
+- Results use `main div[role="listitem"]`; the page scrolls inside `main`.
+  Scroll to `scrollHeight - 300`, not the absolute bottom.
+- Save post text to a file with the `filename` option. Skip promoted posts and
+  candidate posts (`#OpenToWork`, "busco trabajo").
+- Post URLs are often absent in content results; use `not available`, never
+  invent one. Author + post text identify the lead.
+- Home feed fallback (only when asked): `https://www.linkedin.com/feed/`,
+  selector `div[data-testid="mainFeed"] div[role="listitem"]`, scroll `main`
+  with `main.scrollBy(0, 800)`.
+- No likes, comments, connection requests, messages, follows, or reposts.
+
 ## Messaging and connections (attention layer)
 
 - Connection notes: 300-character maximum; the outreach skill supplies the
@@ -72,8 +89,8 @@ live UI.
 
 ## Never automate
 
-- Applications, sends, or posts without per-action user confirmation
-  (`approval-flow.md`).
+- Applications outside the automatic Medium/High flow; sends and posts without
+  per-action user confirmation (`approval-flow.md`).
 - CAPTCHA/challenge solving, auth bypass, or credential entry.
 - High-volume fetching, fake accounts, or engagement automation.
 - Profile scraping beyond what the current task needs.

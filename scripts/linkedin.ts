@@ -4,7 +4,7 @@
  *
  * Usage:
  *   npx tsx scripts/linkedin.ts search-url --keywords "<terms>" [--location "<place>"]
- *     [--posted 24h|week|month] [--mode on-site|remote|hybrid]
+ *     [--posted 24h|48h|week|month] [--mode on-site|remote|hybrid]
  *     [--level internship|entry|associate|mid-senior|director|executive]
  *     [--easy-apply] [--recent]
  *   npx tsx scripts/linkedin.ts job-id <url>
@@ -23,7 +23,7 @@ import { fail, valueAfter } from "./args.ts"
 
 const SCRIPT = "linkedin"
 
-const POSTED: readonly string[] = ["24h", "week", "month"]
+const POSTED: readonly string[] = ["24h", "48h", "week", "month"]
 const MODES: readonly string[] = ["on-site", "remote", "hybrid"]
 const LEVELS: readonly string[] = [
   "internship",

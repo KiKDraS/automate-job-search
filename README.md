@@ -1,12 +1,10 @@
 <div align="center" markdown>
 
-<!-- TODO(public flip): enable the Socialify hero and live badges once the repository is public.
 ![automate-job-search](https://socialify.git.ci/KiKDraS/automate-job-search/image?description=1&forks=1&issues=1&language=1&name=1&owner=1&pattern=Transparent&pulls=1&stargazers=1&theme=Auto)
 [![Stars](https://img.shields.io/github/stars/KiKDraS/automate-job-search)](https://github.com/KiKDraS/automate-job-search/stargazers)
 [![Forks](https://img.shields.io/github/forks/KiKDraS/automate-job-search)](https://github.com/KiKDraS/automate-job-search/forks)
 [![Issues](https://img.shields.io/github/issues/KiKDraS/automate-job-search)](https://github.com/KiKDraS/automate-job-search/issues)
 [![Pull requests](https://img.shields.io/github/issues-pr/KiKDraS/automate-job-search)](https://github.com/KiKDraS/automate-job-search/pulls)
--->
 
 **[Changelog](https://github.com/KiKDraS/automate-job-search/blob/main/CHANGELOG.md) · [Report a bug](https://github.com/KiKDraS/automate-job-search/issues) · [Request a feature](https://github.com/KiKDraS/automate-job-search/issues)**
 
@@ -79,6 +77,38 @@ Then open OpenCode in the project and start a session — Coach is the default
 agent and greets you automatically. First time, run `/job/setup`; it walks you
 through your resume, preferences, and work history. The first search opens a
 browser window — log into LinkedIn there, once.
+
+## Using Coach
+
+Coach is the only agent you talk to. It plans, delegates, and brings back the
+result; you never need to address a subagent directly.
+
+1. **First run.** Start OpenCode in the project. Coach greets you, asks your
+   chat language and where to keep personal data, then runs `/job/setup`:
+   resume, target roles, preferences, and the stack you actually use. It shows
+   the profile for approval before any search uses it.
+2. **Search.** `/job/search` looks at LinkedIn postings from the last 48 hours.
+   Coach shows the plan, waits for your OK, then scores fit, saves High/Medium
+   postings, tailors the resume, applies to Medium/High fits, and logs every
+   submission. `/job/feed-search` does the same for hiring posts in LinkedIn
+   content search.
+3. **Review.** Open `<data dir>/applications.md` to see what was sent, where,
+   and with which fit. Each job folder has an `applied.md` with the exact
+   fields and answers.
+4. **Artifacts.** `/job/tailor`, `/job/cover-letter`, and `/job/outreach`
+   produce drafts. Every draft passes an internal fact and voice audit before
+   Coach shows it to you. Messages, comments, and application emails stay
+   draft-only.
+5. **Presence.** Ask for a profile audit, a post, or a comment. Posts start
+   from one real moment; Coach interviews you if you don't have one. A post
+   publishes only after you approve the exact text.
+6. **Manual work.** `/job/log-application` records an application you sent
+   outside the agent. `/job/application-email` drafts an email for a feed lead
+   that publishes an address and gives you a `mailto:` link.
+
+Coach asks only for what it cannot know: your language, data folder, resume,
+preferences, stack, and missing evidence. It does not invent facts, create
+accounts, solve CAPTCHAs, or send messages without your OK.
 
 ## Commands
 

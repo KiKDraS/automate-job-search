@@ -4,7 +4,12 @@ import os from "node:os"
 import path from "node:path"
 import { test } from "node:test"
 import { parseDataDirConfig, resolveDataDirWithSource } from "../lib/data-dir.ts"
-import { formatAppliedMarkdown, parseAppliedEntry } from "../lib/apply.ts"
+import {
+  formatApplicationIndexRow,
+  formatAppliedMarkdown,
+  parseAppliedEntry,
+  upsertApplicationIndexRow,
+} from "../lib/apply.ts"
 import { isLikelyScanned, joinPages } from "../lib/resume-text.ts"
 import { detectAts } from "../lib/ats.ts"
 import {
@@ -471,6 +476,7 @@ test("parseAppliedEntry accepts valid entries and rejects incomplete ones", () =
       company: "Acme",
       url: "https://example.com/job",
       method: "Lever",
+      fit: "High",
       resume: "resume.pdf",
       confirmation: "sent",
       fields: [{ label: "Email", value: "a@b.c" }, { label: "ignored" }],
@@ -478,7 +484,59 @@ test("parseAppliedEntry accepts valid entries and rejects incomplete ones", () =
   )
   assert.equal(entry?.company, "Acme")
   assert.equal(entry?.method, "Lever")
+  assert.equal(entry?.fit, "High")
   assert.deepEqual(entry?.fields, [{ label: "Email", value: "a@b.c" }])
   assert.equal(parseAppliedEntry('{"role":"x"}'), null)
   assert.equal(parseAppliedEntry("not json"), null)
+})
+
+test("formatAppliedMarkdown records a manual submission", () => {
+  const markdown = formatAppliedMarkdown(
+    {
+      role: "Staff Engineer",
+      company: "Acme",
+      url: "https://example.com/job",
+      resume: "resume.pdf",
+      source: "user",
+      status: "submitted (manual)",
+      note: "User submitted in the browser",
+      confirmation: "User reported manual submission on 2026-11-12",
+    },
+    "2026-11-13",
+  )
+  assert.ok(markdown.includes("- Source: user"))
+  assert.ok(markdown.includes("- Status: submitted (manual)"))
+  assert.ok(markdown.includes("- Note: User submitted in the browser"))
+})
+
+test("upsertApplicationIndexRow appends and replaces by folder", () => {
+  const header = "# Applications\n\n| Date | Folder |\n| --- | --- |\n"
+  const first = "| 2026-11-12 | jobs/acme |\n"
+  const second = "| 2026-11-13 | jobs/acme |\n"
+  const appended = upsertApplicationIndexRow(header, first, "jobs/acme")
+  assert.ok(appended.endsWith(first))
+  const replaced = upsertApplicationIndexRow(appended, second, "jobs/acme")
+  assert.ok(replaced.includes(second.trim()))
+  assert.ok(!replaced.includes("2026-11-12"))
+  assert.equal(replaced.match(/jobs\/acme/g)?.length, 1)
+})
+
+test("formatApplicationIndexRow builds the applications.md row", () => {
+  const row = formatApplicationIndexRow(
+    {
+      role: "Staff Engineer",
+      company: "Acme | Labs",
+      url: "https://example.com/job",
+      method: "Lever",
+      fit: "Medium",
+      resume: "resume.pdf",
+      confirmation: "sent",
+    },
+    "jobs/acme",
+    "2026-11-13",
+  )
+  assert.equal(
+    row,
+    "| 2026-11-13 | Acme \\| Labs | Staff Engineer | Medium | Lever | submitted | sent | https://example.com/job | jobs/acme |\n",
+  )
 })

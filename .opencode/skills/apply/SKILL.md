@@ -1,17 +1,18 @@
 ---
 name: Apply
-description: "Fill and submit a LinkedIn Easy Apply application for a saved job: prepare answers, fill the form, stop at review for the user's OK, then submit. Use only when the user explicitly asks to apply."
+description: "Fill and submit a LinkedIn Easy Apply application for a saved job scored Medium or High: prepare answers, fill the form, verify it, submit, and log it. No per-application approval."
 ---
 
 # Apply
 
-Fills one LinkedIn Easy Apply application and submits it only after the user
-approves the review sheet. One application at a time.
+Fills one LinkedIn Easy Apply application and submits it in the same run. No
+second confirmation. One application at a time.
 
 ## Inputs (from Coach)
 
 - Job folder path: `<data dir>/jobs/<company>-<role>-<date>/` with
-  `posting.md` inside. The job URL is the `- URL:` line of that file.
+  `posting.md` inside.
+- Fit: `High` or `Medium`, passed by Coach. Used in the application log. The job URL is the `- URL:` line of that file.
 - `<data dir>/profile.md` and the base resume text in `<data dir>/resume/`
   (`base.txt`, `base.md`, or any `.txt`/`.md`).
 - `<data dir>/application-data.md` — reusable answers, created on first use.
@@ -35,10 +36,9 @@ approves the review sheet. One application at a time.
    Collect: full name, email, phone, location, LinkedIn URL, portfolio.
 2. Collect logistics answers when present: work authorization, sponsorship,
    notice period, earliest start, relocation, work mode, salary expectation.
-3. Do not guess. Anything a required field needs and you do not have: gather
-   it into ONE numbered question list and stop — return it to Coach instead
-   of filling around it. When the answers come back, write them into
-   `application-data.md` and continue.
+3. Do not guess. Anything a required field needs and you do not have: return
+   `NEEDS_ANSWER` with the label, type, and options, and stop. Coach skips the
+   job; the user can add the answer later. Never fill around a gap.
 4. `application-data.md` is free-form Markdown, one bullet per answer:
 
    ```md
@@ -67,8 +67,8 @@ approves the review sheet. One application at a time.
 
 ## Steps
 
-Two delegations: a **fill** runs steps 1–6 and stops at Review; a **submit**
-runs step 7 (then 8) only — it never navigates, so the open modal survives.
+One run: steps 1–8 fill, verify, submit, and log. If the modal is already open
+and filled from a previous run, resume at step 5.
 
 ### 1. Verify the job and the folder (fill only)
 
@@ -151,8 +151,9 @@ return r
 - A field that ignores programmatic input: click it and use `browser_type`
   with the same selector (or its ref from a compact dialog snapshot). Two
   failures on the same control → stop and report the step and label.
-- Any required question without a recorded answer → collect it (label, type,
-  options, step) and stop with the batch question list.
+- Any required question without a recorded answer → return `NEEDS_ANSWER`
+  with the label, type, and options, and stop. Coach skips the job; do not ask
+  the user mid-run.
 
 ### 4. Attach the resume
 
@@ -168,18 +169,16 @@ The Contact info step has a resume section.
 ### 5. Advance to Review
 
 Click "Review" (or "Next" through the steps) until the Review step shows and
-the progress indicator is at the final step. Do not click "Submit
-application".
+the progress indicator is at the final step. The next step submits.
 
 Cover letter: if the form has an optional cover-letter field and
 `<job folder>/cover-letter.md` exists, paste that text exactly. Never write,
 shorten, or summarize a cover letter here. If none exists, leave it empty.
 
-### 6. Return the review sheet
+### 6. Record the review sheet
 
 One `execute` call extracts the Review step's own text (the form's summary of
-every field) and the progress indicator. Return it to Coach in this shape —
-this exact sheet is what the user approves (Gate 3):
+every field) and the progress indicator. Record it in this shape:
 
 ```text
 APPLY REVIEW — <role> at <company>
@@ -192,28 +191,31 @@ Resume: <filename>
 Cover letter: <not requested | pasted from cover-letter.md>
 ```
 
-Then stop and report. Never submit from this delegation. If the Review step
-does not show a toggle or checkbox that the form will send (for example,
-sharing your profile with the job poster), add it under "Also sent:".
+If the Review step does not show a toggle or checkbox that the form will send
+(for example, sharing your profile with the job poster), add it under "Also
+sent:". If a required field is empty or the form shows an error, stop and
+report it instead of submitting.
 
-### 7. Submit only after the OK (submit only)
+### 7. Submit
 
-A new delegation arrives with the approved review sheet and the user's
-explicit OK. Do not navigate; use the dialog that is already open. One
-`execute` call:
+Do not navigate; use the dialog that is already open. One `execute` call:
 
-1. Re-extract the Review step text and compare it with the approved sheet.
-   Any difference, or the dialog is no longer on Review → stop and report: a
-   new approval is needed.
-2. Click "Submit application" exactly once.
-3. Wait for the confirmation ("Your application was sent…"). If it does not
+1. Re-extract the Review step text and compare it with the sheet from step 6.
+   Any difference, or the dialog is no longer on Review → stop and report; do
+   not submit a form that differs from the record.
+2. Check for a CAPTCHA gate. If an hCaptcha/reCAPTCHA widget is present and its
+   response token is empty, do not click. Return `CAPTCHA_REQUIRED` and stop.
+   Coach skips the job and reports it; the user can complete it later from the
+   log. Never solve or bypass it (`browser-setup.md`).
+3. Click "Submit application" exactly once.
+4. Wait for the confirmation ("Your application was sent…"). If it does not
    appear within a few seconds, return what is visible — never click twice.
 
 **Timeout recovery.** If the click times out or no confirmation appears, do
 not click Submit again. Check the job page for "Applied" / "Solicitud
 enviada" and the applied-jobs list. If the application is there, log it with
-that confirmation. If it is not, re-open the form, re-fill from the approved
-sheet, compare the Review step, and submit once.
+that confirmation. If it is not, re-open the form, re-fill from the same
+answers, compare the Review step, and submit once.
 
 ### 8. Log it
 
@@ -224,6 +226,8 @@ Write `<data dir>/.tmp/application.json`:
   "role": "<role>",
   "company": "<company>",
   "url": "<job URL>",
+  "method": "LinkedIn Easy Apply",
+  "fit": "<High | Medium>",
   "resume": "resume.pdf",
   "coverLetter": "not requested",
   "confirmation": "<exact confirmation text>",
@@ -231,18 +235,20 @@ Write `<data dir>/.tmp/application.json`:
 }
 ```
 
-The `fields` come from the approved review sheet. Then:
+The `fields` come from the review sheet recorded in step 6. Then:
 
     npx tsx scripts/apply-log.ts --folder <job folder> --file <data dir>/.tmp/application.json
 
-It writes `<job folder>/applied.md` and prints the path. Report to Coach: the
-confirmation text, the `applied.md` path, and anything unusual.
+It writes `<job folder>/applied.md` and appends `<data dir>/applications.md`,
+then prints both paths. Report to Coach: the confirmation text, both paths,
+and anything unusual.
 
 ## Rules
 
-- Submit only with Coach relaying the user's explicit OK on the review sheet,
-  per application. No OK, no submit.
-- One application at a time. No batch applications, ever.
+- Submit for a saved job scored Medium or High. No per-application OK; the
+  review sheet is recorded in `applied.md` and `applications.md`.
+- Never apply to a Low fit or a job already in history.
+- One application at a time. No batch applications to Low fits.
 - Never create an account, enter credentials, solve a CAPTCHA, or bypass a
   challenge — stop and report (`browser-setup.md`).
 - Never answer EEO or demographic questions on the user's behalf unless the

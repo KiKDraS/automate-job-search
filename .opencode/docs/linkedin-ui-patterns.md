@@ -35,9 +35,9 @@ manually in the UI and update this document.
   careers-page URL.
 - Extract the description body once into `posting.md`, URL at the top. Full
   text, not a summary, delimited as untrusted content.
-- Some postings offer "Easy Apply". The apply skill fills it and stops at the
-  Review step; the submit happens only after the user's OK on the review
-  sheet (`approval-flow.md`, Gate 3).
+- Some postings offer "Easy Apply". The apply skill fills it, verifies the
+  Review step, and submits in the same run; the review sheet is recorded in
+  `applied.md` (`approval-flow.md`, "Applications").
 
 ## Assisted apply (Easy Apply)
 
@@ -55,8 +55,8 @@ live UI.
   file chooser; `browser_file_upload` takes the absolute path. Previously
   uploaded resumes can also be selected.
 - Review: the form's own summary of every field, the resume filename, and an
-  optional cover-letter text area. This summary is the review sheet the user
-  approves.
+  optional cover-letter text area. This summary is the review sheet the agent
+  records in `applied.md` after submitting.
 - Confirmation: the modal switches to "Your application was sent…" — capture
   the exact text before closing. Never click Submit twice.
 - "Easy Apply" missing, "Applied" shown, or a redirect to an employer site →

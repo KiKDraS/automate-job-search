@@ -1,18 +1,19 @@
 ---
 name: Apply External
-description: "Fill a Greenhouse or Lever application for a saved job: prepare answers, fill the form, stop at review for the user's OK, then submit. Use only when the user explicitly asks."
+description: "Fill and submit a Greenhouse or Lever application for a saved job scored Medium or High: prepare answers, fill the form, verify it, submit, and log it. No per-application approval."
 ---
 
 # Apply External
 
-Fills one Greenhouse or Lever application and submits it only after the user
-approves the review sheet. One application at a time. Other ATS are out of
-scope for v1.
+Fills one Greenhouse or Lever application and submits it in the same run. No
+second confirmation. One application at a time. Other ATS are out of scope for
+v1.
 
 ## Inputs (from Coach)
 
 - Job folder path: `<data dir>/jobs/<company>-<role>-<date>/` with
   `posting.md` inside.
+- Fit: `High` or `Medium`, passed by Coach. Used in the application log.
 - External apply URL: the employer URL if Coach has it; otherwise the
   LinkedIn job URL, where the Apply button leads to the employer site.
 - `<data dir>/profile.md`, `preferences.md`, and the base resume text in
@@ -37,10 +38,10 @@ Use the same answer-sheet rules and template as the `apply` skill: read
 `profile.md` and the base resume, collect contact and logistics answers, and
 create `application-data.md` from the template when it does not exist.
 
-- Do not guess. Anything a required field needs and you do not have: gather
-  it into ONE numbered question list and stop — return it to Coach instead of
-  filling around it. When the answers come back, write them into
-  `application-data.md` and continue.
+- Do not guess. Anything a required field needs and you do not have: return
+  `NEEDS_ANSWER` with the label, type, and options, and stop. Coach skips the
+  job and reports it; the user can add the answer later. Never fill around a
+  gap.
 - EEO or demographic questions: leave them empty unless the answer is already
   recorded in `application-data.md`.
 - The form may ask extra questions (current company, website, how you heard
@@ -48,9 +49,8 @@ create `application-data.md` from the template when it does not exist.
 
 ## Steps
 
-Two delegations: a **fill** runs steps 1–5 and stops at the review sheet; a
-**submit** runs step 6 (then 7) only — it never navigates, so the open form
-survives.
+One run: steps 1–7 fill, verify, submit, and log. If the form is already open
+and filled from a previous run, resume at step 5.
 
 ### 1. Verify the job, folder and ATS (fill only)
 
@@ -94,8 +94,9 @@ in the returned JSON.
   answer.
 - A field that ignores programmatic input: click it and use `browser_type`
   with the same selector. Two failures on the same control → stop and report.
-- Any required question without a recorded answer → collect it (label, type,
-  options, step) and stop with the batch question list.
+- Any required question without a recorded answer → return `NEEDS_ANSWER`
+  with the label, type, and options, and stop. Coach skips the job; do not ask
+  the user mid-run.
 - If the form has multiple steps, fill one step at a time, verify, click Next,
   and keep a compact record of the values already sent. Stop at the final
   review/submit step.
@@ -113,12 +114,12 @@ in the returned JSON.
   file, stop and report (the toolkit only has markdown). If no cover letter
   is requested, leave the field empty.
 
-### 5. Build the review sheet (stop here)
+### 5. Build the review sheet and submit
 
 Advance to the ATS review step if one exists; otherwise stay on the filled
 form. One `execute` call re-extracts every filled field, the file names, the
-checked consents, and the Review/Submit page's own text. Return it to Coach in
-this shape — this exact sheet is what the user approves (Gate 3):
+checked consents, and the Review/Submit page's own text. Record it in this
+shape:
 
 ```text
 APPLY REVIEW — <role> at <company>
@@ -133,31 +134,31 @@ Cover letter: <not requested | pasted from cover-letter.md>
 Also sent: <checked consents or "none">
 ```
 
-Then stop and report. Never submit from this delegation. If a required field
-is empty or the form shows an error, report it instead of the sheet.
+Then submit.
 
-### 6. Submit only after the OK (submit only)
+### 6. Submit
 
-A new delegation arrives with the approved review sheet and the user's
-explicit OK. Do not navigate; use the form that is already open.
-
-1. Re-extract the form values and Review text; compare them with the approved
-   sheet. Any difference, or the form is no longer open → stop and report: a
-   new approval is needed. If the review page no longer exposes the inputs,
-   compare the Review text with the approved sheet; do not submit on a blank
-   or blocked state.
-2. Click the submit button exactly once.
-3. Wait for the confirmation ("Thank you", "Application submitted", "Your
+1. Re-extract the form values and Review text and compare them with the sheet
+   from step 5. Any difference, or the form is no longer open → stop and
+   report; do not submit a form that differs from the record. If the review
+   page no longer exposes the inputs, compare the Review text with the sheet;
+   do not submit on a blank or blocked state.
+2. Check for a CAPTCHA gate. If an hCaptcha/reCAPTCHA widget is present and its
+   response token is empty, do not click. Return `CAPTCHA_REQUIRED` and stop.
+   Coach skips the job and reports it; the user can complete it later from the
+   log. Never solve or bypass it (`browser-setup.md`).
+3. Click the submit button exactly once.
+4. Wait for the confirmation ("Thank you", "Application submitted", "Your
    application has been submitted"). Never click twice. If no confirmation
    appears within a few seconds, return what is visible.
-4. **Timeout recovery**: if the click times out or no confirmation appears, do
+5. **Timeout recovery**: if the click times out or no confirmation appears, do
    not click Submit again. Check the page for an applied/thank-you state. If
    the application is confirmed, log it; if not, report the visible state and
    stop.
 
 ### 7. Log it
 
-Write `<data dir>/.tmp/application.json` with the approved values:
+Write `<data dir>/.tmp/application.json` with the values sent:
 
 ```json
 {
@@ -165,6 +166,7 @@ Write `<data dir>/.tmp/application.json` with the approved values:
   "company": "<company>",
   "url": "<external apply URL>",
   "method": "Greenhouse",
+  "fit": "<High | Medium>",
   "resume": "resume.pdf",
   "coverLetter": "<not requested | pasted from cover-letter.md>",
   "confirmation": "<exact confirmation text>",
@@ -176,14 +178,16 @@ Use `"method": "Lever"` for Lever. Then:
 
     npx tsx scripts/apply-log.ts --folder <job folder> --file <data dir>/.tmp/application.json
 
-It writes `<job folder>/applied.md` and prints the path. Report the
-confirmation text, the `applied.md` path, and anything unusual.
+It writes `<job folder>/applied.md` and appends `<data dir>/applications.md`,
+then prints both paths. Report the confirmation text, both paths, and anything
+unusual.
 
 ## Rules
 
-- Submit only with Coach relaying the user's explicit OK on the review sheet,
-  per application. No OK, no submit.
-- One application at a time. No batch applications, ever.
+- Submit for a saved job scored Medium or High. No per-application OK; the
+  review sheet is recorded in `applied.md` and `applications.md`.
+- Never apply to a Low fit or a job already in history.
+- One application at a time. No batch applications to Low fits.
 - Never create an account, enter credentials, solve a CAPTCHA, or bypass a
   challenge — stop and report.
 - Never answer EEO or demographic questions on the user's behalf unless the

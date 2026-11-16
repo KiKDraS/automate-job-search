@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-16
+
 ### Added
 
 - Automated daily search: `automation.md` in the data dir, a cross-platform
@@ -37,6 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The scheduler resolves the `opencode` CLI across Homebrew, npm, pnpm, Bun,
   the curl installer, and Windows installers. The wrapper pins the absolute
   path and the install-time `PATH`; `--opencode-bin` handles custom installs.
+  It also resolves a stable `node` path and falls back at runtime if the
+  pinned CLI disappears.
 
 ## [0.6.0] - 2026-11-13
 

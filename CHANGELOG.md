@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Automated daily search: `automation.md` in the data dir, a cross-platform
+  scheduler (launchd, systemd/cron, Task Scheduler), `/job/schedule`,
+  `/job/retry`, native notifications with a text fallback, daily reports, and
+  a pending-state handoff for CAPTCHA, email, login, and missing answers.
+- Model choice for scheduled runs: `--model provider/model` or the OpenCode
+  default.
+- `schedule` skill and `/job/schedule` command.
+
+### Changed
+
+- `job-setup` now collects application answers and offers the automation step
+  after the profile is approved.
+- README documents the automated search, defaults, model choice, OS behavior,
+  reports, and retry.
+
 ## [0.6.0] - 2026-11-13
 
 ### Added

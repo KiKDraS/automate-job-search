@@ -24,6 +24,7 @@ export interface WrapperSpec {
   tsxCliPath: string
   runnerPath: string
   opencodePath: string
+  pathEnv: string
 }
 
 export function detectScheduler(platform: NodeJS.Platform = process.platform): SchedulerKind {
@@ -158,6 +159,7 @@ export function buildWindowsTaskArgs(spec: SchedulerSpec): string[] {
 export function buildPosixWrapper(spec: WrapperSpec): string {
   return `#!/bin/sh
 cd ${shellQuote(spec.repoPath)} || exit 1
+export PATH=${shellQuote(spec.pathEnv)}
 export JOBSEARCH_OPENCODE_BIN=${shellQuote(spec.opencodePath)}
 exec ${shellQuote(spec.nodePath)} ${shellQuote(spec.tsxCliPath)} ${shellQuote(
     spec.runnerPath,
@@ -168,6 +170,7 @@ exec ${shellQuote(spec.nodePath)} ${shellQuote(spec.tsxCliPath)} ${shellQuote(
 export function buildWindowsWrapper(spec: WrapperSpec): string {
   return `@echo off\r
 cd /d "${spec.repoPath}"\r
+set "PATH=${spec.pathEnv};%PATH%"\r
 set "JOBSEARCH_OPENCODE_BIN=${spec.opencodePath}"\r
 "${spec.nodePath}" "${spec.tsxCliPath}" "${spec.runnerPath}" >> "${spec.dataDir}\\logs\\scheduler.log" 2>&1\r
 `

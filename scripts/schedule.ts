@@ -6,6 +6,7 @@
  *   npx tsx scripts/schedule.ts status
  *   npx tsx scripts/schedule.ts enable  [--time 09:00] [--interval daily|every 12h]
  *                                       [--model provider/model] [--default-model]
+ *                                       [--opencode-bin /path/to/opencode]
  *                                       [--max-applications 0] [--max-runtime 60]
  *                                       [--notify|--no-notify] [--feed|--no-feed]
  *                                       [--apply|--no-apply] [--dry-run]
@@ -45,6 +46,7 @@ import {
   type SchedulerSpec,
   type WrapperSpec,
 } from "../lib/scheduler.ts"
+import { knownOpencodePaths, resolveOpencodePath } from "../lib/opencode-bin.ts"
 import { fail } from "./args.ts"
 
 const SCRIPT = "schedule"
@@ -112,24 +114,28 @@ function schedulerSpec(): SchedulerSpec {
   }
 }
 
-function resolveOpencode(): string {
-  const command = process.platform === "win32" ? "where" : "which"
-  const result = run(command, ["opencode"])
-  const first = result.stdout
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .find((line) => line !== "")
-  return result.status === 0 && first !== undefined ? first : "opencode"
+function resolveOpencode(override?: string): string {
+  const resolved = resolveOpencodePath({ override })
+  if (resolved === null) {
+    return fail(
+      SCRIPT,
+      `opencode CLI not found. Install it or pass --opencode-bin <path>. Known locations: ${knownOpencodePaths().join(
+        ", ",
+      )}`,
+    )
+  }
+  return resolved
 }
 
-function wrapperSpec(): WrapperSpec {
+function wrapperSpec(opencodePath: string): WrapperSpec {
   return {
     repoPath,
     dataDir,
     nodePath: process.execPath,
     tsxCliPath,
     runnerPath,
-    opencodePath: resolveOpencode(),
+    opencodePath,
+    pathEnv: process.env["PATH"] ?? "",
   }
 }
 
@@ -138,12 +144,12 @@ function formatNext(config: AutomationConfig): string {
   return next === null ? "not scheduled" : next.toLocaleString()
 }
 
-async function writeWrapper(): Promise<void> {
+async function writeWrapper(opencodePath: string): Promise<void> {
   await fs.mkdir(binDir, { recursive: true })
   const content =
     process.platform === "win32"
-      ? buildWindowsWrapper(wrapperSpec())
-      : buildPosixWrapper(wrapperSpec())
+      ? buildWindowsWrapper(wrapperSpec(opencodePath))
+      : buildPosixWrapper(wrapperSpec(opencodePath))
   await fs.writeFile(wrapperPath, content, { mode: 0o755 })
   if (process.platform !== "win32") await fs.chmod(wrapperPath, 0o755)
 }
@@ -226,11 +232,11 @@ async function installWindows(config: AutomationConfig): Promise<string> {
   return TASK_NAME
 }
 
-async function install(config: AutomationConfig): Promise<string> {
+async function install(config: AutomationConfig, opencodePath: string): Promise<string> {
   if (!(await fs.stat(tsxCliPath).catch(() => null))) {
     fail(SCRIPT, `missing ${tsxCliPath}; run npm install first`)
   }
-  await writeWrapper()
+  await writeWrapper(opencodePath)
   if (process.platform === "darwin") return installLaunchd(config)
   if (process.platform === "win32") return installWindows(config)
   try {
@@ -303,6 +309,7 @@ async function statusLine(config: AutomationConfig): Promise<void> {
   console.log(`Next run: ${formatNext(config)}`)
   console.log(`Scheduler: ${detectScheduler()}`)
   console.log(`Installed: ${(await isInstalled()) ? "yes" : "no"}`)
+  console.log(`OpenCode CLI: ${resolveOpencodePath() ?? "not found"}`)
   console.log(`Wrapper: ${wrapperPath}`)
   console.log(`Config: ${configPath}`)
   console.log(`Setup: ${missing.length === 0 ? "ready" : `missing ${missing.join(", ")}`}`)
@@ -313,13 +320,15 @@ async function statusLine(config: AutomationConfig): Promise<void> {
   console.log(`Standing auto-apply: ${config.standingApproval ? "on" : "off"}`)
 }
 
-async function dryRun(config: AutomationConfig): Promise<void> {
+async function dryRun(config: AutomationConfig, opencodePath: string): Promise<void> {
   const spec = { ...schedulerSpec(), time: config.time, interval: config.interval }
   console.log(`# ${configPath}\n`)
   console.log(formatAutomationConfig(config))
   console.log(`# ${wrapperPath}\n`)
   console.log(
-    process.platform === "win32" ? buildWindowsWrapper(wrapperSpec()) : buildPosixWrapper(wrapperSpec()),
+    process.platform === "win32"
+      ? buildWindowsWrapper(wrapperSpec(opencodePath))
+      : buildPosixWrapper(wrapperSpec(opencodePath)),
   )
   console.log(`# ${detectScheduler()}\n`)
   if (process.platform === "darwin") console.log(buildLaunchdPlist(spec))
@@ -383,6 +392,7 @@ async function main(): Promise<void> {
   const model = optionalValue(args, "--model")
   const maxApplications = optionalValue(args, "--max-applications")
   const maxRuntime = optionalValue(args, "--max-runtime")
+  const opencodeOverride = optionalValue(args, "--opencode-bin")
 
   if (time !== undefined) config.time = time
   if (interval !== undefined) config.interval = interval
@@ -410,7 +420,7 @@ async function main(): Promise<void> {
   }
 
   if (dry) {
-    await dryRun(config)
+    await dryRun(config, resolveOpencode(opencodeOverride))
     return
   }
 
@@ -418,7 +428,7 @@ async function main(): Promise<void> {
   await fs.mkdir(logsDir, { recursive: true })
   await fs.mkdir(stateDir, { recursive: true })
   await fs.writeFile(configPath, formatAutomationConfig(config))
-  const target = await install(config)
+  const target = await install(config, resolveOpencode(opencodeOverride))
   console.log(`Automation ${config.enabled ? "enabled" : "updated"}.`)
   console.log(`Next run: ${formatNext(config)}`)
   console.log(`Scheduler target: ${target}`)

@@ -167,6 +167,15 @@ nothing, the next daily run picks them up as backlog.
 OpenCode default. The settings live in `<data dir>/automation.md`; the command
 writes that file and reinstalls the scheduler for you.
 
+The installer resolves the `opencode` CLI from `PATH` and the common install
+locations: Homebrew (Apple Silicon and Intel), npm, pnpm, Bun, the curl
+installer, and Windows installers. If you use a custom location, pass it
+explicitly:
+
+```text
+/job/schedule --opencode-bin /path/to/opencode
+```
+
 ### How it runs per OS
 
 | OS | Scheduler |

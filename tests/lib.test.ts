@@ -1,5 +1,5 @@
 import assert from "node:assert/strict"
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { test } from "node:test"
@@ -24,6 +24,11 @@ import {
   intervalHours,
 } from "../lib/scheduler.ts"
 import { buildNotificationCommand } from "../lib/notify.ts"
+import {
+  findOpencodeOnPath,
+  knownOpencodePaths,
+  resolveOpencodePath,
+} from "../lib/opencode-bin.ts"
 import {
   formatApplicationIndexRow,
   formatAppliedMarkdown,
@@ -741,9 +746,11 @@ test("notification and wrapper builders are platform-specific", () => {
     tsxCliPath: "/repo/node_modules/tsx/dist/cli.mjs",
     runnerPath: "/repo/scripts/scheduled-search.ts",
     opencodePath: "/opt/homebrew/bin/opencode",
+    pathEnv: "/opt/homebrew/bin:/usr/bin:/bin",
   })
   assert.ok(wrapper.includes("cd '/repo'"))
   assert.ok(wrapper.includes("exec '/node'"))
+  assert.ok(wrapper.includes("PATH='/opt/homebrew/bin:/usr/bin:/bin'"))
   assert.ok(wrapper.includes("JOBSEARCH_OPENCODE_BIN='/opt/homebrew/bin/opencode'"))
   const windows = buildWindowsWrapper({
     repoPath: "C:\\repo",
@@ -751,11 +758,13 @@ test("notification and wrapper builders are platform-specific", () => {
     nodePath: "C:\\node.exe",
     tsxCliPath: "C:\\repo\\node_modules\\tsx\\dist\\cli.mjs",
     runnerPath: "C:\\repo\\scripts\\scheduled-search.ts",
-    opencodePath: "C:\\Users\\ana\\AppData\\Local\\opencode\\opencode.cmd",
+    opencodePath: "C:\\tools\\opencode\\opencode.cmd",
+    pathEnv: "C:\\tools\\opencode;C:\\Windows\\System32",
   })
   assert.ok(windows.includes("@echo off"))
   assert.ok(windows.includes("cd /d"))
   assert.ok(windows.includes("JOBSEARCH_OPENCODE_BIN"))
+  assert.ok(windows.includes("set \"PATH="))
 })
 
 test("automationReady lists missing user data", async () => {
@@ -782,4 +791,59 @@ test("buildScheduledPrompt includes the user data and pipeline", () => {
   assert.ok(prompt.includes("reports/"))
   assert.ok(prompt.includes("pending-search.json"))
   assert.ok(prompt.includes("No application cap"))
+})
+
+test("findOpencodeOnPath finds an executable on POSIX", () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "ajs-opencode-"))
+  try {
+    const binary = path.join(dir, "opencode")
+    writeFileSync(binary, "#!/bin/sh\nexit 0\n")
+    chmodSync(binary, 0o755)
+    const found = findOpencodeOnPath({ platform: "darwin", env: { PATH: dir }, home: dir })
+    assert.equal(found, binary)
+    assert.equal(resolveOpencodePath({ platform: "darwin", env: { PATH: dir }, home: dir }), binary)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test("resolveOpencodePath falls back to known install locations", () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "ajs-opencode-home-"))
+  try {
+    const bin = path.join(dir, ".opencode", "bin")
+    mkdirSync(bin, { recursive: true })
+    const binary = path.join(bin, "opencode")
+    writeFileSync(binary, "#!/bin/sh\nexit 0\n")
+    chmodSync(binary, 0o755)
+    assert.equal(
+      resolveOpencodePath({ platform: "linux", env: { PATH: "" }, home: dir }),
+      binary,
+    )
+    assert.equal(
+      resolveOpencodePath({ platform: "darwin", env: { PATH: "" }, home: dir, override: binary }),
+      binary,
+    )
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test("knownOpencodePaths covers Windows and Unix install methods", () => {
+  const win = knownOpencodePaths({
+    platform: "win32",
+    env: {
+      LOCALAPPDATA: "C:\\Users\\test\\AppData\\Local",
+      APPDATA: "C:\\Users\\test\\AppData\\Roaming",
+      ProgramFiles: "C:\\Program Files",
+    },
+    home: "C:\\Users\\test",
+  })
+  assert.ok(win.some((item) => item.endsWith("opencode.exe")))
+  assert.ok(win.some((item) => item.endsWith("opencode.cmd")))
+  assert.ok(win.some((item) => item.includes("npm")))
+
+  const unix = knownOpencodePaths({ platform: "darwin", env: {}, home: "/Users/test" })
+  assert.ok(unix.includes("/opt/homebrew/bin/opencode"))
+  assert.ok(unix.includes("/usr/local/bin/opencode"))
+  assert.ok(unix.some((item) => item.includes(".opencode/bin/opencode")))
 })

@@ -33,6 +33,7 @@ Flags:
 - `--time HH:MM`
 - `--interval "daily"` or `--interval "every 12h"` (1–24 hours)
 - `--model <provider/model>` — empty means OpenCode default; `--default-model` clears it
+- `--opencode-bin <path>` — override the CLI path when auto-detection fails
 - `--max-applications N` — `0` means no cap
 - `--max-runtime N` — 5–240 minutes
 - `--notify` / `--no-notify`
@@ -60,6 +61,10 @@ Flags:
    - how to change it later.
 5. If the OS scheduler fails, report the exact error and the manual command
    from the script output. Do not silently fall back to a background process.
+6. The installer resolves `opencode` from PATH and the known Homebrew, npm,
+   pnpm, Bun, curl, and Windows locations. If it cannot find the CLI, it stops
+   with a clear error; ask the user for the path and rerun with
+   `--opencode-bin <path>`.
 
 ## Rules
 

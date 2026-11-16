@@ -85,7 +85,8 @@ result; you never need to address a subagent directly.
 
 1. **First run.** Start OpenCode in the project. Coach greets you, asks your
    chat language and where to keep personal data, then runs `/job/setup`:
-   resume, target roles, preferences, and the stack you actually use. It shows
+   resume, target roles, preferences, the stack you actually use, application
+   answers, and — at the end — whether to enable the daily search. It shows
    the profile for approval before any search uses it.
 2. **Search.** `/job/search` looks at LinkedIn postings from the last 48 hours.
    Coach shows the plan, waits for your OK, then scores fit, saves High/Medium
@@ -110,6 +111,79 @@ Coach asks only for what it cannot know: your language, data folder, resume,
 preferences, stack, and missing evidence. It does not invent facts, create
 accounts, solve CAPTCHAs, or send messages without your OK.
 
+## Automated daily search
+
+Coach can run the search for you once a day. The onboarding offers it at the
+end of `/job/setup`, and you can change it anytime with `/job/schedule`.
+
+| Default | Value |
+| --- | --- |
+| Frequency | Daily at 09:00 local |
+| Job search | Postings from the last 48 hours |
+| Feed search | On |
+| Notifications | On |
+| Auto-apply | Medium/High with standing approval |
+| Applications per run | No cap |
+| Runtime cap | 60 minutes |
+| Model | OpenCode default |
+
+What the run does, in order:
+
+1. Retries the saved Medium/High backlog without `applied.md`.
+2. Runs the 48-hour job search.
+3. Runs the feed/content search.
+4. Tailors, audits, and auto-applies every Medium/High fit it can fill.
+5. Stops at the runtime cap or the agent step budget.
+6. Writes `<data dir>/reports/YYYY-MM-DD.md` and
+   `<data dir>/state/pending-search.json`.
+
+The report has a **Needs you** section for the steps only you can do:
+
+- solve a CAPTCHA and submit the already-filled form;
+- send an application email from the prepared `mailto:` link;
+- log in or create an account;
+- answer a required question that is not in `application-data.md`.
+
+If the run stops early, open the report or say **“retry the pending ones”**.
+`/job/retry` continues only the pending jobs, not a new search. If you do
+nothing, the next daily run picks them up as backlog.
+
+### Change the automation
+
+```text
+/job/schedule                       # status, next run, OS scheduler
+/job/schedule --time 08:30          # daily at 08:30
+/job/schedule --interval "every 12h"
+/job/schedule --model provider/model
+/job/schedule --default-model
+/job/schedule --no-feed
+/job/schedule --notify / --no-notify
+/job/schedule --max-applications 10 # 0 = no cap
+/job/schedule --max-runtime 45
+/job/schedule --disable / --enable
+```
+
+`opencode models` lists the model IDs. Leave the model empty to use the
+OpenCode default. The settings live in `<data dir>/automation.md`; the command
+writes that file and reinstalls the scheduler for you.
+
+### How it runs per OS
+
+| OS | Scheduler |
+| --- | --- |
+| macOS | LaunchAgent (`launchd`) |
+| Linux | `systemd --user` timer; `cron` fallback |
+| Windows | Task Scheduler (`schtasks`) |
+
+Logs are in `<data dir>/logs/`; the generated wrapper is in
+`<data dir>/bin/`. The scheduler runs `opencode run --auto --agent coach` with
+the model you chose.
+
+The machine must be on and the browser profile must still be logged into
+LinkedIn. If it was asleep or off, the OS runs the job when it wakes or starts,
+where supported. The agent never creates accounts, solves CAPTCHAs, sends
+messages, publishes posts, or changes the repository during a scheduled run.
+
 ## Commands
 
 | Command | What it does |
@@ -124,6 +198,8 @@ accounts, solve CAPTCHAs, or send messages without your OK.
 | `/job/apply` | Apply to a saved Medium/High fit — fills, submits, and logs it |
 | `/job/apply-form` | Fill a generic application form when the ATS is not LinkedIn/Greenhouse/Lever |
 | `/job/log-application` | Record an application you sent manually |
+| `/job/schedule` | Configure the automated daily search |
+| `/job/retry` | Retry the pending jobs from the last automated run |
 | `/job/outreach` | Connection notes and follow-ups (draft-only) |
 | `/job` | Show the menu anytime |
 
@@ -140,7 +216,8 @@ accounts, solve CAPTCHAs, or send messages without your OK.
 
 Pipeline: **plan → your approval → delegate → audit → done.** Applications
 for Medium and High fits submit automatically; messages and posts get a final
-OK.
+OK. Scheduled runs use the standing approval in `automation.md` and leave a
+daily report for anything that needs you.
 
 ## Runs on free models
 
@@ -149,7 +226,9 @@ deterministic work runs in code, browser data never floods the conversation,
 and every agent has a step budget.
 
 Pick a free model from [OpenCode Zen](https://opencode.ai/zen) as your session
-model — Coach and all subagents inherit it.
+model — Coach and all subagents inherit it. Scheduled runs can use a different
+model: choose it with `/job/schedule --model provider/model`, or leave it empty
+for the OpenCode default.
 
 ## Privacy and safety
 
@@ -166,6 +245,10 @@ model — Coach and all subagents inherit it.
   CAPTCHA, the agent skips the job and reports it; you can complete it later.
   The agent never solves or bypasses a CAPTCHA. Review LinkedIn's Terms of
   Service; your account is your responsibility.
+- Scheduled runs use the standing approval in `automation.md`; they search,
+  auto-apply Medium/High, log, and report. They never send messages, publish
+  posts, create accounts, solve CAPTCHAs, or change the repository. Disable
+  them with `/job/schedule --disable`.
 - External content — postings, messages — is always treated as untrusted
   input.
 

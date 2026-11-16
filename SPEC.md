@@ -45,10 +45,11 @@ out — on OpenCode's free models, with no subscription required.
 
 - **Agents** — Coach leads; job-scout, artifact-writer, draft-review,
   release-manager, presence-coach. Roster: `AGENTS.md`
-- **Skills** — job-setup, job-search, feed-search, resume-review, tailor-resume,
-  cover-letter, outreach, apply, apply-external, apply-form, log-application,
-  application-email, profile-audit, linkedin-post, linkedin-comment; craft
-  skills no-ai-slop and write-root-readme (`.opencode/skills/`)
+- **Skills** — job-setup, job-search, feed-search, schedule, resume-review,
+  tailor-resume, cover-letter, outreach, apply, apply-external, apply-form,
+  log-application, application-email, profile-audit, linkedin-post,
+  linkedin-comment; craft skills no-ai-slop and write-root-readme
+  (`.opencode/skills/`)
 - **Plugins** — coach-greeting (server + TUI halves): greets on launch
   (`.opencode/plugins/coach-greeting/`)
 - **Helpers** — deterministic wrappers over `lib/` (`scripts/`)
@@ -61,15 +62,16 @@ out — on OpenCode's free models, with no subscription required.
 (hiring posts that match the target roles), resumes (build, review, tailoring),
 cover letters, outreach drafts, application email drafts, automatic apply for
 saved jobs scored Medium or High (LinkedIn Easy Apply, Greenhouse, Lever, and
-any readable generic form via `apply-form`), with a consolidated log in
-`applications.md`, launch greeting, attention layer (profile audit, post
+any readable generic form via `apply-form`), scheduled daily search with a
+local OS scheduler (configurable time, interval, model, feed scan, and
+notifications) and an action report for human-only steps, with a consolidated
+log in `applications.md`, launch greeting, attention layer (profile audit, post
 drafts, comment drafts, and publishing a post the user approved — no
 autonomous publishing).
 
 **Deferred:**
 
 - Network scan — waiting on a LinkedIn contacts export
-- Scheduled/headless runs
 - ATS-specific optimizations beyond the generic form filler
 - Attention-layer analytics (engagement metrics)
 

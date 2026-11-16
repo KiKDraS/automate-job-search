@@ -23,7 +23,9 @@ only the returned value enters context.
 ## Profile and login
 
 - The browser runs headful with a persistent profile (Playwright MCP's
-  per-workspace default location). Sessions survive restarts.
+  per-workspace default location). Sessions survive restarts. Scheduled runs
+  use the same profile; if LinkedIn is logged out, the run reports
+  `login required` and stops.
 - First run: the user logs into LinkedIn **manually in the opened window**.
   Agents never type credentials and never handle 2FA codes.
 - When logged out, or when LinkedIn shows a checkpoint or challenge: stop the

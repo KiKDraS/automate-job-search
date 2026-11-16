@@ -5,6 +5,26 @@ import path from "node:path"
 import { test } from "node:test"
 import { parseDataDirConfig, resolveDataDirWithSource } from "../lib/data-dir.ts"
 import {
+  automationReady,
+  buildScheduledPrompt,
+  DEFAULT_AUTOMATION,
+  formatAutomationConfig,
+  nextRunAt,
+  parseAutomationConfig,
+  validateAutomationConfig,
+} from "../lib/automation.ts"
+import {
+  buildCronLine,
+  buildLaunchdPlist,
+  buildPosixWrapper,
+  buildSystemdTimer,
+  buildWindowsTaskArgs,
+  buildWindowsWrapper,
+  detectScheduler,
+  intervalHours,
+} from "../lib/scheduler.ts"
+import { buildNotificationCommand } from "../lib/notify.ts"
+import {
   formatApplicationIndexRow,
   formatAppliedMarkdown,
   parseAppliedEntry,
@@ -614,4 +634,148 @@ test("formatApplicationIndexRow builds the applications.md row", () => {
     row,
     "| 2026-11-13 | Acme \\| Labs | Staff Engineer | Medium | Lever | submitted | sent | https://example.com/job | jobs/acme |\n",
   )
+})
+
+test("parseAutomationConfig round-trips the Markdown config", () => {
+  const source = `# Automation
+
+- enabled: true
+- time: "08:30"
+- interval: every 12h
+- model: "opencode/deepseek-v4.1-flash-free"
+- standingApproval: true
+- maxApplicationsPerRun: 0
+- includeBacklog: true
+- includeJobSearch: true
+- includeFeedSearch: false
+- notify: true
+- maxRuntimeMinutes: 45
+`
+  const config = parseAutomationConfig(source)
+  assert.equal(config.enabled, true)
+  assert.equal(config.time, "08:30")
+  assert.equal(config.interval, "every 12h")
+  assert.equal(config.model, "opencode/deepseek-v4.1-flash-free")
+  assert.equal(config.maxApplicationsPerRun, 0)
+  assert.equal(config.includeFeedSearch, false)
+  assert.equal(config.maxRuntimeMinutes, 45)
+  assert.deepEqual(parseAutomationConfig(formatAutomationConfig(config)), config)
+})
+
+test("validateAutomationConfig rejects bad times, intervals and models", () => {
+  assert.deepEqual(validateAutomationConfig(DEFAULT_AUTOMATION), [])
+  assert.ok(validateAutomationConfig({ ...DEFAULT_AUTOMATION, time: "9:00" }).length > 0)
+  assert.ok(validateAutomationConfig({ ...DEFAULT_AUTOMATION, interval: "every 25h" }).length > 0)
+  assert.ok(validateAutomationConfig({ ...DEFAULT_AUTOMATION, model: "not-a-model" }).length > 0)
+  assert.ok(validateAutomationConfig({ ...DEFAULT_AUTOMATION, maxRuntimeMinutes: 1 }).length > 0)
+  assert.ok(validateAutomationConfig({ ...DEFAULT_AUTOMATION, maxApplicationsPerRun: -1 }).length > 0)
+})
+
+test("nextRunAt handles daily and every-N-hours schedules", () => {
+  const base = new Date(2026, 10, 16, 8, 0, 0)
+  const daily = nextRunAt({ ...DEFAULT_AUTOMATION, enabled: true, time: "09:00" }, base)
+  assert.equal(daily?.getFullYear(), 2026)
+  assert.equal(daily?.getMonth(), 10)
+  assert.equal(daily?.getDate(), 16)
+  assert.equal(daily?.getHours(), 9)
+
+  const nextDay = nextRunAt({ ...DEFAULT_AUTOMATION, enabled: true, time: "07:00" }, base)
+  assert.equal(nextDay?.getDate(), 17)
+  assert.equal(nextDay?.getHours(), 7)
+
+  const every = nextRunAt(
+    { ...DEFAULT_AUTOMATION, enabled: true, interval: "every 12h" },
+    base,
+    base,
+  )
+  assert.equal(every?.getTime(), base.getTime() + 12 * 60 * 60 * 1000)
+})
+
+test("scheduler builders cover launchd, systemd, cron and Windows", () => {
+  const spec = {
+    time: "09:00",
+    interval: "daily",
+    wrapperPath: "/data/bin/scheduled-search.sh",
+    logsDir: "/data/logs",
+    label: "com.test.search",
+    taskName: "test-search",
+  }
+  const plist = buildLaunchdPlist(spec)
+  assert.ok(plist.includes("<key>StartCalendarInterval</key>"))
+  assert.ok(plist.includes("/data/bin/scheduled-search.sh"))
+  const intervalPlist = buildLaunchdPlist({ ...spec, interval: "every 12h" })
+  assert.ok(intervalPlist.includes("<key>StartInterval</key>"))
+  assert.ok(intervalPlist.includes(String(12 * 60 * 60)))
+
+  assert.ok(buildSystemdTimer(spec).includes("OnCalendar=*-*-* 09:00:00"))
+  assert.ok(buildSystemdTimer({ ...spec, interval: "every 12h" }).includes("OnUnitActiveSec=12h"))
+  assert.ok(buildCronLine(spec).includes("0 9 * * *"))
+  assert.ok(buildCronLine({ ...spec, interval: "every 12h" }).includes("0 */12 * * *"))
+
+  const win = buildWindowsTaskArgs(spec)
+  assert.ok(win.includes("/SC") && win.includes("DAILY") && win.includes("09:00"))
+  const winInterval = buildWindowsTaskArgs({ ...spec, interval: "every 12h" })
+  assert.ok(winInterval.includes("HOURLY") && winInterval.includes("12"))
+
+  assert.equal(intervalHours("every 12h"), 12)
+  assert.equal(intervalHours("daily"), null)
+  assert.equal(detectScheduler("darwin"), "launchd")
+  assert.equal(detectScheduler("linux"), "systemd")
+  assert.equal(detectScheduler("win32"), "task-scheduler")
+})
+
+test("notification and wrapper builders are platform-specific", () => {
+  const mac = buildNotificationCommand("darwin", "Title", "Body")
+  assert.equal(mac.command, "osascript")
+  assert.ok(mac.args[1]?.includes("display notification"))
+  const linux = buildNotificationCommand("linux", "Title", "Body")
+  assert.equal(linux.command, "notify-send")
+  assert.deepEqual(linux.args, ["Title", "Body"])
+  const win = buildNotificationCommand("win32", "Title", "Body")
+  assert.equal(win.command, "powershell")
+
+  const wrapper = buildPosixWrapper({
+    repoPath: "/repo",
+    dataDir: "/data",
+    nodePath: "/node",
+    tsxCliPath: "/repo/node_modules/tsx/dist/cli.mjs",
+    runnerPath: "/repo/scripts/scheduled-search.ts",
+  })
+  assert.ok(wrapper.includes("cd '/repo'"))
+  assert.ok(wrapper.includes("exec '/node'"))
+  const windows = buildWindowsWrapper({
+    repoPath: "C:\\repo",
+    dataDir: "C:\\data",
+    nodePath: "C:\\node.exe",
+    tsxCliPath: "C:\\repo\\node_modules\\tsx\\dist\\cli.mjs",
+    runnerPath: "C:\\repo\\scripts\\scheduled-search.ts",
+  })
+  assert.ok(windows.includes("@echo off"))
+  assert.ok(windows.includes("cd /d"))
+})
+
+test("automationReady lists missing user data", async () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "ajs-automation-"))
+  try {
+    mkdirSync(path.join(dir, "resume"))
+    for (const file of ["profile.md", "preferences.md", "application-data.md", "language.md"]) {
+      writeFileSync(path.join(dir, file), "x")
+    }
+    writeFileSync(path.join(dir, "resume", "base.md"), "x")
+    assert.deepEqual(await automationReady(dir), [])
+    rmSync(path.join(dir, "resume", "base.md"))
+    assert.deepEqual(await automationReady(dir), ["resume/base.md"])
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test("buildScheduledPrompt includes the user data and pipeline", () => {
+  const prompt = buildScheduledPrompt("/data", { ...DEFAULT_AUTOMATION, enabled: true })
+  assert.ok(prompt.includes("/data/automation.md"))
+  assert.ok(prompt.includes("profile.md"))
+  assert.ok(prompt.includes("preferences.md"))
+  assert.ok(prompt.includes("reports/"))
+  assert.ok(prompt.includes("pending-search.json"))
+  assert.ok(prompt.includes("No application cap"))
 })

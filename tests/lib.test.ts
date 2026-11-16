@@ -25,6 +25,7 @@ import {
 } from "../lib/scheduler.ts"
 import { buildNotificationCommand } from "../lib/notify.ts"
 import {
+  findNodePath,
   findOpencodeOnPath,
   knownOpencodePaths,
   resolveOpencodePath,
@@ -823,6 +824,18 @@ test("resolveOpencodePath falls back to known install locations", () => {
       resolveOpencodePath({ platform: "darwin", env: { PATH: "" }, home: dir, override: binary }),
       binary,
     )
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test("findNodePath finds node on PATH", () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "ajs-node-"))
+  try {
+    const binary = path.join(dir, "node")
+    writeFileSync(binary, "#!/bin/sh\nexit 0\n")
+    chmodSync(binary, 0o755)
+    assert.equal(findNodePath({ platform: "darwin", env: { PATH: dir }, home: dir }), binary)
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }

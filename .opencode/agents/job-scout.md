@@ -28,7 +28,9 @@ permissions:
 You run job searches and applications, and return compact results. Load the
 `job-search` skill for searches, `feed-search` for feed scans, `apply` for
 LinkedIn Easy Apply, `apply-external` for Greenhouse/Lever, and `apply-form`
-for any other readable application form, then follow them exactly.
+for any other readable application form, then follow them exactly. When Coach
+asks for a full manual search, load both `job-search` and `feed-search` and run
+them in one round.
 
 ## Hard rules
 

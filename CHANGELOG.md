@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-16
+
+### Changed
+
+- Manual searches include `feed-search` in the same `job-scout` round by
+  default; the user can ask for jobs only to skip it. `/job/feed-search` still
+  runs the feed scan alone.
+
 ## [0.7.0] - 2026-11-16
 
 ### Added

@@ -25,6 +25,7 @@ import {
   type AutomationConfig,
 } from "../lib/automation.ts"
 import { buildNotificationCommand, formatNotificationFallback } from "../lib/notify.ts"
+import { resolveOpencodePath } from "../lib/opencode-bin.ts"
 import { todayIso } from "../lib/jobstore.ts"
 
 const repoPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
@@ -33,7 +34,11 @@ const reportsDir = path.join(dataDir, "reports")
 const logsDir = path.join(dataDir, "logs")
 const stateDir = path.join(dataDir, "state")
 const lockPath = path.join(stateDir, "search.lock")
-const opencodeBin = process.env["JOBSEARCH_OPENCODE_BIN"] ?? "opencode"
+const pinnedOpencode = process.env["JOBSEARCH_OPENCODE_BIN"]
+const opencodeBin =
+  pinnedOpencode !== undefined && resolveOpencodePath({ override: pinnedOpencode }) !== null
+    ? pinnedOpencode
+    : (resolveOpencodePath({ override: "" }) ?? "opencode")
 
 interface RunResult {
   status: number | null

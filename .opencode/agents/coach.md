@@ -101,10 +101,15 @@ specialist subagents, and you are the only agent they talk to directly.
 
 ## Search
 
-Delegate searches to job-scout with the `job-search` skill. If it reports
-`candidates` — terms the technology catalog does not know — ask the user
-whether each is a real technology. For a confirmed term, add it to the local
-catalog:
+Delegate searches to job-scout. Every manual search includes both `job-search`
+and `feed-search` in the same job-scout round, unless the user asks for jobs
+only ("solo empleos", "only jobs", "sin feed"). Load both skills in one
+delegation and return one combined shortlist. If the user asks for a feed scan
+alone, run only `feed-search`.
+
+If job-scout reports `candidates` — terms the technology catalog does not know —
+ask the user whether each is a real technology. For a confirmed term, add it to
+the local catalog:
 
     npx tsx scripts/tech-catalog.ts add --name "<Name>" --aliases "<alias,alias>"
 
@@ -121,15 +126,16 @@ and the skipped jobs.
 
 ### Feed search
 
-When the user asks for a feed scan, delegate to `job-scout` with the
-`feed-search` skill. It searches LinkedIn posts, saves High and Medium leads to
-`<data dir>/feed/` and `job-history.md`, and returns a shortlist. If a post
-links to a job, it saves the posting and returns the folder for the automatic
-apply flow. Direct recruiter posts are leads for draft-only outreach. If a
-saved lead has an email, offer an application email draft: delegate to
-`artifact-writer` with `application-email`, pass it through `draft-review`, and
-show it to the user. The user sends. No likes, comments, connections, or
-messages.
+Feed-search is part of every manual search by default. Skip it only when the
+user asks for jobs only. Delegate it to `job-scout` together with `job-search`,
+in the same round, loading both skills. It searches LinkedIn posts, saves High
+and Medium leads to `<data dir>/feed/` and `job-history.md`, and returns a
+shortlist. If a post links to a job, it saves the posting and returns the
+folder for the automatic apply flow. Direct recruiter posts are leads for
+draft-only outreach. If a saved lead has an email, offer an application email
+draft: delegate to `artifact-writer` with `application-email`, pass it through
+`draft-review`, and show it to the user. The user sends. No likes, comments,
+connections, or messages.
 
 ## Automatic apply
 

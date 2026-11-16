@@ -88,11 +88,12 @@ result; you never need to address a subagent directly.
    resume, target roles, preferences, the stack you actually use, application
    answers, and — at the end — whether to enable the daily search. It shows
    the profile for approval before any search uses it.
-2. **Search.** `/job/search` looks at LinkedIn postings from the last 48 hours.
-   Coach shows the plan, waits for your OK, then scores fit, saves High/Medium
-   postings, tailors the resume, applies to Medium/High fits, and logs every
-   submission. `/job/feed-search` does the same for hiring posts in LinkedIn
-   content search.
+2. **Search.** `/job/search` looks at LinkedIn postings from the last 48 hours
+   and, in the same round, scans the feed for hiring posts. Coach shows the
+   plan, waits for your OK, then scores fit, saves High/Medium postings and
+   leads, tailors the resume, applies to Medium/High fits, and logs every
+   submission. Say “solo empleos” or “only jobs” to skip the feed. Use
+   `/job/feed-search` when you want the feed scan alone.
 3. **Review.** Open `<data dir>/applications.md` to see what was sent, where,
    and with which fit. Each job folder has an `applied.md` with the exact
    fields and answers.
@@ -204,8 +205,8 @@ messages, publishes posts, or changes the repository during a scheduled run.
 | Command | What it does |
 | --- | --- |
 | `/job/setup` | Onboarding: resume, preferences, work history |
-| `/job/search` | Find and score jobs posted in the last 48 hours |
-| `/job/feed-search` | Search LinkedIn posts for hiring leads that match your roles |
+| `/job/search` | Find and score jobs posted in the last 48 hours, plus feed hiring leads |
+| `/job/feed-search` | Search LinkedIn posts for hiring leads (feed only) |
 | `/job/application-email` | Draft an application email for a feed lead with an email |
 | `/job/tailor` | Tailored resume for a saved job |
 | `/job/resume-review` | CV feedback with concrete improvements |

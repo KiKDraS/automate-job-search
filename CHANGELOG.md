@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Manual searches include `feed-search` in the same `job-scout` round by
+  default; the user can ask for jobs only to skip it. `/job/feed-search` still
+  runs the feed scan alone.
 - `job-search` resolves each result card's job ID by clicking the card and
   reading `currentJobId` or `/jobs/view/<id>/`; it reports seen, resolved,
   new, duplicates, and unresolved cards. The search URL no longer carries the

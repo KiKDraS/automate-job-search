@@ -40,7 +40,7 @@ function windowsExtensions(env: NodeJS.ProcessEnv): string[] {
 }
 
 /** Scan PATH without relying on `which`/`where`. */
-export function findOpencodeOnPath(options: ResolveOptions = {}): string | null {
+export function findOnPath(name: string, options: ResolveOptions = {}): string | null {
   const platform = options.platform ?? process.platform
   const env = options.env ?? process.env
   const p = pathApi(platform)
@@ -48,15 +48,41 @@ export function findOpencodeOnPath(options: ResolveOptions = {}): string | null 
   const dirs = (env["PATH"] ?? env["Path"] ?? "").split(delimiter).filter((dir) => dir !== "")
   const names =
     platform === "win32"
-      ? ["opencode", ...windowsExtensions(env).map((ext) => `opencode${ext}`)]
-      : ["opencode"]
+      ? [name, ...windowsExtensions(env).map((ext) => `${name}${ext}`)]
+      : [name]
   for (const dir of dirs) {
-    for (const name of names) {
-      const candidate = p.join(dir, name)
+    for (const candidateName of names) {
+      const candidate = p.join(dir, candidateName)
       if (isExecutable(candidate, platform)) return candidate
     }
   }
   return null
+}
+
+/** Scan PATH for the opencode CLI. */
+export function findOpencodeOnPath(options: ResolveOptions = {}): string | null {
+  return findOnPath("opencode", options)
+}
+
+/** Scan PATH for node, with known locations; falls back to the running node. */
+export function findNodePath(options: ResolveOptions = {}): string | null {
+  const platform = options.platform ?? process.platform
+  const env = options.env ?? process.env
+  const home = options.home ?? os.homedir()
+  const p = pathApi(platform)
+  const onPath = findOnPath("node", { ...options, platform, env })
+  if (onPath !== null) return onPath
+  const known =
+    platform === "win32"
+      ? [
+          p.join(env["ProgramFiles"] ?? "C:\\Program Files", "nodejs", "node.exe"),
+          p.join(env["LOCALAPPDATA"] ?? p.join(home, "AppData", "Local"), "Programs", "nodejs", "node.exe"),
+        ]
+      : ["/opt/homebrew/bin/node", "/usr/local/bin/node", "/usr/bin/node", p.join(home, ".bun", "bin", "node")]
+  for (const candidate of known) {
+    if (isExecutable(candidate, platform)) return candidate
+  }
+  return process.execPath !== "" ? process.execPath : null
 }
 
 /** Locations used by the common installers. */
@@ -103,8 +129,8 @@ export function resolveOpencodePath(options: ResolveOptions = {}): string | null
   const platform = options.platform ?? process.platform
   const env = options.env ?? process.env
   const override = options.override ?? env["JOBSEARCH_OPENCODE_BIN"]
-  if (override !== undefined && override.trim() !== "" && isExecutable(override, platform)) {
-    return override
+  if (override !== undefined && override.trim() !== "") {
+    return isExecutable(override, platform) ? override : null
   }
   const onPath = findOpencodeOnPath({ ...options, platform, env })
   if (onPath !== null) return onPath

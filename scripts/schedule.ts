@@ -46,7 +46,7 @@ import {
   type SchedulerSpec,
   type WrapperSpec,
 } from "../lib/scheduler.ts"
-import { knownOpencodePaths, resolveOpencodePath } from "../lib/opencode-bin.ts"
+import { findNodePath, knownOpencodePaths, resolveOpencodePath } from "../lib/opencode-bin.ts"
 import { fail } from "./args.ts"
 
 const SCRIPT = "schedule"
@@ -131,7 +131,7 @@ function wrapperSpec(opencodePath: string): WrapperSpec {
   return {
     repoPath,
     dataDir,
-    nodePath: process.execPath,
+    nodePath: findNodePath() ?? process.execPath,
     tsxCliPath,
     runnerPath,
     opencodePath,
@@ -310,6 +310,7 @@ async function statusLine(config: AutomationConfig): Promise<void> {
   console.log(`Scheduler: ${detectScheduler()}`)
   console.log(`Installed: ${(await isInstalled()) ? "yes" : "no"}`)
   console.log(`OpenCode CLI: ${resolveOpencodePath() ?? "not found"}`)
+  console.log(`Node: ${findNodePath() ?? "not found"}`)
   console.log(`Wrapper: ${wrapperPath}`)
   console.log(`Config: ${configPath}`)
   console.log(`Setup: ${missing.length === 0 ? "ready" : `missing ${missing.join(", ")}`}`)

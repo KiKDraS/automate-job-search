@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   after the profile is approved.
 - README documents the automated search, defaults, model choice, OS behavior,
   reports, and retry.
+- Scheduled runs draft application emails and queue CAPTCHA, login, email, and
+  missing-answer actions in the daily report; the README notes that the run
+  uses the checked-out code and how to repair after changing the OpenCode
+  install method.
 
 ### Fixed
 

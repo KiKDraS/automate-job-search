@@ -792,6 +792,8 @@ test("buildScheduledPrompt includes the user data and pipeline", () => {
   assert.ok(prompt.includes("reports/"))
   assert.ok(prompt.includes("pending-search.json"))
   assert.ok(prompt.includes("No application cap"))
+  assert.ok(prompt.includes("mailto"))
+  assert.ok(prompt.includes("Needs you"))
 })
 
 test("findOpencodeOnPath finds an executable on POSIX", () => {

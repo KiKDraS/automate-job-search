@@ -188,6 +188,12 @@ Logs are in `<data dir>/logs/`; the generated wrapper is in
 `<data dir>/bin/`. The scheduler runs `opencode run --auto --agent coach` with
 the model you chose.
 
+The scheduler runs the code checked out in the repository. Keep `develop` or
+`main` checked out; a feature branch or uncommitted changes affect the next
+run. If you change how `opencode` is installed, run
+`/job/schedule --repair`; the runtime resolver also falls back to PATH and the
+known install locations automatically.
+
 The machine must be on and the browser profile must still be logged into
 LinkedIn. If it was asleep or off, the OS runs the job when it wakes or starts,
 where supported. The agent never creates accounts, solves CAPTCHAs, sends

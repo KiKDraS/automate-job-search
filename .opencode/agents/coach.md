@@ -169,9 +169,15 @@ pre-approved the plan in `<data dir>/automation.md`; do not ask questions.
    - queue every blocker.
 3. Auto-apply only if `standingApproval: true`; otherwise save the jobs and
    list them for the user.
-4. Never publish posts, send messages, create accounts, solve CAPTCHAs, or
+4. Do every automatic application before the human-only steps. For a feed lead
+   with an email, draft the application email with `application-email`, pass
+   `draft-review`, and put the `mailto:` link under “Needs you”. Do not send it.
+   For CAPTCHA, login, account creation, or a missing required answer, leave
+   the form filled when possible and put the URL and the exact action under
+   “Needs you”.
+5. Never publish posts, send messages, create accounts, solve CAPTCHAs, or
    change the repository.
-5. Write `<data dir>/reports/<date>.md` with Summary, Applied, Needs you, and
+6. Write `<data dir>/reports/<date>.md` with Summary, Applied, Needs you, and
    Skipped. Write `<data dir>/state/pending-search.json` with every blocker
    and unfinished job. The runner sends the notification; you write the files.
 

@@ -33,6 +33,7 @@ const reportsDir = path.join(dataDir, "reports")
 const logsDir = path.join(dataDir, "logs")
 const stateDir = path.join(dataDir, "state")
 const lockPath = path.join(stateDir, "search.lock")
+const opencodeBin = process.env["JOBSEARCH_OPENCODE_BIN"] ?? "opencode"
 
 interface RunResult {
   status: number | null
@@ -57,7 +58,7 @@ function runOpenCode(prompt: string, config: AutomationConfig): RunResult {
     maxBuffer: 20 * 1024 * 1024,
   }
   if (process.platform !== "win32") {
-    const result = spawnSync("opencode", args, options)
+    const result = spawnSync(opencodeBin, args, options)
     return {
       status: result.status,
       stdout: result.stdout ?? "",
@@ -66,7 +67,7 @@ function runOpenCode(prompt: string, config: AutomationConfig): RunResult {
     }
   }
   const command = [process.env["ComSpec"] ?? "cmd.exe"]
-  const line = ["opencode", ...args.map(quoteWindowsArg)].join(" ")
+  const line = [opencodeBin, ...args.map(quoteWindowsArg)].join(" ")
   const result = spawnSync(command[0] ?? "cmd.exe", ["/d", "/s", "/c", line], options)
   return {
     status: result.status,

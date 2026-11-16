@@ -77,6 +77,10 @@ revision.
 Agents declare `steps` limits so a weak model cannot loop indefinitely. When
 an agent nears its cap it stops and reports, rather than thrashing.
 
+Scheduled runs are capped by `maxRuntimeMinutes` and the agent step budget.
+Unfinished jobs go to `<data dir>/state/pending-search.json`; the next run or
+`/job/retry` continues them. No infinite loops.
+
 ## Presence
 
 Presence drafts (profile audit, post, comment) use the user's brief and the

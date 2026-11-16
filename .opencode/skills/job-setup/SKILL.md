@@ -1,6 +1,6 @@
 ---
 name: Job Setup
-description: "One-time onboarding: resume, preferences, and a compact work-history profile in the data directory. Use for first-time setup or refreshing preferences. Not for job searching (use job-search)."
+description: "One-time onboarding: resume, preferences, work-history profile, application answers, and optional daily automation. Use for first-time setup or refreshing preferences. Not for job searching (use job-search)."
 ---
 
 # Job Setup
@@ -13,6 +13,8 @@ reads. Keep it to one batch of questions at a time.
 - `resume/` — the user's source resume file(s)
 - `preferences.md` — targets, locations, compensation, constraints
 - `profile.md` — compact, structured work history used for tailoring
+- `application-data.md` — reusable contact and application answers
+- `automation.md` — optional scheduled search (created only if enabled)
 
 ## Steps
 
@@ -109,11 +111,51 @@ For an existing profile, do this once before the first search that uses it.
 If `## Stack` is missing, propose it from the resume and ask for confirmation
 first.
 
-### 6. Wrap up
+### 6. Application answers
 
-Summarize the files written (including any PDF) and remind the user that the
-first search opens a browser window where they log into LinkedIn manually,
-once.
+Ask in one batch, prefilled from the resume and preferences:
+
+- Full name, email, phone, location, LinkedIn, GitHub or portfolio.
+- Authorized to work in Argentina; needs sponsorship; can issue contractor
+  invoices; will keep residing/working where the employer can contract.
+- Rate, current company, notice period, earliest start, relocation, work mode,
+  salary expectation.
+
+Write `<data dir>/application-data.md` using the bullets from the `apply`
+skill. Never guess: if the user does not know an answer, write `not recorded`
+and note that automated forms needing it will be skipped and queued.
+
+### 7. Automation
+
+Only after the profile is approved and `application-data.md` exists. Ask in
+one batch, with defaults:
+
+1. Enable the automated search? (default no; explain what it does)
+2. Time (09:00)
+3. Frequency (`daily` or `every 12h`)
+4. Model (default OpenCode model, or `provider/model`; `opencode models` lists them)
+5. Include feed search? (yes)
+6. Notifications? (yes)
+7. Standing auto-apply for Medium/High? (yes)
+8. Maximum applications per run? (0 = no cap)
+9. Runtime cap in minutes? (60)
+
+If the user says yes, run:
+
+    npx tsx scripts/schedule.ts enable --time "09:00" --interval daily \
+      --notify --feed --apply --max-applications 0 --max-runtime 60
+
+Add `--model "<provider/model>"` only when the user chose one. Show the
+summary: schedule, next run, model, OS scheduler, and how to change it with
+`/job/schedule`. If the OS scheduler fails, show the exact error.
+
+If the user says no, do not install anything; `/job/schedule` stays available.
+
+### 8. Wrap up
+
+Summarize the files written (including any PDF), the automation status, and
+remind the user that the first search opens a browser window where they log
+into LinkedIn manually, once.
 
 ## Rules
 
@@ -121,5 +163,7 @@ once.
 - Never write `## Stack` from inference alone; write only the user's
   confirmed Primary / Working knowledge split.
 - Show `profile.md` for explicit approval before any skill uses it.
+- Never install the scheduler before the profile is approved and
+  `application-data.md` exists. Automation is optional; the user must confirm.
 - Keep both files compact — they are read often.
 - Data lives in `~/.jobsearch` (or `JOBSEARCH_HOME`) — never in the repo.

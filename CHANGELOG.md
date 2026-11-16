@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-16
+
+### Added
+
+- Automated daily search: `automation.md` in the data dir, a cross-platform
+  scheduler (launchd, systemd/cron, Task Scheduler), `/job/schedule`,
+  `/job/retry`, native notifications with a text fallback, daily reports, and
+  a pending-state handoff for CAPTCHA, email, login, and missing answers.
+- Model choice for scheduled runs: `--model provider/model` or the OpenCode
+  default.
+- `schedule` skill and `/job/schedule` command.
+
+### Changed
+
+- `job-search` resolves each result card's job ID by clicking the card and
+  reading `currentJobId` or `/jobs/view/<id>/`; it reports seen, resolved,
+  new, duplicates, and unresolved cards. The search URL no longer carries the
+  `f_SAL` salary filter.
+- `job-setup` now collects application answers and offers the automation step
+  after the profile is approved.
+- README documents the automated search, defaults, model choice, OS behavior,
+  reports, and retry.
+- Scheduled runs draft application emails and queue CAPTCHA, login, email, and
+  missing-answer actions in the daily report; the README notes that the run
+  uses the checked-out code and how to repair after changing the OpenCode
+  install method.
+
+### Fixed
+
+- The scheduler resolves the `opencode` CLI across Homebrew, npm, pnpm, Bun,
+  the curl installer, and Windows installers. The wrapper pins the absolute
+  path and the install-time `PATH`; `--opencode-bin` handles custom installs.
+  It also resolves a stable `node` path and falls back at runtime if the
+  pinned CLI disappears.
+
 ## [0.6.0] - 2026-11-13
 
 ### Added

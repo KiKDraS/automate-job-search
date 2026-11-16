@@ -22,10 +22,16 @@ Useful query parameters:
 Parameter names can change; if a filter visibly fails to apply, verify
 manually in the UI and update this document.
 
+`f_SAL` (salary filter) is intentionally not used. The URL builder deletes it
+if a copied URL carries it.
+
 ## Reading a results page
 
 - Results are cards: title, company, location, posted time, and the job URL.
   Extract only those fields (see `browser-setup.md`).
+- A card may not expose the job ID in the DOM. Tag the card containers, click
+  each card, and read `currentJobId` or `/jobs/view/<id>/` from the resulting
+  URL. Do not rely on `li.scaffold-layout__list-item`.
 - Paginate deliberately: one page at a time, cap results per run.
 - Mark and exclude "Promoted" cards from scoring.
 

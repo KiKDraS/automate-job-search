@@ -61,6 +61,21 @@ resume, fills the form, and submits without asking. Low fits are skipped.
 - The same rule applies to LinkedIn Easy Apply, Greenhouse, Lever, and any
   other readable form via `apply-form`.
 
+### Scheduled runs
+
+The user enables the daily search in `automation.md` through `/job/schedule`.
+That is a standing approval for exactly this scope:
+
+- run the backlog, the 48-hour job search, and the feed search;
+- tailor, `draft-review`, and auto-apply Medium/High fits when
+  `standingApproval` is true;
+- write `applied.md`, `applications.md`, the daily report, and the pending
+  state.
+
+It does not approve messages, comments, posts, profile edits, account creation,
+CAPTCHA solving, or repository changes. A scheduled run never asks a question:
+it skips the blocker, writes it to the report, and leaves it for the user.
+
 ### Posts
 
 A LinkedIn post is one more outbound action:

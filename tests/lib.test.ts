@@ -1,9 +1,35 @@
 import assert from "node:assert/strict"
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { test } from "node:test"
 import { parseDataDirConfig, resolveDataDirWithSource } from "../lib/data-dir.ts"
+import {
+  automationReady,
+  buildScheduledPrompt,
+  DEFAULT_AUTOMATION,
+  formatAutomationConfig,
+  nextRunAt,
+  parseAutomationConfig,
+  validateAutomationConfig,
+} from "../lib/automation.ts"
+import {
+  buildCronLine,
+  buildLaunchdPlist,
+  buildPosixWrapper,
+  buildSystemdTimer,
+  buildWindowsTaskArgs,
+  buildWindowsWrapper,
+  detectScheduler,
+  intervalHours,
+} from "../lib/scheduler.ts"
+import { buildNotificationCommand } from "../lib/notify.ts"
+import {
+  findNodePath,
+  findOpencodeOnPath,
+  knownOpencodePaths,
+  resolveOpencodePath,
+} from "../lib/opencode-bin.ts"
 import {
   formatApplicationIndexRow,
   formatAppliedMarkdown,
@@ -131,6 +157,7 @@ test("buildJobSearchUrl sets keywords, location and filters", () => {
   assert.equal(url.searchParams.get("f_AL"), "true")
   assert.equal(url.searchParams.get("sortBy"), "DD")
   assert.equal(url.searchParams.get("f_E"), null)
+  assert.equal(url.searchParams.get("f_SAL"), null)
 })
 
 test("jobIdFromUrl handles view URLs, collections URLs and non-LinkedIn input", () => {
@@ -614,4 +641,225 @@ test("formatApplicationIndexRow builds the applications.md row", () => {
     row,
     "| 2026-11-13 | Acme \\| Labs | Staff Engineer | Medium | Lever | submitted | sent | https://example.com/job | jobs/acme |\n",
   )
+})
+
+test("parseAutomationConfig round-trips the Markdown config", () => {
+  const source = `# Automation
+
+- enabled: true
+- time: "08:30"
+- interval: every 12h
+- model: "opencode/deepseek-v4.1-flash-free"
+- standingApproval: true
+- maxApplicationsPerRun: 0
+- includeBacklog: true
+- includeJobSearch: true
+- includeFeedSearch: false
+- notify: true
+- maxRuntimeMinutes: 45
+`
+  const config = parseAutomationConfig(source)
+  assert.equal(config.enabled, true)
+  assert.equal(config.time, "08:30")
+  assert.equal(config.interval, "every 12h")
+  assert.equal(config.model, "opencode/deepseek-v4.1-flash-free")
+  assert.equal(config.maxApplicationsPerRun, 0)
+  assert.equal(config.includeFeedSearch, false)
+  assert.equal(config.maxRuntimeMinutes, 45)
+  assert.deepEqual(parseAutomationConfig(formatAutomationConfig(config)), config)
+})
+
+test("validateAutomationConfig rejects bad times, intervals and models", () => {
+  assert.deepEqual(validateAutomationConfig(DEFAULT_AUTOMATION), [])
+  assert.ok(validateAutomationConfig({ ...DEFAULT_AUTOMATION, time: "9:00" }).length > 0)
+  assert.ok(validateAutomationConfig({ ...DEFAULT_AUTOMATION, interval: "every 25h" }).length > 0)
+  assert.ok(validateAutomationConfig({ ...DEFAULT_AUTOMATION, model: "not-a-model" }).length > 0)
+  assert.ok(validateAutomationConfig({ ...DEFAULT_AUTOMATION, maxRuntimeMinutes: 1 }).length > 0)
+  assert.ok(validateAutomationConfig({ ...DEFAULT_AUTOMATION, maxApplicationsPerRun: -1 }).length > 0)
+})
+
+test("nextRunAt handles daily and every-N-hours schedules", () => {
+  const base = new Date(2026, 10, 16, 8, 0, 0)
+  const daily = nextRunAt({ ...DEFAULT_AUTOMATION, enabled: true, time: "09:00" }, base)
+  assert.equal(daily?.getFullYear(), 2026)
+  assert.equal(daily?.getMonth(), 10)
+  assert.equal(daily?.getDate(), 16)
+  assert.equal(daily?.getHours(), 9)
+
+  const nextDay = nextRunAt({ ...DEFAULT_AUTOMATION, enabled: true, time: "07:00" }, base)
+  assert.equal(nextDay?.getDate(), 17)
+  assert.equal(nextDay?.getHours(), 7)
+
+  const every = nextRunAt(
+    { ...DEFAULT_AUTOMATION, enabled: true, interval: "every 12h" },
+    base,
+    base,
+  )
+  assert.equal(every?.getTime(), base.getTime() + 12 * 60 * 60 * 1000)
+})
+
+test("scheduler builders cover launchd, systemd, cron and Windows", () => {
+  const spec = {
+    time: "09:00",
+    interval: "daily",
+    wrapperPath: "/data/bin/scheduled-search.sh",
+    logsDir: "/data/logs",
+    label: "com.test.search",
+    taskName: "test-search",
+  }
+  const plist = buildLaunchdPlist(spec)
+  assert.ok(plist.includes("<key>StartCalendarInterval</key>"))
+  assert.ok(plist.includes("/data/bin/scheduled-search.sh"))
+  const intervalPlist = buildLaunchdPlist({ ...spec, interval: "every 12h" })
+  assert.ok(intervalPlist.includes("<key>StartInterval</key>"))
+  assert.ok(intervalPlist.includes(String(12 * 60 * 60)))
+
+  assert.ok(buildSystemdTimer(spec).includes("OnCalendar=*-*-* 09:00:00"))
+  assert.ok(buildSystemdTimer({ ...spec, interval: "every 12h" }).includes("OnUnitActiveSec=12h"))
+  assert.ok(buildCronLine(spec).includes("0 9 * * *"))
+  assert.ok(buildCronLine({ ...spec, interval: "every 12h" }).includes("0 */12 * * *"))
+
+  const win = buildWindowsTaskArgs(spec)
+  assert.ok(win.includes("/SC") && win.includes("DAILY") && win.includes("09:00"))
+  const winInterval = buildWindowsTaskArgs({ ...spec, interval: "every 12h" })
+  assert.ok(winInterval.includes("HOURLY") && winInterval.includes("12"))
+
+  assert.equal(intervalHours("every 12h"), 12)
+  assert.equal(intervalHours("daily"), null)
+  assert.equal(detectScheduler("darwin"), "launchd")
+  assert.equal(detectScheduler("linux"), "systemd")
+  assert.equal(detectScheduler("win32"), "task-scheduler")
+})
+
+test("notification and wrapper builders are platform-specific", () => {
+  const mac = buildNotificationCommand("darwin", "Title", "Body")
+  assert.equal(mac.command, "osascript")
+  assert.ok(mac.args[1]?.includes("display notification"))
+  const linux = buildNotificationCommand("linux", "Title", "Body")
+  assert.equal(linux.command, "notify-send")
+  assert.deepEqual(linux.args, ["Title", "Body"])
+  const win = buildNotificationCommand("win32", "Title", "Body")
+  assert.equal(win.command, "powershell")
+
+  const wrapper = buildPosixWrapper({
+    repoPath: "/repo",
+    dataDir: "/data",
+    nodePath: "/node",
+    tsxCliPath: "/repo/node_modules/tsx/dist/cli.mjs",
+    runnerPath: "/repo/scripts/scheduled-search.ts",
+    opencodePath: "/opt/homebrew/bin/opencode",
+    pathEnv: "/opt/homebrew/bin:/usr/bin:/bin",
+  })
+  assert.ok(wrapper.includes("cd '/repo'"))
+  assert.ok(wrapper.includes("exec '/node'"))
+  assert.ok(wrapper.includes("PATH='/opt/homebrew/bin:/usr/bin:/bin'"))
+  assert.ok(wrapper.includes("JOBSEARCH_OPENCODE_BIN='/opt/homebrew/bin/opencode'"))
+  const windows = buildWindowsWrapper({
+    repoPath: "C:\\repo",
+    dataDir: "C:\\data",
+    nodePath: "C:\\node.exe",
+    tsxCliPath: "C:\\repo\\node_modules\\tsx\\dist\\cli.mjs",
+    runnerPath: "C:\\repo\\scripts\\scheduled-search.ts",
+    opencodePath: "C:\\tools\\opencode\\opencode.cmd",
+    pathEnv: "C:\\tools\\opencode;C:\\Windows\\System32",
+  })
+  assert.ok(windows.includes("@echo off"))
+  assert.ok(windows.includes("cd /d"))
+  assert.ok(windows.includes("JOBSEARCH_OPENCODE_BIN"))
+  assert.ok(windows.includes("set \"PATH="))
+})
+
+test("automationReady lists missing user data", async () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "ajs-automation-"))
+  try {
+    mkdirSync(path.join(dir, "resume"))
+    for (const file of ["profile.md", "preferences.md", "application-data.md", "language.md"]) {
+      writeFileSync(path.join(dir, file), "x")
+    }
+    writeFileSync(path.join(dir, "resume", "base.md"), "x")
+    assert.deepEqual(await automationReady(dir), [])
+    rmSync(path.join(dir, "resume", "base.md"))
+    assert.deepEqual(await automationReady(dir), ["resume/base.md"])
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test("buildScheduledPrompt includes the user data and pipeline", () => {
+  const prompt = buildScheduledPrompt("/data", { ...DEFAULT_AUTOMATION, enabled: true })
+  assert.ok(prompt.includes("/data/automation.md"))
+  assert.ok(prompt.includes("profile.md"))
+  assert.ok(prompt.includes("preferences.md"))
+  assert.ok(prompt.includes("reports/"))
+  assert.ok(prompt.includes("pending-search.json"))
+  assert.ok(prompt.includes("No application cap"))
+  assert.ok(prompt.includes("mailto"))
+  assert.ok(prompt.includes("Needs you"))
+})
+
+test("findOpencodeOnPath finds an executable on POSIX", () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "ajs-opencode-"))
+  try {
+    const binary = path.join(dir, "opencode")
+    writeFileSync(binary, "#!/bin/sh\nexit 0\n")
+    chmodSync(binary, 0o755)
+    const found = findOpencodeOnPath({ platform: "darwin", env: { PATH: dir }, home: dir })
+    assert.equal(found, binary)
+    assert.equal(resolveOpencodePath({ platform: "darwin", env: { PATH: dir }, home: dir }), binary)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test("resolveOpencodePath falls back to known install locations", () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "ajs-opencode-home-"))
+  try {
+    const bin = path.join(dir, ".opencode", "bin")
+    mkdirSync(bin, { recursive: true })
+    const binary = path.join(bin, "opencode")
+    writeFileSync(binary, "#!/bin/sh\nexit 0\n")
+    chmodSync(binary, 0o755)
+    assert.equal(
+      resolveOpencodePath({ platform: "linux", env: { PATH: "" }, home: dir }),
+      binary,
+    )
+    assert.equal(
+      resolveOpencodePath({ platform: "darwin", env: { PATH: "" }, home: dir, override: binary }),
+      binary,
+    )
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test("findNodePath finds node on PATH", () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "ajs-node-"))
+  try {
+    const binary = path.join(dir, "node")
+    writeFileSync(binary, "#!/bin/sh\nexit 0\n")
+    chmodSync(binary, 0o755)
+    assert.equal(findNodePath({ platform: "darwin", env: { PATH: dir }, home: dir }), binary)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test("knownOpencodePaths covers Windows and Unix install methods", () => {
+  const win = knownOpencodePaths({
+    platform: "win32",
+    env: {
+      LOCALAPPDATA: "C:\\Users\\test\\AppData\\Local",
+      APPDATA: "C:\\Users\\test\\AppData\\Roaming",
+      ProgramFiles: "C:\\Program Files",
+    },
+    home: "C:\\Users\\test",
+  })
+  assert.ok(win.some((item) => item.endsWith("opencode.exe")))
+  assert.ok(win.some((item) => item.endsWith("opencode.cmd")))
+  assert.ok(win.some((item) => item.includes("npm")))
+
+  const unix = knownOpencodePaths({ platform: "darwin", env: {}, home: "/Users/test" })
+  assert.ok(unix.includes("/opt/homebrew/bin/opencode"))
+  assert.ok(unix.includes("/usr/local/bin/opencode"))
+  assert.ok(unix.some((item) => item.includes(".opencode/bin/opencode")))
 })

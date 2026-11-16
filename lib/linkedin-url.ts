@@ -58,6 +58,9 @@ export function buildJobSearchUrl(params: JobSearchParams): string {
   if (params.experience) url.searchParams.set("f_E", EXPERIENCE[params.experience])
   if (params.easyApplyOnly) url.searchParams.set("f_AL", "true")
   if (params.sortRecent) url.searchParams.set("sortBy", "DD")
+  // Never add f_SAL: the salary filter narrows the results and is not part of
+  // this toolkit's search contract. Remove it if a copied URL carries it.
+  url.searchParams.delete("f_SAL")
   return url.toString()
 }
 

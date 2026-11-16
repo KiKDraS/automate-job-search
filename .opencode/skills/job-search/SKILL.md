@@ -40,34 +40,101 @@ Use `--posted 48h` for every run. This is a hard limit: only postings
 published in the last 48 hours. Do not widen to week or month unless the user
 explicitly asks for an exception.
 
-### 3. Extract candidates (one execute call per URL)
+Do not add `f_SAL` to the search URL. The builder deletes it; the salary
+filter is intentionally out of scope.
 
-Batch navigate + extract; return only the fields needed, capped at 25:
+### 3. Extract candidates and resolve each card ID on click
+
+Navigate to the search URL once. The list cards do not expose a reliable job ID
+in the DOM, so tag the card containers, click each one, and read the ID from
+the URL after the click (`currentJobId` or `/jobs/view/<id>/`). Do not use
+`li.scaffold-layout__list-item`; use the semantic card containers.
+
+One `execute` call:
 
 ```js
-const nav = await tools.playwright.browser_navigate({ url: URL })
-const r = await tools.playwright.browser_evaluate({
-  function: "() => Array.from(document.querySelectorAll('li.scaffold-layout__list-item')).slice(0, 25).map(li => { const a = li.querySelector('a[href*=\"/jobs/view/\"]'); return { title: (a?.innerText ?? '').trim(), company: (li.querySelector('.artdeco-entity-lockup__subtitle')?.innerText ?? '').trim(), location: (li.querySelector('.artdeco-entity-lockup__caption')?.innerText ?? '').trim(), posted: (li.querySelector('time')?.innerText ?? '').trim(), url: (a?.href ?? '').split('?')[0] } }).filter(x => x.title && x.url)"
-})
-return r
+const searchUrl = URL
+await tools.playwright.browser_navigate({ url: searchUrl })
+
+const tagCards = async () =>
+  tools.playwright.browser_evaluate({
+    function: `() => {
+      const root = document.querySelector('.scaffold-layout__list, main') || document.body
+      const all = Array.from(root.querySelectorAll(
+        '[data-occludable-job-id], div.job-card-container, div.job-card-container--clickable'
+      ))
+      const cards = all.filter((el) => !all.some((other) => other !== el && other.contains(el)))
+      return cards.slice(0, 25).map((el, i) => {
+        el.setAttribute('data-ajs-card', String(i))
+        const link = el.querySelector('a[href*="/jobs/view/"], a[href*="currentJobId"], a.job-card-container__link, a')
+        const text = (selector) => (el.querySelector(selector)?.innerText || '').trim()
+        return {
+          i,
+          title: (link?.innerText || text('.artdeco-entity-lockup__title') || '').trim(),
+          company: text('.artdeco-entity-lockup__subtitle'),
+          location: text('.artdeco-entity-lockup__caption'),
+          posted: text('time'),
+          href: link?.href || ''
+        }
+      }).filter((card) => card.title)
+    }`
+  })
+
+const cards = await tagCards()
+const resolved = []
+const unresolved = []
+for (const card of cards) {
+  try {
+    await tools.playwright.browser_click({
+      target: `[data-ajs-card="${card.i}"] a, [data-ajs-card="${card.i}"] [role="button"]`
+    })
+    const info = await tools.playwright.browser_evaluate({
+      function: `() => {
+        const u = new URL(location.href)
+        const id = u.searchParams.get('currentJobId') || (u.pathname.match(/\\/jobs\\/view\\/(\\d+)/) || [])[1] || null
+        return { id, url: location.href }
+      }`
+    })
+    if (info.id) resolved.push({ ...card, jobId: info.id, url: info.url })
+    else unresolved.push({ ...card, reason: 'no currentJobId or /jobs/view/<id>/ after click' })
+  } catch (error) {
+    unresolved.push({ ...card, reason: String(error) })
+  }
+}
+return { seen: cards.length, resolved, unresolved }
 ```
 
-If the result is empty, take ONE `browser_snapshot` with a small `depth` to
-find the current list container, fix the selector, and retry once. If it is
-still empty, report the failure with the page URL.
+If a click navigates away and the list disappears, go back, re-run `tagCards`,
+and continue from the next card. If two cards in a row fail, stop and report
+the unresolved ones. If no cards are found, take ONE `browser_snapshot` with a
+small `depth` to find the current card container, fix the selector, and retry
+once.
 
 Skip any listing whose posted time is older than 2 days, even if LinkedIn
 includes it in the results. The posted label is the source of truth.
 
-### 4. Dedupe
+### 4. Dedupe and count
 
-Write the candidates array to `<data dir>/.tmp/candidates.json` (JSON array),
-then:
+The extraction returns `{ seen, resolved, unresolved }`:
+
+- `seen`: cards tagged on the page.
+- `resolved`: cards whose job ID was resolved after the click.
+- `unresolved`: cards with no ID; keep title, company, `href`, and the reason.
+
+Write only the `resolved` array to `<data dir>/.tmp/candidates.json` (JSON
+array), then:
 
     npx tsx scripts/history.ts filter --file <data dir>/.tmp/candidates.json
 
-Output is JSON with only new candidates. If empty: report "no new jobs" with
-counts and stop.
+The output is a JSON array with only new candidates. Compute:
+
+- `new` = length of the filtered array.
+- `duplicates` = `resolved.length - new`.
+- `unresolved` = the extraction's unresolved list.
+
+If `resolved` is empty: report "no resolvable jobs" with `seen` and
+`unresolved`, and stop. If the filtered array is empty: report "no new jobs"
+with `seen`, `new: 0`, `duplicates`, and `unresolved`, and stop.
 
 ### 5. Score fit
 
@@ -134,8 +201,11 @@ retry them or re-add them by hand.
 
 Return to Coach:
 
-- Terms used, URLs searched, counts: new / High / Medium / Low, skipped
-  duplicates.
+- Terms used, URLs searched.
+- Counts: `seen`, `resolved`, `new`, `duplicates`, `unresolved`, and
+  High/Medium/Low.
+- Unresolved IDs: title — company — `href` or card selector — reason. If none,
+  say "none".
 - Shortlist rows for High and Medium fits: role — company — location — job
   URL — why — folder path. Canonicalize each URL first with
   `npx tsx scripts/linkedin.ts normalize-job "<url>"`, and include the

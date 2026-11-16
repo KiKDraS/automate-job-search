@@ -157,6 +157,7 @@ test("buildJobSearchUrl sets keywords, location and filters", () => {
   assert.equal(url.searchParams.get("f_AL"), "true")
   assert.equal(url.searchParams.get("sortBy"), "DD")
   assert.equal(url.searchParams.get("f_E"), null)
+  assert.equal(url.searchParams.get("f_SAL"), null)
 })
 
 test("jobIdFromUrl handles view URLs, collections URLs and non-LinkedIn input", () => {

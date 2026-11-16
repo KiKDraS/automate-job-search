@@ -24,6 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - README documents the automated search, defaults, model choice, OS behavior,
   reports, and retry.
 
+### Fixed
+
+- The scheduler resolves the `opencode` CLI across Homebrew, npm, pnpm, Bun,
+  the curl installer, and Windows installers. The wrapper pins the absolute
+  path and the install-time `PATH`; `--opencode-bin` handles custom installs.
+
 ## [0.6.0] - 2026-11-13
 
 ### Added

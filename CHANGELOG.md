@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `job-search` resolves each result card's job ID by clicking the card and
+  reading `currentJobId` or `/jobs/view/<id>/`; it reports seen, resolved,
+  new, duplicates, and unresolved cards. The search URL no longer carries the
+  `f_SAL` salary filter.
 - `job-setup` now collects application answers and offers the automation step
   after the profile is approved.
 - README documents the automated search, defaults, model choice, OS behavior,

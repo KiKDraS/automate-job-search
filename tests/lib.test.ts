@@ -740,18 +740,22 @@ test("notification and wrapper builders are platform-specific", () => {
     nodePath: "/node",
     tsxCliPath: "/repo/node_modules/tsx/dist/cli.mjs",
     runnerPath: "/repo/scripts/scheduled-search.ts",
+    opencodePath: "/opt/homebrew/bin/opencode",
   })
   assert.ok(wrapper.includes("cd '/repo'"))
   assert.ok(wrapper.includes("exec '/node'"))
+  assert.ok(wrapper.includes("JOBSEARCH_OPENCODE_BIN='/opt/homebrew/bin/opencode'"))
   const windows = buildWindowsWrapper({
     repoPath: "C:\\repo",
     dataDir: "C:\\data",
     nodePath: "C:\\node.exe",
     tsxCliPath: "C:\\repo\\node_modules\\tsx\\dist\\cli.mjs",
     runnerPath: "C:\\repo\\scripts\\scheduled-search.ts",
+    opencodePath: "C:\\Users\\ana\\AppData\\Local\\opencode\\opencode.cmd",
   })
   assert.ok(windows.includes("@echo off"))
   assert.ok(windows.includes("cd /d"))
+  assert.ok(windows.includes("JOBSEARCH_OPENCODE_BIN"))
 })
 
 test("automationReady lists missing user data", async () => {

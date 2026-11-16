@@ -112,6 +112,16 @@ function schedulerSpec(): SchedulerSpec {
   }
 }
 
+function resolveOpencode(): string {
+  const command = process.platform === "win32" ? "where" : "which"
+  const result = run(command, ["opencode"])
+  const first = result.stdout
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => line !== "")
+  return result.status === 0 && first !== undefined ? first : "opencode"
+}
+
 function wrapperSpec(): WrapperSpec {
   return {
     repoPath,
@@ -119,6 +129,7 @@ function wrapperSpec(): WrapperSpec {
     nodePath: process.execPath,
     tsxCliPath,
     runnerPath,
+    opencodePath: resolveOpencode(),
   }
 }
 

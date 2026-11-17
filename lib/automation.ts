@@ -11,7 +11,7 @@ import { todayIso } from "./jobstore.ts"
 
 export interface AutomationConfig {
   enabled: boolean
-  time: string
+  times: string[]
   interval: string
   model: string
   standingApproval: boolean
@@ -19,6 +19,7 @@ export interface AutomationConfig {
   includeBacklog: boolean
   includeJobSearch: boolean
   includeFeedSearch: boolean
+  searchWindowHours: number
   notify: boolean
   maxRuntimeMinutes: number
 }
@@ -43,7 +44,7 @@ export const SEARCH_LOCK_FILE = path.join("state", "search.lock")
 
 export const DEFAULT_AUTOMATION: AutomationConfig = {
   enabled: false,
-  time: "09:00",
+  times: ["09:00"],
   interval: "daily",
   model: "",
   standingApproval: false,
@@ -51,6 +52,7 @@ export const DEFAULT_AUTOMATION: AutomationConfig = {
   includeBacklog: true,
   includeJobSearch: true,
   includeFeedSearch: true,
+  searchWindowHours: 48,
   notify: true,
   maxRuntimeMinutes: 60,
 }
@@ -64,7 +66,19 @@ const BOOLEAN_KEYS = new Set([
   "notify",
 ])
 
-const NUMBER_KEYS = new Set(["maxApplicationsPerRun", "maxRuntimeMinutes"])
+const NUMBER_KEYS = new Set([
+  "maxApplicationsPerRun",
+  "maxRuntimeMinutes",
+  "searchWindowHours",
+])
+
+/** Split a comma-separated time list; validation checks each entry. */
+export function parseTimes(value: string): string[] {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item !== "")
+}
 
 function parseBoolean(value: string): boolean | null {
   const normalized = value.trim().toLowerCase()
@@ -76,6 +90,7 @@ function parseBoolean(value: string): boolean | null {
 /** Parse the Markdown bullets written by `formatAutomationConfig`. */
 export function parseAutomationConfig(source: string): AutomationConfig {
   const config: AutomationConfig = { ...DEFAULT_AUTOMATION }
+  let sawTimes = false
   for (const line of source.split(/\r?\n/)) {
     const match = line.match(/^\s*-\s*([a-zA-Z][a-zA-Z0-9]*):\s*(.*?)\s*$/)
     if (!match) continue
@@ -93,7 +108,20 @@ export function parseAutomationConfig(source: string): AutomationConfig {
       if (Number.isFinite(parsed)) (config as unknown as Record<string, unknown>)[key] = parsed
       continue
     }
-    if (key === "time" || key === "interval" || key === "model") {
+    if (key === "times") {
+      const values = parseTimes(value)
+      if (values.length > 0) {
+        config.times = values
+        sawTimes = true
+      }
+      continue
+    }
+    if (key === "time") {
+      // Legacy single-time field; a `times` line wins regardless of order.
+      if (!sawTimes) config.times = [value]
+      continue
+    }
+    if (key === "interval" || key === "model") {
       (config as unknown as Record<string, unknown>)[key] = value
     }
   }
@@ -104,7 +132,7 @@ export function formatAutomationConfig(config: AutomationConfig): string {
   return `# Automation
 
 - enabled: ${config.enabled}
-- time: "${config.time}"
+- times: "${config.times.join(",")}"
 - interval: ${config.interval}
 - model: "${config.model}"
 - standingApproval: ${config.standingApproval}
@@ -112,6 +140,7 @@ export function formatAutomationConfig(config: AutomationConfig): string {
 - includeBacklog: ${config.includeBacklog}
 - includeJobSearch: ${config.includeJobSearch}
 - includeFeedSearch: ${config.includeFeedSearch}
+- searchWindowHours: ${config.searchWindowHours}
 - notify: ${config.notify}
 - maxRuntimeMinutes: ${config.maxRuntimeMinutes}
 `
@@ -122,11 +151,25 @@ const INTERVAL_PATTERN = /^every\s+(?:[1-9]|1\d|2[0-4])h$/
 
 export function validateAutomationConfig(config: AutomationConfig): string[] {
   const errors: string[] = []
-  if (!TIME_PATTERN.test(config.time)) {
-    errors.push(`time must be HH:MM (24h), got ${JSON.stringify(config.time)}`)
+  if (config.times.length === 0) {
+    errors.push("at least one time is required")
+  }
+  if (config.times.length > 4) {
+    errors.push("at most 4 times are supported")
+  }
+  for (const time of config.times) {
+    if (!TIME_PATTERN.test(time)) {
+      errors.push(`times must be HH:MM (24h), got ${JSON.stringify(time)}`)
+    }
+  }
+  if (new Set(config.times).size !== config.times.length) {
+    errors.push("times must be unique")
   }
   if (config.interval !== "daily" && !INTERVAL_PATTERN.test(config.interval)) {
     errors.push(`interval must be "daily" or "every Nh" (1-24), got ${JSON.stringify(config.interval)}`)
+  }
+  if (config.interval !== "daily" && config.times.length > 1) {
+    errors.push("multiple times require interval daily")
   }
   if (config.model.trim() !== "" && !/^[^\s/]+\/[^\s/]+$/.test(config.model.trim())) {
     errors.push(`model must be provider/model or empty, got ${JSON.stringify(config.model)}`)
@@ -140,6 +183,13 @@ export function validateAutomationConfig(config: AutomationConfig): string[] {
     config.maxRuntimeMinutes > 240
   ) {
     errors.push("maxRuntimeMinutes must be an integer between 5 and 240")
+  }
+  if (
+    !Number.isInteger(config.searchWindowHours) ||
+    config.searchWindowHours < 1 ||
+    config.searchWindowHours > 168
+  ) {
+    errors.push("searchWindowHours must be an integer between 1 and 168")
   }
   return errors
 }
@@ -157,10 +207,20 @@ export function nextRunAt(
 ): Date | null {
   if (!config.enabled) return null
   if (config.interval === "daily") {
-    const [hours = "0", minutes = "0"] = config.time.split(":")
-    const next = new Date(now)
-    next.setHours(Number(hours), Number(minutes), 0, 0)
-    if (next.getTime() <= now.getTime()) next.setDate(next.getDate() + 1)
+    const candidates = config.times
+      .map((time) => {
+        const [hours = "0", minutes = "0"] = time.split(":")
+        const next = new Date(now)
+        next.setHours(Number(hours), Number(minutes), 0, 0)
+        return next
+      })
+      .sort((a, b) => a.getTime() - b.getTime())
+    const upcoming = candidates.find((candidate) => candidate.getTime() > now.getTime())
+    if (upcoming !== undefined) return upcoming
+    const first = candidates[0]
+    if (first === undefined) return null
+    const next = new Date(first)
+    next.setDate(next.getDate() + 1)
     return next
   }
   const match = config.interval.match(/^every\s+(\d+)h$/)
@@ -208,7 +268,7 @@ export function buildScheduledPrompt(dataDir: string, config: AutomationConfig):
     `The runner owns ${path.join(dataDir, SEARCH_LOCK_FILE)} for this run; ignore it and never delete it.`,
     "Use only the user's data: profile.md, preferences.md, resume/base.md, application-data.md, language.md.",
     "If any required file is missing, write a setup-incomplete report and stop.",
-    `${backlog} Run the 48-hour job search. ${feed}`,
+    `${backlog} Run the ${config.searchWindowHours}-hour job search. ${feed}`,
     "Tailor each Medium/High fit, pass draft-review, then apply.",
     "Do every automatic application before the human-only steps.",
     "For a feed lead with an email, draft the application email, pass draft-review, and add the mailto to Needs you; do not send it.",

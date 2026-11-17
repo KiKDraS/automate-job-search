@@ -143,14 +143,15 @@ Only after the profile is approved and `application-data.md` exists. Ask in
 one batch, with defaults:
 
 1. Enable the automated search? (default no; explain what it does)
-2. Time (09:00)
-3. Frequency (`daily` or `every 12h`)
-4. Model (default OpenCode model, or `provider/model`; `opencode models` lists them)
-5. Include feed search? (yes)
-6. Notifications? (yes)
-7. Standing auto-apply for Medium/High? (yes)
-8. Maximum applications per run? (0 = no cap)
-9. Runtime cap in minutes? (60)
+2. Times (one or more, default 09:00; e.g. 11:30 and 18:30)
+3. Frequency (`daily` or `every 12h`; multiple times require daily)
+4. Search window in hours (24, 48, or the user's choice; default 48)
+5. Model (default OpenCode model, or `provider/model`; `opencode models` lists them)
+6. Include feed search? (yes)
+7. Notifications? (yes)
+8. Standing auto-apply for Medium/High? (yes)
+9. Maximum applications per run? (0 = no cap)
+10. Runtime cap in minutes? (60)
 
 The scheduler runs from a runtime copy in the application-data folder, so the
 project can stay where it is — including `~/Documents`. If the data directory
@@ -159,13 +160,13 @@ permissions are in `.opencode/docs/automation-runtime.md`.
 
 If the user says yes, run:
 
-    npx tsx scripts/schedule.ts enable --time "09:00" --interval daily \
-      --notify --feed --apply --max-applications 0 --max-runtime 60
+    npx tsx scripts/schedule.ts enable --times "09:00" --interval daily \
+      --search-window 48 --notify --feed --apply --max-applications 0 --max-runtime 60
 
-Add `--model "<provider/model>"` only when the user chose one. Show the
-summary: schedule, next run, model, OS scheduler, runtime path, data-dir
-safety, and how to change it with `/job/schedule`. If the OS scheduler fails,
-show the exact error.
+Use the times and window the user chose. Add `--model "<provider/model>"` only
+when the user chose one. Show the summary: times, search window, next run,
+model, OS scheduler, runtime path, data-dir safety, and how to change it with
+`/job/schedule`. If the OS scheduler fails, show the exact error.
 
 If the user says no, do not install anything; `/job/schedule` stays available.
 

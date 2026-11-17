@@ -175,7 +175,7 @@ the project; write only inside the data directory.
    `state/search.lock` for this run; ignore it and never delete it.
 2. Run the pipeline in this order:
    - backlog: saved Medium/High jobs without `applied.md`;
-   - job search for the last 48 hours;
+   - job search for the window in `automation.md` (48 hours by default);
    - feed search;
    - tailor, `draft-review`, and auto-apply each Medium/High fit;
    - queue every blocker.
@@ -191,7 +191,9 @@ the project; write only inside the data directory.
    change the repository.
 6. Write `<data dir>/reports/<date>.md` with Summary, Applied, Needs you, and
    Skipped. Write `<data dir>/state/pending-search.json` with every blocker
-   and unfinished job. The runner sends the notification; you write the files.
+   and unfinished job. If a browser tab was left open for a human action,
+   include its URL and exact action under "Needs you". The runner sends the
+   notification; you write the files.
 
    Pending shape:
 

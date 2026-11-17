@@ -9,7 +9,8 @@
 export type SchedulerKind = "launchd" | "systemd" | "cron" | "task-scheduler"
 
 export interface SchedulerSpec {
-  time: string
+  /** One or more local times; multiple times require a daily interval. */
+  times: string[]
   interval: string
   wrapperPath: string
   logsDir: string
@@ -62,17 +63,23 @@ function psQuote(value: string): string {
 }
 
 export function buildLaunchdPlist(spec: SchedulerSpec): string {
-  const { hour, minute } = parseTime(spec.time)
   const hours = intervalHours(spec.interval)
   const schedule =
     hours === null
       ? `    <key>StartCalendarInterval</key>
-    <dict>
-        <key>Hour</key>
-        <integer>${hour}</integer>
-        <key>Minute</key>
-        <integer>${minute}</integer>
-    </dict>`
+    <array>
+${spec.times
+  .map((time) => {
+    const { hour, minute } = parseTime(time)
+    return `        <dict>
+            <key>Hour</key>
+            <integer>${hour}</integer>
+            <key>Minute</key>
+            <integer>${minute}</integer>
+        </dict>`
+  })
+  .join("\n")}
+    </array>`
       : `    <key>StartInterval</key>
     <integer>${hours * 60 * 60}</integer>`
 
@@ -113,7 +120,7 @@ export function buildSystemdTimer(spec: SchedulerSpec): string {
   const hours = intervalHours(spec.interval)
   const schedule =
     hours === null
-      ? `OnCalendar=*-*-* ${spec.time}:00
+      ? `${spec.times.map((time) => `OnCalendar=*-*-* ${time}:00`).join("\n")}
 Persistent=true`
       : `OnBootSec=5min
 OnUnitActiveSec=${hours}h
@@ -130,28 +137,38 @@ WantedBy=timers.target
 `
 }
 
-export function buildCronLine(spec: SchedulerSpec): string {
-  const { hour, minute } = parseTime(spec.time)
+export function buildCronLines(spec: SchedulerSpec): string[] {
   const hours = intervalHours(spec.interval)
-  const cron =
-    hours === null || hours >= 24
-      ? `${minute} ${hour} * * * ${shellQuote(spec.wrapperPath)}`
-      : `0 */${hours} * * * ${shellQuote(spec.wrapperPath)}`
-  return `${cron} # automate-job-search`
+  if (hours === null || hours >= 24) {
+    return spec.times.map((time) => {
+      const { hour, minute } = parseTime(time)
+      return `${minute} ${hour} * * * ${shellQuote(spec.wrapperPath)} # automate-job-search`
+    })
+  }
+  return [`0 */${hours} * * * ${shellQuote(spec.wrapperPath)} # automate-job-search`]
 }
 
-export function buildWindowsTaskArgs(spec: SchedulerSpec): string[] {
+/** Windows task name: one task per time; the first keeps the legacy name. */
+export function windowsTaskName(spec: SchedulerSpec, index: number): string {
+  return spec.times.length === 1 ? spec.taskName : `${spec.taskName}-${index + 1}`
+}
+
+export function buildWindowsTaskArgs(
+  spec: SchedulerSpec,
+  time: string,
+  taskName: string = spec.taskName,
+): string[] {
   const hours = intervalHours(spec.interval)
   const schedule =
     hours === null || hours >= 24
-      ? ["/SC", "DAILY", "/ST", spec.time]
-      : ["/SC", "HOURLY", "/MO", String(hours), "/ST", spec.time]
+      ? ["/SC", "DAILY", "/ST", time]
+      : ["/SC", "HOURLY", "/MO", String(hours), "/ST", time]
   return [
     "/Create",
     "/F",
     ...schedule,
     "/TN",
-    spec.taskName,
+    taskName,
     "/TR",
     `"${spec.wrapperPath}"`,
   ]

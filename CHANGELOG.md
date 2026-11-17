@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-17
+
+### Added
+
+- Multiple daily run times: `times` in `automation.md`, set with
+  `--times "11:30,18:30"`. macOS and Linux use multiple triggers in one
+  scheduled job; Windows creates one task per time.
+- Configurable search window: `searchWindowHours`, set with
+  `--search-window 24`; the scheduled prompt uses it. The default stays 48
+  hours.
+
+### Changed
+
+- `job-scout` closes the browser tabs it opens before returning. A tab left
+  for a CAPTCHA, login, or missing answer is listed under "Needs you" with its
+  URL and action.
+
 ## [0.9.0] - 2026-11-17
 
 ### Added

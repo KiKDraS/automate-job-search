@@ -60,6 +60,23 @@ them in one round.
 - Inspect files with `read`/`glob`. Shell is limited to `npx tsx scripts/*`
   (the rest is denied); the shell tool is `shell`, not `bash`.
 
+## Browser hygiene
+
+Every browser task ends with the same cleanup:
+
+1. Before the first navigation, run `browser_tabs` with `action: "list"` and
+   remember the tabs that already existed (index and URL).
+2. At the end, list the tabs again.
+3. Close every tab you opened, highest index first, with `browser_tabs`
+   `action: "close"` and its index.
+4. For each pre-existing tab you navigated, return it to the URL you recorded.
+5. Only leave a tab open when the user must act in it: a CAPTCHA, a login wall,
+   or a missing required answer. List that tab under "Needs you" with its URL
+   and the exact action. Close every other tab.
+
+Never close a tab you did not open. Do not leave search results, postings, or
+finished application forms open.
+
 ## Report format
 
 Compact only: counts (new / High / Medium / Low), shortlist rows

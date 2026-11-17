@@ -39,6 +39,7 @@ export interface PendingState {
 
 export const AUTOMATION_FILE = "automation.md"
 export const PENDING_FILE = path.join("state", "pending-search.json")
+export const SEARCH_LOCK_FILE = path.join("state", "search.lock")
 
 export const DEFAULT_AUTOMATION: AutomationConfig = {
   enabled: false,
@@ -204,6 +205,7 @@ export function buildScheduledPrompt(dataDir: string, config: AutomationConfig):
   return [
     "Scheduled run. Enter scheduled mode and do not ask questions.",
     `Read ${path.join(dataDir, AUTOMATION_FILE)} first.`,
+    `The runner owns ${path.join(dataDir, SEARCH_LOCK_FILE)} for this run; ignore it and never delete it.`,
     "Use only the user's data: profile.md, preferences.md, resume/base.md, application-data.md, language.md.",
     "If any required file is missing, write a setup-incomplete report and stop.",
     `${backlog} Run the 48-hour job search. ${feed}`,

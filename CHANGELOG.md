@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-17
+
+### Added
+
+- Scheduled runs execute from a runtime copy in the user's application-data
+  directory, so the project can live anywhere, including `~/Documents`.
+  `/job/schedule status` reports the project, the runtime state, and the data
+  directory safety; `repair` resynchronizes the copy.
+- `scripts/data-dir.ts` reports whether the data directory is safe for
+  scheduled runs and can migrate it to a new location with
+  `migrate --to <path>`.
+- Scheduled runs use a dedicated copy of the project's Playwright MCP Chrome
+  profile, seeded on install, so an interactive browser does not lock the run
+  and the LinkedIn login carries over. `/job/schedule --login` refreshes it.
+
+### Changed
+
+- The scheduler wrapper, its log, and `node_modules` live in the runtime
+  directory instead of `<data dir>/bin/` and the project.
+- `/job/schedule` refuses a protected data directory unless
+  `--allow-protected-data-dir` is passed; the agent offers a migration first.
+- `npm run doctor` warns when an enabled automation has a missing or stale
+  runtime.
+- Coach can run `npx tsx scripts/schedule.ts` for `/job/schedule` and
+  onboarding.
+
+### Fixed
+
+- Scheduled runs no longer mistake the runner's own `state/search.lock` for a
+  competing search and stop before the browser work.
+
 ## [0.8.0] - 2026-11-16
 
 ### Changed

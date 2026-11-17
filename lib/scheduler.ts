@@ -18,7 +18,8 @@ export interface SchedulerSpec {
 }
 
 export interface WrapperSpec {
-  repoPath: string
+  /** Runtime copy the scheduler executes; never the project path. */
+  runtimeDir: string
   dataDir: string
   nodePath: string
   tsxCliPath: string
@@ -158,21 +159,23 @@ export function buildWindowsTaskArgs(spec: SchedulerSpec): string[] {
 
 export function buildPosixWrapper(spec: WrapperSpec): string {
   return `#!/bin/sh
-cd ${shellQuote(spec.repoPath)} || exit 1
+cd ${shellQuote(spec.runtimeDir)} || exit 1
 export PATH=${shellQuote(spec.pathEnv)}
 export JOBSEARCH_OPENCODE_BIN=${shellQuote(spec.opencodePath)}
+export JOBSEARCH_HOME=${shellQuote(spec.dataDir)}
 exec ${shellQuote(spec.nodePath)} ${shellQuote(spec.tsxCliPath)} ${shellQuote(
     spec.runnerPath,
-  )} >> ${shellQuote(`${spec.dataDir}/logs/scheduler.log`)} 2>&1
+  )} >> ${shellQuote(`${spec.runtimeDir}/logs/scheduler.log`)} 2>&1
 `
 }
 
 export function buildWindowsWrapper(spec: WrapperSpec): string {
   return `@echo off\r
-cd /d "${spec.repoPath}"\r
+cd /d "${spec.runtimeDir}"\r
 set "PATH=${spec.pathEnv};%PATH%"\r
 set "JOBSEARCH_OPENCODE_BIN=${spec.opencodePath}"\r
-"${spec.nodePath}" "${spec.tsxCliPath}" "${spec.runnerPath}" >> "${spec.dataDir}\\logs\\scheduler.log" 2>&1\r
+set "JOBSEARCH_HOME=${spec.dataDir}"\r
+"${spec.nodePath}" "${spec.tsxCliPath}" "${spec.runnerPath}" >> "${spec.runtimeDir}\\logs\\scheduler.log" 2>&1\r
 `
 }
 

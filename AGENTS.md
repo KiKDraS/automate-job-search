@@ -55,6 +55,7 @@ first, and update it in the same change as the decision that caused it.
 | --- | --- |
 | Approval flow and gates | `.opencode/docs/approval-flow.md` |
 | Data directory | `.opencode/docs/data-directory.md` |
+| Scheduler runtime and permissions | `.opencode/docs/automation-runtime.md` |
 | Priority hierarchy | `.opencode/docs/priority-hierarchy.md` |
 | Token economy | `.opencode/docs/token-economy.md` |
 | Git flow | `.opencode/docs/git-flow.md` |

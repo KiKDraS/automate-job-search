@@ -12,6 +12,13 @@ import os from "node:os"
 import path from "node:path"
 import { promisify } from "node:util"
 import { DATA_DIR_ENV, ensureDataDir, resolveDataDirWithSource } from "../lib/data-dir.ts"
+import { parseAutomationConfig } from "../lib/automation.ts"
+import {
+  knownChromePaths,
+  protectedPathReason,
+  resolveRuntimeDir,
+  runtimeStatus,
+} from "../lib/runtime.ts"
 
 const execFileAsync = promisify(execFile)
 
@@ -73,31 +80,8 @@ async function checkDataDir(): Promise<CheckResult> {
   }
 }
 
-function chromeCandidates(): string[] {
-  if (process.platform === "darwin") {
-    return ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"]
-  }
-  if (process.platform === "win32") {
-    const programFiles = process.env["PROGRAMFILES"] ?? "C:\\Program Files"
-    const programFilesX86 = process.env["PROGRAMFILES(X86)"] ?? "C:\\Program Files (x86)"
-    const localAppData = process.env["LOCALAPPDATA"] ?? ""
-    return [
-      path.join(programFiles, "Google", "Chrome", "Application", "chrome.exe"),
-      path.join(programFilesX86, "Google", "Chrome", "Application", "chrome.exe"),
-      ...(localAppData
-        ? [path.join(localAppData, "Google", "Chrome", "Application", "chrome.exe")]
-        : []),
-    ]
-  }
-  return [
-    "/usr/bin/google-chrome",
-    "/usr/bin/google-chrome-stable",
-    "/opt/google/chrome/chrome",
-  ]
-}
-
 async function checkChrome(): Promise<CheckResult> {
-  for (const candidate of chromeCandidates()) {
+  for (const candidate of knownChromePaths()) {
     try {
       await fs.access(candidate, constants.X_OK)
       return check("Google Chrome", "ok", candidate)
@@ -194,6 +178,46 @@ async function checkBrowserProfile(): Promise<CheckResult> {
   )
 }
 
+async function checkAutomation(): Promise<CheckResult | null> {
+  const { dir } = resolveDataDirWithSource()
+  const source = await fs.readFile(path.join(dir, "automation.md"), "utf8").catch(() => null)
+  if (source === null) return null
+  const config = parseAutomationConfig(source)
+  if (!config.enabled) return check("Automation", "ok", "installed, disabled")
+
+  const requested = protectedPathReason(dir)
+  if (requested !== null) {
+    return check(
+      "Automation runtime",
+      "warn",
+      `data directory is inside ${requested} — scheduled runs need Full Disk Access or a move to ~/.jobsearch`,
+    )
+  }
+
+  const runtimePath = resolveRuntimeDir()
+  const runtime = await runtimeStatus(process.cwd(), runtimePath)
+  if (runtime.state === "missing") {
+    return check(
+      "Automation runtime",
+      "warn",
+      `${runtimePath} missing — run /job/schedule --repair`,
+    )
+  }
+  if (runtime.state === "stale") {
+    return check(
+      "Automation runtime",
+      "warn",
+      `${runtimePath} stale (${runtime.reasons.join(", ")}) — run /job/schedule --repair`,
+    )
+  }
+  return check("Automation runtime", "ok", `${runtimePath} (current)`)
+}
+
+async function automationCheck(): Promise<CheckResult[]> {
+  const result = await checkAutomation()
+  return result === null ? [] : [result]
+}
+
 async function main(): Promise<void> {
   console.log("automate-job-search — doctor\n")
   const results: CheckResult[] = [
@@ -204,6 +228,7 @@ async function main(): Promise<void> {
     await checkPlaywrightMcp(),
     await checkPlaywrightCore(),
     await checkBrowserProfile(),
+    ...(await automationCheck()),
   ]
   for (const item of results) {
     console.log(`${SYMBOL[item.level]} ${item.name}: ${item.detail}`)

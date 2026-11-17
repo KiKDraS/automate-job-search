@@ -10,19 +10,23 @@
  *                                       [--max-applications 0] [--max-runtime 60]
  *                                       [--notify|--no-notify] [--feed|--no-feed]
  *                                       [--apply|--no-apply] [--dry-run]
+ *                                       [--allow-protected-data-dir]
  *   npx tsx scripts/schedule.ts update  [same flags]
  *   npx tsx scripts/schedule.ts disable
  *   npx tsx scripts/schedule.ts remove
- *   npx tsx scripts/schedule.ts repair
+ *   npx tsx scripts/schedule.ts repair  [--force-deps]
  *   npx tsx scripts/schedule.ts run-now
+ *   npx tsx scripts/schedule.ts login
  *
- * The config lives in <data dir>/automation.md. The wrapper and scheduler
- * files live outside the repository; no personal data enters the repo.
+ * The config lives in <data dir>/automation.md. Scheduled runs execute from
+ * a runtime copy in the user's application-data directory, so the project can
+ * live anywhere — including protected folders such as ~/Documents. No
+ * personal data enters the repo.
  */
 import { promises as fs } from "node:fs"
 import os from "node:os"
 import path from "node:path"
-import { spawnSync } from "node:child_process"
+import { spawn, spawnSync } from "node:child_process"
 import { fileURLToPath } from "node:url"
 import { resolveDataDir } from "../lib/data-dir.ts"
 import {
@@ -31,6 +35,7 @@ import {
   formatAutomationConfig,
   nextRunAt,
   parseAutomationConfig,
+  SEARCH_LOCK_FILE,
   validateAutomationConfig,
   type AutomationConfig,
 } from "../lib/automation.ts"
@@ -47,6 +52,19 @@ import {
   type WrapperSpec,
 } from "../lib/scheduler.ts"
 import { findNodePath, knownOpencodePaths, resolveOpencodePath } from "../lib/opencode-bin.ts"
+import {
+  buildRuntimeOpencodeConfig,
+  findChromePath,
+  playwrightProfileDir,
+  protectedPath,
+  resolveRuntimeDir,
+  runtimeBrowserProfileDir,
+  runtimeStatus,
+  safePathEnv,
+  seedBrowserProfile,
+  syncRuntime,
+  type RuntimeStatus,
+} from "../lib/runtime.ts"
 import { fail } from "./args.ts"
 
 const SCRIPT = "schedule"
@@ -59,12 +77,17 @@ const CRON_END = "# END automate-job-search"
 const repoPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const dataDir = resolveDataDir()
 const configPath = path.join(dataDir, "automation.md")
-const binDir = path.join(dataDir, "bin")
 const logsDir = path.join(dataDir, "logs")
 const stateDir = path.join(dataDir, "state")
-const wrapperPath = path.join(binDir, process.platform === "win32" ? "scheduled-search.cmd" : "scheduled-search.sh")
-const tsxCliPath = path.join(repoPath, "node_modules", "tsx", "dist", "cli.mjs")
-const runnerPath = path.join(repoPath, "scripts", "scheduled-search.ts")
+const runtimePath = resolveRuntimeDir()
+const runtimeBinDir = path.join(runtimePath, "bin")
+const runtimeLogsDir = path.join(runtimePath, "logs")
+const wrapperName = process.platform === "win32" ? "scheduled-search.cmd" : "scheduled-search.sh"
+const wrapperPath = path.join(runtimeBinDir, wrapperName)
+const legacyWrapperPath = path.join(dataDir, "bin", wrapperName)
+const tsxCliPath = path.join(runtimePath, "node_modules", "tsx", "dist", "cli.mjs")
+const runnerPath = path.join(runtimePath, "scripts", "scheduled-search.ts")
+const schedulerLogPath = path.join(runtimeLogsDir, "scheduler.log")
 
 interface RunResult {
   status: number | null
@@ -108,7 +131,7 @@ function schedulerSpec(): SchedulerSpec {
     time: "09:00",
     interval: "daily",
     wrapperPath,
-    logsDir,
+    logsDir: runtimeLogsDir,
     label: LABEL,
     taskName: TASK_NAME,
   }
@@ -129,13 +152,13 @@ function resolveOpencode(override?: string): string {
 
 function wrapperSpec(opencodePath: string): WrapperSpec {
   return {
-    repoPath,
+    runtimeDir: runtimePath,
     dataDir,
     nodePath: findNodePath() ?? process.execPath,
     tsxCliPath,
     runnerPath,
     opencodePath,
-    pathEnv: process.env["PATH"] ?? "",
+    pathEnv: safePathEnv(process.env["PATH"] ?? ""),
   }
 }
 
@@ -144,8 +167,24 @@ function formatNext(config: AutomationConfig): string {
   return next === null ? "not scheduled" : next.toLocaleString()
 }
 
+function describeDataDir(): string {
+  const protectedInfo = protectedPath(dataDir)
+  return protectedInfo === null
+    ? `${dataDir} (safe)`
+    : `${dataDir} (protected: ${protectedInfo.label} — ${protectedInfo.reason})`
+}
+
+function describeRuntime(status: RuntimeStatus): string {
+  if (status.state === "missing") {
+    return `${runtimePath} (missing — run /job/schedule --repair)`
+  }
+  if (status.state === "current") return `${runtimePath} (current)`
+  return `${runtimePath} (stale: ${status.reasons.join(", ")} — run /job/schedule --repair)`
+}
+
 async function writeWrapper(opencodePath: string): Promise<void> {
-  await fs.mkdir(binDir, { recursive: true })
+  await fs.mkdir(runtimeBinDir, { recursive: true })
+  await fs.mkdir(runtimeLogsDir, { recursive: true })
   const content =
     process.platform === "win32"
       ? buildWindowsWrapper(wrapperSpec(opencodePath))
@@ -154,10 +193,56 @@ async function writeWrapper(opencodePath: string): Promise<void> {
   if (process.platform !== "win32") await fs.chmod(wrapperPath, 0o755)
 }
 
+async function assertNoRunningSearch(): Promise<void> {
+  try {
+    const lock = JSON.parse(
+      await fs.readFile(path.join(dataDir, SEARCH_LOCK_FILE), "utf8"),
+    ) as { startedAt?: string }
+    const started = Date.parse(lock.startedAt ?? "")
+    const maxAge = 75 * 60 * 1000
+    if (Number.isFinite(started) && Date.now() - started < maxAge) {
+      fail(
+        SCRIPT,
+        `a scheduled search started at ${lock.startedAt} is still running. Wait for it to finish, then run again.`,
+      )
+    }
+  } catch {
+    // no lock
+  }
+}
+
+async function syncRuntimeFiles(forceDependencies = false): Promise<void> {
+  const opencodeSource = await fs.readFile(path.join(repoPath, "opencode.jsonc"), "utf8")
+  const browserProfile = runtimeBrowserProfileDir(runtimePath)
+  const seeded = await seedBrowserProfile(playwrightProfileDir(repoPath), browserProfile)
+  const runtimeConfig = buildRuntimeOpencodeConfig(opencodeSource, browserProfile)
+  const result = await syncRuntime({
+    repoPath,
+    runtimePath,
+    opencodeConfig: runtimeConfig.content,
+    forceDependencies,
+  })
+  console.log(`Runtime: ${runtimePath}`)
+  if (result.dependenciesCopied) console.log("Dependencies copied into the runtime.")
+  if (seeded === "copied") {
+    console.log(`Browser profile copied for scheduled runs: ${browserProfile}`)
+  }
+  if (seeded === "missing") {
+    console.log(
+      "No browser profile yet. The first scheduled browser task opens a fresh window; run /job/schedule --login to sign in once.",
+    )
+  }
+  if (!runtimeConfig.injected) {
+    console.log(
+      "Warning: could not add the browser profile flag to the runtime config; scheduled runs may need a LinkedIn login.",
+    )
+  }
+}
+
 async function installLaunchd(config: AutomationConfig): Promise<string> {
   const plistPath = path.join(os.homedir(), "Library", "LaunchAgents", `${LABEL}.plist`)
   await fs.mkdir(path.dirname(plistPath), { recursive: true })
-  await fs.mkdir(logsDir, { recursive: true })
+  await fs.mkdir(runtimeLogsDir, { recursive: true })
   const spec = { ...schedulerSpec(), time: config.time, interval: config.interval }
   await fs.writeFile(plistPath, buildLaunchdPlist(spec))
   const uid = process.getuid?.()
@@ -174,7 +259,7 @@ async function installLaunchd(config: AutomationConfig): Promise<string> {
 async function installSystemd(config: AutomationConfig): Promise<string> {
   const dir = path.join(os.homedir(), ".config", "systemd", "user")
   await fs.mkdir(dir, { recursive: true })
-  await fs.mkdir(logsDir, { recursive: true })
+  await fs.mkdir(runtimeLogsDir, { recursive: true })
   const spec = { ...schedulerSpec(), time: config.time, interval: config.interval }
   const servicePath = path.join(dir, `${SERVICE_NAME}.service`)
   const timerPath = path.join(dir, `${SERVICE_NAME}.timer`)
@@ -223,7 +308,7 @@ function withoutCronBlock(source: string): string[] {
 }
 
 async function installWindows(config: AutomationConfig): Promise<string> {
-  await fs.mkdir(logsDir, { recursive: true })
+  await fs.mkdir(runtimeLogsDir, { recursive: true })
   const spec = { ...schedulerSpec(), time: config.time, interval: config.interval }
   const result = run("schtasks", buildWindowsTaskArgs(spec))
   if (result.status !== 0) {
@@ -232,10 +317,30 @@ async function installWindows(config: AutomationConfig): Promise<string> {
   return TASK_NAME
 }
 
-async function install(config: AutomationConfig, opencodePath: string): Promise<string> {
-  if (!(await fs.stat(tsxCliPath).catch(() => null))) {
-    fail(SCRIPT, `missing ${tsxCliPath}; run npm install first`)
+async function install(
+  config: AutomationConfig,
+  opencodePath: string,
+  forceDependencies = false,
+): Promise<string> {
+  const sourceTsx = path.join(repoPath, "node_modules", "tsx", "dist", "cli.mjs")
+  if (!(await fs.stat(sourceTsx).catch(() => null))) {
+    fail(SCRIPT, `missing ${sourceTsx}; run npm install first`)
   }
+  const nodePath = findNodePath() ?? process.execPath
+  for (const [label, value] of [
+    ["node", nodePath],
+    ["opencode", opencodePath],
+  ] as const) {
+    const reason = protectedPath(value)
+    if (reason !== null) {
+      return fail(
+        SCRIPT,
+        `${label} is inside ${reason.label} (${reason.reason}). Install it outside protected folders, or grant Full Disk Access to both binaries.`,
+      )
+    }
+  }
+  await assertNoRunningSearch()
+  await syncRuntimeFiles(forceDependencies)
   await writeWrapper(opencodePath)
   if (process.platform === "darwin") return installLaunchd(config)
   if (process.platform === "win32") return installWindows(config)
@@ -278,6 +383,7 @@ async function remove(): Promise<void> {
     await removeCron()
   }
   await fs.rm(wrapperPath, { force: true })
+  await fs.rm(legacyWrapperPath, { force: true })
 }
 
 async function isInstalled(): Promise<boolean> {
@@ -303,15 +409,20 @@ async function isInstalled(): Promise<boolean> {
 
 async function statusLine(config: AutomationConfig): Promise<void> {
   const missing = await automationReady(dataDir)
+  const runtime = await runtimeStatus(repoPath, runtimePath)
   console.log(`Automation: ${config.enabled ? "enabled" : "disabled"}`)
   console.log(`Schedule: ${config.interval === "daily" ? `daily at ${config.time}` : config.interval}`)
   console.log(`Model: ${config.model === "" ? "OpenCode default" : config.model}`)
   console.log(`Next run: ${formatNext(config)}`)
   console.log(`Scheduler: ${detectScheduler()}`)
   console.log(`Installed: ${(await isInstalled()) ? "yes" : "no"}`)
+  console.log(`Project: ${repoPath}${formatProject(runtime)}`)
+  console.log(`Runtime: ${describeRuntime(runtime)}`)
+  console.log(`Data dir: ${describeDataDir()}`)
   console.log(`OpenCode CLI: ${resolveOpencodePath() ?? "not found"}`)
   console.log(`Node: ${findNodePath() ?? "not found"}`)
-  console.log(`Wrapper: ${wrapperPath}`)
+  console.log(`Scheduler log: ${schedulerLogPath}`)
+  console.log(`Browser profile: ${runtimeBrowserProfileDir(runtimePath)}`)
   console.log(`Config: ${configPath}`)
   console.log(`Setup: ${missing.length === 0 ? "ready" : `missing ${missing.join(", ")}`}`)
   console.log(`Applications: ${config.maxApplicationsPerRun === 0 ? "no cap" : config.maxApplicationsPerRun}`)
@@ -321,10 +432,16 @@ async function statusLine(config: AutomationConfig): Promise<void> {
   console.log(`Standing auto-apply: ${config.standingApproval ? "on" : "off"}`)
 }
 
+function formatProject(runtime: RuntimeStatus): string {
+  if (runtime.project.commit === null) return runtime.project.dirty ? " (dirty)" : ""
+  return ` @ ${runtime.project.commit}${runtime.project.dirty ? " (dirty)" : ""}`
+}
+
 async function dryRun(config: AutomationConfig, opencodePath: string): Promise<void> {
   const spec = { ...schedulerSpec(), time: config.time, interval: config.interval }
   console.log(`# ${configPath}\n`)
   console.log(formatAutomationConfig(config))
+  console.log(`# Runtime: ${runtimePath}\n`)
   console.log(`# ${wrapperPath}\n`)
   console.log(
     process.platform === "win32"
@@ -383,8 +500,34 @@ async function main(): Promise<void> {
     return
   }
 
+  if (command === "login") {
+    const chrome = findChromePath()
+    if (chrome === null) {
+      return fail(
+        SCRIPT,
+        "Google Chrome not found. Install Chrome, or open the scheduled profile manually and sign in to LinkedIn.",
+      )
+    }
+    const profile = runtimeBrowserProfileDir(runtimePath)
+    await fs.mkdir(profile, { recursive: true })
+    const child = spawn(
+      chrome,
+      [`--user-data-dir=${profile}`, "https://www.linkedin.com/login"],
+      { detached: true, stdio: "ignore" },
+    )
+    child.unref()
+    console.log(`Chrome opened with the scheduled profile: ${profile}`)
+    console.log(
+      "Sign in to LinkedIn, close that window, and scheduled runs will reuse the session.",
+    )
+    return
+  }
+
   if (!["enable", "apply", "update", "repair"].includes(command)) {
-    return fail(SCRIPT, "usage: status | enable | update | disable | remove | repair | run-now [flags]")
+    return fail(
+      SCRIPT,
+      "usage: status | enable | update | disable | remove | repair | run-now | login [flags]",
+    )
   }
 
   const config = await readConfig()
@@ -407,16 +550,35 @@ async function main(): Promise<void> {
   if (has(args, "--no-feed")) config.includeFeedSearch = false
   if (has(args, "--apply")) config.standingApproval = true
   if (has(args, "--no-apply")) config.standingApproval = false
-  if (command !== "update") config.enabled = true
+  if (command === "enable" || command === "apply") config.enabled = true
 
   const errors = validateAutomationConfig(config)
   if (errors.length > 0) return fail(SCRIPT, errors.join("; "))
 
-  const missing = await automationReady(dataDir)
-  if (missing.length > 0) {
+  if (command === "repair" && !config.enabled) {
+    await syncRuntimeFiles(has(args, "--force-deps"))
+    console.log("Automation is disabled; enable it with /job/schedule --enable.")
+    return
+  }
+
+  if (config.enabled) {
+    const missing = await automationReady(dataDir)
+    if (missing.length > 0) {
+      return fail(
+        SCRIPT,
+        `setup incomplete (${missing.join(", ")}). Finish /job/setup before enabling automation.`,
+      )
+    }
+  }
+
+  const protectedInfo = protectedPath(dataDir)
+  if (protectedInfo !== null && !has(args, "--allow-protected-data-dir")) {
     return fail(
       SCRIPT,
-      `setup incomplete (${missing.join(", ")}). Finish /job/setup before enabling automation.`,
+      `data directory ${dataDir} is inside ${protectedInfo.label}, which ${protectedInfo.reason}. ` +
+        "Move it with `npx tsx scripts/data-dir.ts migrate --to ~/.jobsearch` (or another path outside " +
+        "Documents, Desktop, Downloads, iCloud, and external volumes) and run again. " +
+        "If you granted Full Disk Access to node and opencode, pass --allow-protected-data-dir.",
     )
   }
 
@@ -429,10 +591,17 @@ async function main(): Promise<void> {
   await fs.mkdir(logsDir, { recursive: true })
   await fs.mkdir(stateDir, { recursive: true })
   await fs.writeFile(configPath, formatAutomationConfig(config))
-  const target = await install(config, resolveOpencode(opencodeOverride))
+
+  if (!config.enabled) {
+    console.log("Automation is disabled. Config saved; nothing installed.")
+    return
+  }
+
+  const target = await install(config, resolveOpencode(opencodeOverride), has(args, "--force-deps"))
   console.log(`Automation ${config.enabled ? "enabled" : "updated"}.`)
   console.log(`Next run: ${formatNext(config)}`)
   console.log(`Scheduler target: ${target}`)
+  console.log(`Data dir: ${describeDataDir()}`)
   console.log(`Config: ${configPath}`)
   console.log(`Change later: /job/schedule --time 08:30 | --interval "every 12h" | --model <provider/model>`)
 }

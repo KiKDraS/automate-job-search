@@ -177,6 +177,45 @@ explicitly:
 /job/schedule --opencode-bin /path/to/opencode
 ```
 
+### Where things live
+
+| What | Location |
+| --- | --- |
+| Project | anywhere you cloned it, including `~/Documents` |
+| Runtime copy | macOS: `~/Library/Application Support/automate-job-search/runtime` · Linux: `${XDG_DATA_HOME:-~/.local/share}/automate-job-search/runtime` · Windows: `%LOCALAPPDATA%\automate-job-search\runtime` |
+| Personal data | `~/.jobsearch` (recommended) or the folder you chose |
+| Scheduler log | `<runtime>/logs/scheduler.log` |
+| Run logs and reports | `<data dir>/logs/`, `<data dir>/reports/` |
+
+The scheduled job executes the runtime copy, never the project path. That is
+why the project can stay wherever you cloned it: macOS protects `Desktop`,
+`Documents`, `Downloads`, iCloud Drive, and external volumes from background
+jobs, and Windows Controlled Folder Access can do the same.
+
+`/job/schedule status` reports whether the runtime is current, stale, or
+missing. `/job/schedule --repair` copies the latest code and reinstalls the
+scheduler. The copy includes `node_modules`, so it only recopies dependencies
+when `package-lock.json` changes.
+
+### Permissions
+
+| OS | What the agent needs | Manual step |
+| --- | --- | --- |
+| macOS | Write to Application Support, `~/Library/LaunchAgents`, and the data folder | None with `~/.jobsearch` |
+| macOS, data in Documents/Desktop/Downloads | Full Disk Access for `node` and `opencode` | Yes, in System Settings → Privacy & Security |
+| Linux | `systemd --user` or `cron`; normal access to the user profile | None |
+| Windows | Task Scheduler; normal access to the user profile | None, unless Controlled Folder Access protects the data folder |
+
+If the data folder is in a protected location, `/job/schedule` stops and asks
+you to move it. The migration copies the data and keeps the old folder:
+
+```text
+npx tsx scripts/data-dir.ts migrate --to ~/.jobsearch
+```
+
+Full Disk Access is only needed when you choose to keep the data in a
+protected folder. The agent never asks for `sudo` or an administrator account.
+
 ### How it runs per OS
 
 | OS | Scheduler |
@@ -185,15 +224,16 @@ explicitly:
 | Linux | `systemd --user` timer; `cron` fallback |
 | Windows | Task Scheduler (`schtasks`) |
 
-Logs are in `<data dir>/logs/`; the generated wrapper is in
-`<data dir>/bin/`. The scheduler runs `opencode run --auto --agent coach` with
-the model you chose.
+The scheduler runs `opencode run --auto --agent coach` with the model you
+chose, from the runtime copy. Logs are in `<data dir>/logs/`; the OS-level log
+is `<runtime>/logs/scheduler.log`. Scheduled runs use a dedicated copy of the
+Chrome profile, so an open interactive browser does not block them. If the
+LinkedIn login expires, `/job/schedule --login` opens Chrome with that profile;
+sign in once and close it.
 
-The scheduler runs the code checked out in the repository. Keep `develop` or
-`main` checked out; a feature branch or uncommitted changes affect the next
-run. If you change how `opencode` is installed, run
-`/job/schedule --repair`; the runtime resolver also falls back to PATH and the
-known install locations automatically.
+If you change how `opencode` is installed, move the project, or change the
+data folder, run `/job/schedule --repair`; the runtime resolver also falls
+back to PATH and the known install locations automatically.
 
 The machine must be on and the browser profile must still be logged into
 LinkedIn. If it was asleep or off, the OS runs the job when it wakes or starts,

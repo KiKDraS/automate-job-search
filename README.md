@@ -119,8 +119,9 @@ end of `/job/setup`, and you can change it anytime with `/job/schedule`.
 
 | Default | Value |
 | --- | --- |
-| Frequency | Daily at 09:00 local |
-| Job search | Postings from the last 48 hours |
+| Frequency | Daily; one or more times |
+| Times | 09:00 local |
+| Search window | 48 hours |
 | Feed search | On |
 | Notifications | On |
 | Auto-apply | Medium/High with standing approval |
@@ -131,7 +132,7 @@ end of `/job/setup`, and you can change it anytime with `/job/schedule`.
 What the run does, in order:
 
 1. Retries the saved Medium/High backlog without `applied.md`.
-2. Runs the 48-hour job search.
+2. Runs the job search for the configured window (48 hours by default).
 3. Runs the feed/content search.
 4. Tailors, audits, and auto-applies every Medium/High fit it can fill.
 5. Stops at the runtime cap or the agent step budget.
@@ -154,6 +155,8 @@ nothing, the next daily run picks them up as backlog.
 ```text
 /job/schedule                       # status, next run, OS scheduler
 /job/schedule --time 08:30          # daily at 08:30
+/job/schedule --times "11:30,18:30" # two runs per day
+/job/schedule --search-window 24    # look back 24 hours per run
 /job/schedule --interval "every 12h"
 /job/schedule --model provider/model
 /job/schedule --default-model
@@ -223,6 +226,9 @@ protected folder. The agent never asks for `sudo` or an administrator account.
 | macOS | LaunchAgent (`launchd`) |
 | Linux | `systemd --user` timer; `cron` fallback |
 | Windows | Task Scheduler (`schtasks`) |
+
+With more than one time, macOS, Linux, and cron use multiple triggers in one
+scheduled job; Windows creates one task per time.
 
 The scheduler runs `opencode run --auto --agent coach` with the model you
 chose, from the runtime copy. Logs are in `<data dir>/logs/`; the OS-level log

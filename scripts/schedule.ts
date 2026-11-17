@@ -4,7 +4,9 @@
  *
  * Usage:
  *   npx tsx scripts/schedule.ts status
- *   npx tsx scripts/schedule.ts enable  [--time 09:00] [--interval daily|every 12h]
+ *   npx tsx scripts/schedule.ts enable  [--times "09:00,18:00"] [--time 09:00]
+ *                                       [--interval daily|every 12h]
+ *                                       [--search-window 48]
  *                                       [--model provider/model] [--default-model]
  *                                       [--opencode-bin /path/to/opencode]
  *                                       [--max-applications 0] [--max-runtime 60]
@@ -35,12 +37,13 @@ import {
   formatAutomationConfig,
   nextRunAt,
   parseAutomationConfig,
+  parseTimes,
   SEARCH_LOCK_FILE,
   validateAutomationConfig,
   type AutomationConfig,
 } from "../lib/automation.ts"
 import {
-  buildCronLine,
+  buildCronLines,
   buildLaunchdPlist,
   buildPosixWrapper,
   buildSystemdService,
@@ -48,6 +51,7 @@ import {
   buildWindowsTaskArgs,
   buildWindowsWrapper,
   detectScheduler,
+  windowsTaskName,
   type SchedulerSpec,
   type WrapperSpec,
 } from "../lib/scheduler.ts"
@@ -126,10 +130,10 @@ async function readConfig(): Promise<AutomationConfig> {
   }
 }
 
-function schedulerSpec(): SchedulerSpec {
+function schedulerSpec(config: AutomationConfig): SchedulerSpec {
   return {
-    time: "09:00",
-    interval: "daily",
+    times: config.times,
+    interval: config.interval,
     wrapperPath,
     logsDir: runtimeLogsDir,
     label: LABEL,
@@ -243,7 +247,7 @@ async function installLaunchd(config: AutomationConfig): Promise<string> {
   const plistPath = path.join(os.homedir(), "Library", "LaunchAgents", `${LABEL}.plist`)
   await fs.mkdir(path.dirname(plistPath), { recursive: true })
   await fs.mkdir(runtimeLogsDir, { recursive: true })
-  const spec = { ...schedulerSpec(), time: config.time, interval: config.interval }
+  const spec = schedulerSpec(config)
   await fs.writeFile(plistPath, buildLaunchdPlist(spec))
   const uid = process.getuid?.()
   if (uid === undefined) fail(SCRIPT, "cannot resolve the macOS user id")
@@ -260,7 +264,7 @@ async function installSystemd(config: AutomationConfig): Promise<string> {
   const dir = path.join(os.homedir(), ".config", "systemd", "user")
   await fs.mkdir(dir, { recursive: true })
   await fs.mkdir(runtimeLogsDir, { recursive: true })
-  const spec = { ...schedulerSpec(), time: config.time, interval: config.interval }
+  const spec = schedulerSpec(config)
   const servicePath = path.join(dir, `${SERVICE_NAME}.service`)
   const timerPath = path.join(dir, `${SERVICE_NAME}.timer`)
   await fs.writeFile(servicePath, buildSystemdService(spec))
@@ -276,11 +280,11 @@ async function installSystemd(config: AutomationConfig): Promise<string> {
 }
 
 async function installCron(config: AutomationConfig): Promise<string> {
-  const spec = { ...schedulerSpec(), time: config.time, interval: config.interval }
+  const spec = schedulerSpec(config)
   const existing = run("crontab", ["-l"])
   const current = existing.status === 0 ? existing.stdout : ""
   const lines = withoutCronBlock(current)
-  const block = [CRON_BEGIN, buildCronLine(spec), CRON_END]
+  const block = [CRON_BEGIN, ...buildCronLines(spec), CRON_END]
   const next = [...lines, ...block, ""].join("\n")
   const install = run("crontab", ["-"], next)
   if (install.status !== 0) {
@@ -309,12 +313,21 @@ function withoutCronBlock(source: string): string[] {
 
 async function installWindows(config: AutomationConfig): Promise<string> {
   await fs.mkdir(runtimeLogsDir, { recursive: true })
-  const spec = { ...schedulerSpec(), time: config.time, interval: config.interval }
-  const result = run("schtasks", buildWindowsTaskArgs(spec))
-  if (result.status !== 0) {
-    return fail(SCRIPT, `schtasks failed: ${result.stderr || result.stdout}`)
+  const spec = schedulerSpec(config)
+  run("schtasks", ["/Delete", "/F", "/TN", spec.taskName])
+  for (let index = 0; index < 5; index += 1) {
+    run("schtasks", ["/Delete", "/F", "/TN", `${spec.taskName}-${index + 1}`])
   }
-  return TASK_NAME
+  const names: string[] = []
+  for (const [index, time] of spec.times.entries()) {
+    const name = windowsTaskName(spec, index)
+    const result = run("schtasks", buildWindowsTaskArgs(spec, time, name))
+    if (result.status !== 0) {
+      return fail(SCRIPT, `schtasks failed: ${result.stderr || result.stdout}`)
+    }
+    names.push(name)
+  }
+  return names.join(", ")
 }
 
 async function install(
@@ -373,11 +386,14 @@ async function removeCron(): Promise<void> {
   run("crontab", ["-"], [...lines, ""].join("\n"))
 }
 
-async function remove(): Promise<void> {
+async function remove(config: AutomationConfig): Promise<void> {
   if (process.platform === "darwin") {
     await removeLaunchd()
   } else if (process.platform === "win32") {
     run("schtasks", ["/Delete", "/F", "/TN", TASK_NAME])
+    for (let index = 0; index < 5; index += 1) {
+      run("schtasks", ["/Delete", "/F", "/TN", `${TASK_NAME}-${index + 1}`])
+    }
   } else {
     await removeSystemd()
     await removeCron()
@@ -386,7 +402,7 @@ async function remove(): Promise<void> {
   await fs.rm(legacyWrapperPath, { force: true })
 }
 
-async function isInstalled(): Promise<boolean> {
+async function isInstalled(config: AutomationConfig): Promise<boolean> {
   if (process.platform === "darwin") {
     const plistPath = path.join(os.homedir(), "Library", "LaunchAgents", `${LABEL}.plist`)
     return fs.access(plistPath).then(
@@ -395,7 +411,11 @@ async function isInstalled(): Promise<boolean> {
     )
   }
   if (process.platform === "win32") {
-    return run("schtasks", ["/Query", "/TN", TASK_NAME]).status === 0
+    const spec = schedulerSpec(config)
+    return spec.times.every(
+      (_time, index) =>
+        run("schtasks", ["/Query", "/TN", windowsTaskName(spec, index)]).status === 0,
+    )
   }
   const timerPath = path.join(os.homedir(), ".config", "systemd", "user", `${SERVICE_NAME}.timer`)
   const systemd = await fs.access(timerPath).then(
@@ -411,11 +431,18 @@ async function statusLine(config: AutomationConfig): Promise<void> {
   const missing = await automationReady(dataDir)
   const runtime = await runtimeStatus(repoPath, runtimePath)
   console.log(`Automation: ${config.enabled ? "enabled" : "disabled"}`)
-  console.log(`Schedule: ${config.interval === "daily" ? `daily at ${config.time}` : config.interval}`)
+  console.log(
+    `Schedule: ${
+      config.interval === "daily"
+        ? `daily at ${config.times.join(", ")}`
+        : config.interval
+    }`,
+  )
+  console.log(`Search window: ${config.searchWindowHours} hours`)
   console.log(`Model: ${config.model === "" ? "OpenCode default" : config.model}`)
   console.log(`Next run: ${formatNext(config)}`)
   console.log(`Scheduler: ${detectScheduler()}`)
-  console.log(`Installed: ${(await isInstalled()) ? "yes" : "no"}`)
+  console.log(`Installed: ${(await isInstalled(config)) ? "yes" : "no"}`)
   console.log(`Project: ${repoPath}${formatProject(runtime)}`)
   console.log(`Runtime: ${describeRuntime(runtime)}`)
   console.log(`Data dir: ${describeDataDir()}`)
@@ -438,7 +465,7 @@ function formatProject(runtime: RuntimeStatus): string {
 }
 
 async function dryRun(config: AutomationConfig, opencodePath: string): Promise<void> {
-  const spec = { ...schedulerSpec(), time: config.time, interval: config.interval }
+  const spec = schedulerSpec(config)
   console.log(`# ${configPath}\n`)
   console.log(formatAutomationConfig(config))
   console.log(`# Runtime: ${runtimePath}\n`)
@@ -450,11 +477,16 @@ async function dryRun(config: AutomationConfig, opencodePath: string): Promise<v
   )
   console.log(`# ${detectScheduler()}\n`)
   if (process.platform === "darwin") console.log(buildLaunchdPlist(spec))
-  else if (process.platform === "win32") console.log(`schtasks ${buildWindowsTaskArgs(spec).join(" ")}`)
-  else {
+  else if (process.platform === "win32") {
+    for (const [index, time] of spec.times.entries()) {
+      console.log(
+        `schtasks ${buildWindowsTaskArgs(spec, time, windowsTaskName(spec, index)).join(" ")}`,
+      )
+    }
+  } else {
     console.log(buildSystemdService(spec))
     console.log(buildSystemdTimer(spec))
-    console.log(buildCronLine(spec))
+    for (const line of buildCronLines(spec)) console.log(line)
   }
 }
 
@@ -471,7 +503,7 @@ async function main(): Promise<void> {
     const config = { ...(await readConfig()), enabled: false }
     await fs.mkdir(dataDir, { recursive: true })
     await fs.writeFile(configPath, formatAutomationConfig(config))
-    if (!dry) await remove()
+    if (!dry) await remove(config)
     console.log("Automation disabled. Config kept; run /job/schedule --enable to resume.")
     return
   }
@@ -480,7 +512,7 @@ async function main(): Promise<void> {
     const config = { ...(await readConfig()), enabled: false }
     await fs.mkdir(dataDir, { recursive: true })
     await fs.writeFile(configPath, formatAutomationConfig(config))
-    if (!dry) await remove()
+    if (!dry) await remove(config)
     console.log("Scheduler removed. automation.md kept with enabled: false.")
     return
   }
@@ -492,7 +524,7 @@ async function main(): Promise<void> {
       const uid = process.getuid?.()
       if (uid !== undefined) run("launchctl", ["kickstart", "-k", `gui/${uid}/${LABEL}`])
     } else if (process.platform === "win32") {
-      run("schtasks", ["/Run", "/TN", TASK_NAME])
+      run("schtasks", ["/Run", "/TN", windowsTaskName(schedulerSpec(config), 0)])
     } else {
       run("systemctl", ["--user", "start", `${SERVICE_NAME}.service`])
     }
@@ -531,15 +563,19 @@ async function main(): Promise<void> {
   }
 
   const config = await readConfig()
+  const times = optionalValue(args, "--times")
   const time = optionalValue(args, "--time")
   const interval = optionalValue(args, "--interval")
+  const searchWindow = optionalValue(args, "--search-window")
   const model = optionalValue(args, "--model")
   const maxApplications = optionalValue(args, "--max-applications")
   const maxRuntime = optionalValue(args, "--max-runtime")
   const opencodeOverride = optionalValue(args, "--opencode-bin")
 
-  if (time !== undefined) config.time = time
+  if (times !== undefined) config.times = parseTimes(times)
+  else if (time !== undefined) config.times = [time]
   if (interval !== undefined) config.interval = interval
+  if (searchWindow !== undefined) config.searchWindowHours = Number(searchWindow)
   if (model !== undefined) config.model = model
   if (has(args, "--default-model")) config.model = ""
   if (maxApplications !== undefined) config.maxApplicationsPerRun = Number(maxApplications)
@@ -599,11 +635,15 @@ async function main(): Promise<void> {
 
   const target = await install(config, resolveOpencode(opencodeOverride), has(args, "--force-deps"))
   console.log(`Automation ${config.enabled ? "enabled" : "updated"}.`)
+  console.log(`Schedule: ${config.interval === "daily" ? `daily at ${config.times.join(", ")}` : config.interval}`)
+  console.log(`Search window: ${config.searchWindowHours} hours`)
   console.log(`Next run: ${formatNext(config)}`)
   console.log(`Scheduler target: ${target}`)
   console.log(`Data dir: ${describeDataDir()}`)
   console.log(`Config: ${configPath}`)
-  console.log(`Change later: /job/schedule --time 08:30 | --interval "every 12h" | --model <provider/model>`)
+  console.log(
+    `Change later: /job/schedule --times "08:30,18:30" | --search-window 24 | --model <provider/model>`,
+  )
 }
 
 await main()

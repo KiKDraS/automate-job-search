@@ -11,7 +11,8 @@ and permission rules are in `.opencode/docs/automation-runtime.md`.
 
 ## Defaults
 
-- Daily at **09:00 local**.
+- Daily at **09:00 local**, or one or more times per day.
+- Search window **48 hours**.
 - Feed search **on**.
 - Notifications **on**.
 - Standing auto-apply **on** when enabling.
@@ -32,8 +33,10 @@ and permission rules are in `.opencode/docs/automation-runtime.md`.
 
 Flags:
 
-- `--time HH:MM`
-- `--interval "daily"` or `--interval "every 12h"` (1–24 hours)
+- `--times "HH:MM,HH:MM"` — one to four daily times
+- `--time HH:MM` — shorthand for a single time
+- `--search-window N` — hours to look back per run (1–168)
+- `--interval "daily"` or `--interval "every 12h"` (1–24 hours; multiple times require daily)
 - `--model <provider/model>` — empty means OpenCode default; `--default-model` clears it
 - `--opencode-bin <path>` — override the CLI path when auto-detection fails
 - `--max-applications N` — `0` means no cap
@@ -60,6 +63,8 @@ Flags:
    Access to `node` and `opencode`.
 3. Map the request to flags. Examples:
    - “todos los días a las 8:30” → `--time 08:30 --interval daily`
+   - “a las 11:30 y 18:30” → `--times "11:30,18:30" --interval daily`
+   - “buscá las últimas 24 horas” → `--search-window 24`
    - “cada 12 horas” → `--interval "every 12h"`
    - “usá el modelo X” → `--model X`
    - “sin feed” → `--no-feed`
@@ -70,7 +75,8 @@ Flags:
    `/job/setup` is complete; the script refuses and lists what is missing.
 5. Run the script. It synchronizes the runtime copy, writes the wrapper and
    scheduler files, and prints:
-   - schedule and next run,
+   - times and next run,
+   - search window,
    - model (or OpenCode default),
    - OS scheduler used,
    - runtime path and data-dir safety,

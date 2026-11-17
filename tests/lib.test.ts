@@ -12,10 +12,11 @@ import {
   formatAutomationConfig,
   nextRunAt,
   parseAutomationConfig,
+  parseTimes,
   validateAutomationConfig,
 } from "../lib/automation.ts"
 import {
-  buildCronLine,
+  buildCronLines,
   buildLaunchdPlist,
   buildPosixWrapper,
   buildSystemdTimer,
@@ -23,6 +24,7 @@ import {
   buildWindowsWrapper,
   detectScheduler,
   intervalHours,
+  windowsTaskName,
 } from "../lib/scheduler.ts"
 import { buildNotificationCommand } from "../lib/notify.ts"
 import {
@@ -661,48 +663,80 @@ test("parseAutomationConfig round-trips the Markdown config", () => {
   const source = `# Automation
 
 - enabled: true
-- time: "08:30"
-- interval: every 12h
+- times: "08:30,18:30"
+- interval: daily
 - model: "opencode/deepseek-v4.1-flash-free"
 - standingApproval: true
 - maxApplicationsPerRun: 0
 - includeBacklog: true
 - includeJobSearch: true
 - includeFeedSearch: false
+- searchWindowHours: 24
 - notify: true
 - maxRuntimeMinutes: 45
 `
   const config = parseAutomationConfig(source)
   assert.equal(config.enabled, true)
-  assert.equal(config.time, "08:30")
-  assert.equal(config.interval, "every 12h")
+  assert.deepEqual(config.times, ["08:30", "18:30"])
+  assert.equal(config.interval, "daily")
   assert.equal(config.model, "opencode/deepseek-v4.1-flash-free")
   assert.equal(config.maxApplicationsPerRun, 0)
   assert.equal(config.includeFeedSearch, false)
+  assert.equal(config.searchWindowHours, 24)
   assert.equal(config.maxRuntimeMinutes, 45)
   assert.deepEqual(parseAutomationConfig(formatAutomationConfig(config)), config)
 })
 
+test("parseAutomationConfig accepts the legacy single time", () => {
+  const config = parseAutomationConfig(`# Automation
+
+- time: "11:30"
+- interval: daily
+`)
+  assert.deepEqual(config.times, ["11:30"])
+  assert.deepEqual(parseTimes("11:30, 18:30"), ["11:30", "18:30"])
+})
+
 test("validateAutomationConfig rejects bad times, intervals and models", () => {
   assert.deepEqual(validateAutomationConfig(DEFAULT_AUTOMATION), [])
-  assert.ok(validateAutomationConfig({ ...DEFAULT_AUTOMATION, time: "9:00" }).length > 0)
+  assert.ok(validateAutomationConfig({ ...DEFAULT_AUTOMATION, times: ["9:00"] }).length > 0)
+  assert.ok(validateAutomationConfig({ ...DEFAULT_AUTOMATION, times: [] }).length > 0)
+  assert.ok(
+    validateAutomationConfig({ ...DEFAULT_AUTOMATION, times: ["09:00", "09:00"] }).length > 0,
+  )
+  assert.ok(
+    validateAutomationConfig({
+      ...DEFAULT_AUTOMATION,
+      times: ["09:00", "18:00"],
+      interval: "every 12h",
+    }).length > 0,
+  )
   assert.ok(validateAutomationConfig({ ...DEFAULT_AUTOMATION, interval: "every 25h" }).length > 0)
   assert.ok(validateAutomationConfig({ ...DEFAULT_AUTOMATION, model: "not-a-model" }).length > 0)
   assert.ok(validateAutomationConfig({ ...DEFAULT_AUTOMATION, maxRuntimeMinutes: 1 }).length > 0)
   assert.ok(validateAutomationConfig({ ...DEFAULT_AUTOMATION, maxApplicationsPerRun: -1 }).length > 0)
+  assert.ok(validateAutomationConfig({ ...DEFAULT_AUTOMATION, searchWindowHours: 0 }).length > 0)
+  assert.ok(validateAutomationConfig({ ...DEFAULT_AUTOMATION, searchWindowHours: 200 }).length > 0)
 })
 
-test("nextRunAt handles daily and every-N-hours schedules", () => {
+test("nextRunAt handles daily, multiple times and every-N-hours schedules", () => {
   const base = new Date(2026, 10, 16, 8, 0, 0)
-  const daily = nextRunAt({ ...DEFAULT_AUTOMATION, enabled: true, time: "09:00" }, base)
+  const daily = nextRunAt({ ...DEFAULT_AUTOMATION, enabled: true, times: ["09:00"] }, base)
   assert.equal(daily?.getFullYear(), 2026)
   assert.equal(daily?.getMonth(), 10)
   assert.equal(daily?.getDate(), 16)
   assert.equal(daily?.getHours(), 9)
 
-  const nextDay = nextRunAt({ ...DEFAULT_AUTOMATION, enabled: true, time: "07:00" }, base)
+  const nextDay = nextRunAt({ ...DEFAULT_AUTOMATION, enabled: true, times: ["07:00"] }, base)
   assert.equal(nextDay?.getDate(), 17)
   assert.equal(nextDay?.getHours(), 7)
+
+  const twoTimes = { ...DEFAULT_AUTOMATION, enabled: true, times: ["11:30", "18:30"] }
+  assert.equal(nextRunAt(twoTimes, base)?.getHours(), 11)
+  assert.equal(nextRunAt(twoTimes, new Date(2026, 10, 16, 12, 0, 0))?.getHours(), 18)
+  const tomorrow = nextRunAt(twoTimes, new Date(2026, 10, 16, 19, 0, 0))
+  assert.equal(tomorrow?.getDate(), 17)
+  assert.equal(tomorrow?.getHours(), 11)
 
   const every = nextRunAt(
     { ...DEFAULT_AUTOMATION, enabled: true, interval: "every 12h" },
@@ -714,7 +748,7 @@ test("nextRunAt handles daily and every-N-hours schedules", () => {
 
 test("scheduler builders cover launchd, systemd, cron and Windows", () => {
   const spec = {
-    time: "09:00",
+    times: ["09:00", "18:30"],
     interval: "daily",
     wrapperPath: "/data/bin/scheduled-search.sh",
     logsDir: "/data/logs",
@@ -723,19 +757,33 @@ test("scheduler builders cover launchd, systemd, cron and Windows", () => {
   }
   const plist = buildLaunchdPlist(spec)
   assert.ok(plist.includes("<key>StartCalendarInterval</key>"))
+  assert.ok(plist.includes("<integer>9</integer>"))
+  assert.ok(plist.includes("<integer>18</integer>"))
   assert.ok(plist.includes("/data/bin/scheduled-search.sh"))
   const intervalPlist = buildLaunchdPlist({ ...spec, interval: "every 12h" })
   assert.ok(intervalPlist.includes("<key>StartInterval</key>"))
   assert.ok(intervalPlist.includes(String(12 * 60 * 60)))
 
-  assert.ok(buildSystemdTimer(spec).includes("OnCalendar=*-*-* 09:00:00"))
+  const timer = buildSystemdTimer(spec)
+  assert.ok(timer.includes("OnCalendar=*-*-* 09:00:00"))
+  assert.ok(timer.includes("OnCalendar=*-*-* 18:30:00"))
   assert.ok(buildSystemdTimer({ ...spec, interval: "every 12h" }).includes("OnUnitActiveSec=12h"))
-  assert.ok(buildCronLine(spec).includes("0 9 * * *"))
-  assert.ok(buildCronLine({ ...spec, interval: "every 12h" }).includes("0 */12 * * *"))
+  assert.deepEqual(
+    buildCronLines(spec).map((line) => line.split(" ").slice(0, 5).join(" ")),
+    ["0 9 * * *", "30 18 * * *"],
+  )
+  assert.deepEqual(
+    buildCronLines({ ...spec, interval: "every 12h" }).map((line) => line.split(" ").slice(0, 5).join(" ")),
+    ["0 */12 * * *"],
+  )
 
-  const win = buildWindowsTaskArgs(spec)
+  assert.equal(windowsTaskName(spec, 0), "test-search-1")
+  assert.equal(windowsTaskName(spec, 1), "test-search-2")
+  assert.equal(windowsTaskName({ ...spec, times: ["09:00"] }, 0), "test-search")
+  const win = buildWindowsTaskArgs(spec, "09:00", windowsTaskName(spec, 0))
   assert.ok(win.includes("/SC") && win.includes("DAILY") && win.includes("09:00"))
-  const winInterval = buildWindowsTaskArgs({ ...spec, interval: "every 12h" })
+  assert.ok(win.includes("test-search-1"))
+  const winInterval = buildWindowsTaskArgs({ ...spec, interval: "every 12h" }, "09:00", "test-search")
   assert.ok(winInterval.includes("HOURLY") && winInterval.includes("12"))
 
   assert.equal(intervalHours("every 12h"), 12)
@@ -812,6 +860,14 @@ test("buildScheduledPrompt includes the user data and pipeline", () => {
   assert.ok(prompt.includes("pending-search.json"))
   assert.ok(prompt.includes("search.lock"))
   assert.ok(prompt.includes("No application cap"))
+  assert.ok(prompt.includes("48-hour job search"))
+  assert.ok(
+    buildScheduledPrompt("/data", {
+      ...DEFAULT_AUTOMATION,
+      enabled: true,
+      searchWindowHours: 24,
+    }).includes("24-hour job search"),
+  )
   assert.ok(prompt.includes("mailto"))
   assert.ok(prompt.includes("Needs you"))
 })

@@ -1,9 +1,10 @@
 import assert from "node:assert/strict"
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { createHash } from "node:crypto"
 import os from "node:os"
 import path from "node:path"
 import { test } from "node:test"
-import { parseDataDirConfig, resolveDataDirWithSource } from "../lib/data-dir.ts"
+import { migrateDataDirectory, parseDataDirConfig, resolveDataDirWithSource } from "../lib/data-dir.ts"
 import {
   automationReady,
   buildScheduledPrompt,
@@ -24,6 +25,19 @@ import {
   intervalHours,
 } from "../lib/scheduler.ts"
 import { buildNotificationCommand } from "../lib/notify.ts"
+import {
+  buildRuntimeOpencodeConfig,
+  compareRuntime,
+  isInsidePath,
+  parseRuntimeManifest,
+  playwrightProfileDir,
+  protectedPath,
+  resolveRuntimeDir,
+  runtimeBrowserProfileDir,
+  safePathEnv,
+  seedBrowserProfile,
+  syncRuntime,
+} from "../lib/runtime.ts"
 import {
   findNodePath,
   findOpencodeOnPath,
@@ -742,30 +756,34 @@ test("notification and wrapper builders are platform-specific", () => {
   assert.equal(win.command, "powershell")
 
   const wrapper = buildPosixWrapper({
-    repoPath: "/repo",
+    runtimeDir: "/runtime",
     dataDir: "/data",
     nodePath: "/node",
-    tsxCliPath: "/repo/node_modules/tsx/dist/cli.mjs",
-    runnerPath: "/repo/scripts/scheduled-search.ts",
+    tsxCliPath: "/runtime/node_modules/tsx/dist/cli.mjs",
+    runnerPath: "/runtime/scripts/scheduled-search.ts",
     opencodePath: "/opt/homebrew/bin/opencode",
     pathEnv: "/opt/homebrew/bin:/usr/bin:/bin",
   })
-  assert.ok(wrapper.includes("cd '/repo'"))
+  assert.ok(wrapper.includes("cd '/runtime'"))
   assert.ok(wrapper.includes("exec '/node'"))
   assert.ok(wrapper.includes("PATH='/opt/homebrew/bin:/usr/bin:/bin'"))
   assert.ok(wrapper.includes("JOBSEARCH_OPENCODE_BIN='/opt/homebrew/bin/opencode'"))
+  assert.ok(wrapper.includes("JOBSEARCH_HOME='/data'"))
+  assert.ok(wrapper.includes("/runtime/logs/scheduler.log"))
+  assert.ok(!wrapper.includes("/repo"))
   const windows = buildWindowsWrapper({
-    repoPath: "C:\\repo",
+    runtimeDir: "C:\\runtime",
     dataDir: "C:\\data",
     nodePath: "C:\\node.exe",
-    tsxCliPath: "C:\\repo\\node_modules\\tsx\\dist\\cli.mjs",
-    runnerPath: "C:\\repo\\scripts\\scheduled-search.ts",
+    tsxCliPath: "C:\\runtime\\node_modules\\tsx\\dist\\cli.mjs",
+    runnerPath: "C:\\runtime\\scripts\\scheduled-search.ts",
     opencodePath: "C:\\tools\\opencode\\opencode.cmd",
     pathEnv: "C:\\tools\\opencode;C:\\Windows\\System32",
   })
   assert.ok(windows.includes("@echo off"))
-  assert.ok(windows.includes("cd /d"))
+  assert.ok(windows.includes("cd /d \"C:\\runtime\""))
   assert.ok(windows.includes("JOBSEARCH_OPENCODE_BIN"))
+  assert.ok(windows.includes("JOBSEARCH_HOME"))
   assert.ok(windows.includes("set \"PATH="))
 })
 
@@ -792,6 +810,7 @@ test("buildScheduledPrompt includes the user data and pipeline", () => {
   assert.ok(prompt.includes("preferences.md"))
   assert.ok(prompt.includes("reports/"))
   assert.ok(prompt.includes("pending-search.json"))
+  assert.ok(prompt.includes("search.lock"))
   assert.ok(prompt.includes("No application cap"))
   assert.ok(prompt.includes("mailto"))
   assert.ok(prompt.includes("Needs you"))
@@ -862,4 +881,289 @@ test("knownOpencodePaths covers Windows and Unix install methods", () => {
   assert.ok(unix.includes("/opt/homebrew/bin/opencode"))
   assert.ok(unix.includes("/usr/local/bin/opencode"))
   assert.ok(unix.some((item) => item.includes(".opencode/bin/opencode")))
+})
+
+test("resolveRuntimeDir uses the platform application-data directory", () => {
+  assert.equal(
+    resolveRuntimeDir({ platform: "darwin", env: {}, home: "/Users/test" }),
+    "/Users/test/Library/Application Support/automate-job-search/runtime",
+  )
+  assert.equal(
+    resolveRuntimeDir({ platform: "linux", env: {}, home: "/home/test" }),
+    "/home/test/.local/share/automate-job-search/runtime",
+  )
+  assert.equal(
+    resolveRuntimeDir({
+      platform: "linux",
+      env: { XDG_DATA_HOME: "/data" },
+      home: "/home/test",
+    }),
+    "/data/automate-job-search/runtime",
+  )
+  assert.equal(
+    resolveRuntimeDir({
+      platform: "win32",
+      env: { LOCALAPPDATA: "C:\\Users\\test\\AppData\\Local" },
+      home: "C:\\Users\\test",
+    }),
+    "C:\\Users\\test\\AppData\\Local\\automate-job-search\\runtime",
+  )
+  assert.equal(
+    resolveRuntimeDir({
+      platform: "darwin",
+      env: { JOBSEARCH_RUNTIME: "/custom/runtime" },
+      home: "/Users/test",
+    }),
+    "/custom/runtime",
+  )
+})
+
+test("protectedPath flags macOS and Windows protected folders only", () => {
+  const mac = { platform: "darwin" as const, env: {}, home: "/Users/test" }
+  assert.equal(protectedPath("/Users/test/Documents/jobsearch", mac)?.label, "~/Documents")
+  assert.equal(protectedPath("/Users/test/Desktop/jobsearch", mac)?.label, "~/Desktop")
+  assert.equal(protectedPath("/Users/test/Downloads/jobsearch", mac)?.label, "~/Downloads")
+  assert.equal(
+    protectedPath("/Users/test/Library/Mobile Documents/com~apple~CloudDocs/jobsearch", mac)?.label,
+    "iCloud Drive",
+  )
+  assert.equal(protectedPath("/Volumes/Backup/jobsearch", mac)?.label, "an external volume")
+  assert.equal(protectedPath("/Users/test/.jobsearch", mac), null)
+
+  const win = {
+    platform: "win32" as const,
+    env: { OneDrive: "C:\\Users\\test\\OneDrive" },
+    home: "C:\\Users\\test",
+  }
+  assert.equal(protectedPath("C:\\Users\\test\\Documents\\jobsearch", win)?.label, "%USERPROFILE%\\Documents")
+  assert.equal(protectedPath("C:\\Users\\test\\OneDrive\\jobsearch", win)?.label, "%OneDrive%")
+  assert.equal(protectedPath("C:\\jobsearch", win), null)
+
+  assert.equal(
+    protectedPath("/home/test/Documents/jobsearch", {
+      platform: "linux",
+      env: {},
+      home: "/home/test",
+    }),
+    null,
+  )
+})
+
+test("isInsidePath compares complete path segments", () => {
+  assert.equal(isInsidePath("/Users/test/Documents/a", "/Users/test/Documents", "darwin"), true)
+  assert.equal(isInsidePath("/Users/test/Documents", "/Users/test/Documents", "darwin"), true)
+  assert.equal(isInsidePath("/Users/test/Documents-old/a", "/Users/test/Documents", "darwin"), false)
+  assert.equal(isInsidePath("/data/x", "/data", "linux"), true)
+  assert.equal(isInsidePath("/database/x", "/data", "linux"), false)
+  assert.equal(isInsidePath("C:\\Users\\Test\\Documents\\a", "c:\\users\\test\\documents", "win32"), true)
+})
+
+test("safePathEnv drops protected entries", () => {
+  assert.equal(
+    safePathEnv("/opt/homebrew/bin:/Users/test/Documents/bin:/usr/bin", {
+      platform: "darwin",
+      env: {},
+      home: "/Users/test",
+    }),
+    "/opt/homebrew/bin:/usr/bin",
+  )
+  assert.equal(
+    safePathEnv("C:\\tools;C:\\Users\\test\\Documents\\bin;C:\\Windows", {
+      platform: "win32",
+      env: {},
+      home: "C:\\Users\\test",
+    }),
+    "C:\\tools;C:\\Windows",
+  )
+})
+
+test("playwrightProfileDir shares the project's browser profile", () => {
+  const expected = createHash("sha256")
+    .update("/Users/test/project")
+    .digest("hex")
+    .slice(0, 7)
+  assert.equal(
+    playwrightProfileDir("/Users/test/project", {
+      platform: "darwin",
+      env: {},
+      home: "/Users/test",
+    }),
+    `/Users/test/Library/Caches/ms-playwright-mcp/mcp-chrome-${expected}`,
+  )
+  assert.equal(
+    playwrightProfileDir("/home/test/project", {
+      platform: "linux",
+      env: { XDG_CACHE_HOME: "/cache" },
+      home: "/home/test",
+    }),
+    `/cache/ms-playwright-mcp/mcp-chrome-${createHash("sha256")
+      .update("/home/test/project")
+      .digest("hex")
+      .slice(0, 7)}`,
+  )
+})
+
+test("runtimeBrowserProfileDir seeds a dedicated profile without lock files", async () => {
+  assert.equal(
+    runtimeBrowserProfileDir("/Users/test/automate-job-search/runtime"),
+    "/Users/test/automate-job-search/browser-profile",
+  )
+  const source = mkdtempSync(path.join(os.tmpdir(), "ajs-profile-src-"))
+  const targetParent = mkdtempSync(path.join(os.tmpdir(), "ajs-profile-dst-"))
+  try {
+    mkdirSync(path.join(source, "Default"), { recursive: true })
+    writeFileSync(path.join(source, "Default", "Cookies"), "cookie")
+    writeFileSync(path.join(source, "SingletonLock"), "lock")
+    const target = path.join(targetParent, "browser-profile")
+    assert.equal(await seedBrowserProfile(source, target), "copied")
+    assert.equal(readFileSync(path.join(target, "Default", "Cookies"), "utf8"), "cookie")
+    assert.throws(() => readFileSync(path.join(target, "SingletonLock")))
+    assert.equal(await seedBrowserProfile(source, target), "kept")
+    assert.equal(
+      await seedBrowserProfile(path.join(source, "missing"), path.join(targetParent, "other")),
+      "missing",
+    )
+  } finally {
+    rmSync(source, { recursive: true, force: true })
+    rmSync(targetParent, { recursive: true, force: true })
+  }
+})
+
+test("buildRuntimeOpencodeConfig adds a stable browser profile", () => {  const source = `{
+  "mcp": {
+    "servers": {
+      "playwright": {
+        "command": ["npx", "@playwright/mcp@latest", "--browser", "chrome",
+          "--allow-unrestricted-file-access"],
+      },
+    },
+  },
+}
+`
+  const result = buildRuntimeOpencodeConfig(source, "/Users/test/profile")
+  assert.equal(result.injected, true)
+  assert.ok(result.content.includes('"--user-data-dir"'))
+  assert.ok(result.content.includes('"/Users/test/profile"'))
+  assert.ok(result.content.includes("--allow-unrestricted-file-access"))
+  const already = buildRuntimeOpencodeConfig(result.content, "/other")
+  assert.equal(already.injected, true)
+  assert.ok(already.content.includes("/Users/test/profile"))
+  assert.equal(buildRuntimeOpencodeConfig("{}", "/profile").injected, false)
+})
+
+test("parseRuntimeManifest and compareRuntime detect stale copies", () => {
+  const manifest = {
+    schema: 1,
+    version: "0.9.0",
+    source: "/project",
+    sourceCommit: "abc123",
+    sourceDirty: false,
+    syncedAt: "2026-11-17T00:00:00.000Z",
+    lockHash: "hash",
+  }
+  assert.deepEqual(parseRuntimeManifest(JSON.stringify(manifest)), manifest)
+  assert.equal(parseRuntimeManifest('{"schema":1}'), null)
+  assert.equal(parseRuntimeManifest("not json"), null)
+
+  const expected = {
+    source: "/project",
+    version: "0.9.0",
+    sourceCommit: "abc123",
+    sourceDirty: false,
+  }
+  assert.equal(compareRuntime(manifest, expected).state, "current")
+  assert.equal(compareRuntime(null, expected).state, "missing")
+  assert.equal(
+    compareRuntime({ ...manifest, sourceCommit: "old" }, expected).state,
+    "stale",
+  )
+  assert.equal(
+    compareRuntime({ ...manifest, source: "/other" }, expected).state,
+    "stale",
+  )
+})
+
+test("syncRuntime copies code, keeps dependencies and skips unchanged ones", async () => {
+  const repo = mkdtempSync(path.join(os.tmpdir(), "ajs-runtime-repo-"))
+  const runtime = mkdtempSync(path.join(os.tmpdir(), "ajs-runtime-out-"))
+  try {
+    mkdirSync(path.join(repo, ".opencode", "agents"), { recursive: true })
+    mkdirSync(path.join(repo, "lib"), { recursive: true })
+    mkdirSync(path.join(repo, "scripts"), { recursive: true })
+    mkdirSync(path.join(repo, "node_modules", "tsx", "dist"), { recursive: true })
+    writeFileSync(path.join(repo, ".opencode", "agents", "coach.md"), "coach")
+    writeFileSync(path.join(repo, "lib", "runtime.ts"), "runtime")
+    writeFileSync(path.join(repo, "scripts", "scheduled-search.ts"), "runner")
+    writeFileSync(path.join(repo, "node_modules", "tsx", "dist", "cli.mjs"), "tsx")
+    writeFileSync(path.join(repo, "package.json"), '{"version":"0.9.0"}')
+    writeFileSync(path.join(repo, "package-lock.json"), '{"lock":1}')
+    writeFileSync(path.join(repo, "tsconfig.json"), "{}")
+    writeFileSync(path.join(repo, "AGENTS.md"), "agents")
+    writeFileSync(path.join(repo, "SPEC.md"), "spec")
+    writeFileSync(path.join(repo, "opencode.jsonc"), '{"mcp":{}}')
+
+    const first = await syncRuntime({
+      repoPath: repo,
+      runtimePath: runtime,
+      opencodeConfig: '{"runtime":true}',
+    })
+    assert.equal(first.dependenciesCopied, true)
+    assert.equal(readFileSync(path.join(runtime, "lib", "runtime.ts"), "utf8"), "runtime")
+    assert.equal(
+      readFileSync(path.join(runtime, "scripts", "scheduled-search.ts"), "utf8"),
+      "runner",
+    )
+    assert.equal(readFileSync(path.join(runtime, "opencode.jsonc"), "utf8"), '{"runtime":true}')
+    assert.equal(first.manifest.version, "0.9.0")
+
+    const second = await syncRuntime({
+      repoPath: repo,
+      runtimePath: runtime,
+      opencodeConfig: '{"runtime":true}',
+    })
+    assert.equal(second.dependenciesCopied, false)
+
+    writeFileSync(path.join(repo, "package-lock.json"), '{"lock":2}')
+    const third = await syncRuntime({
+      repoPath: repo,
+      runtimePath: runtime,
+      opencodeConfig: '{"runtime":true}',
+    })
+    assert.equal(third.dependenciesCopied, true)
+  } finally {
+    rmSync(repo, { recursive: true, force: true })
+    rmSync(runtime, { recursive: true, force: true })
+  }
+})
+
+test("migrateDataDirectory copies data, leaves the source and drops scheduler artifacts", async () => {
+  const source = mkdtempSync(path.join(os.tmpdir(), "ajs-migrate-src-"))
+  const target = mkdtempSync(path.join(os.tmpdir(), "ajs-migrate-dst-"))
+  try {
+    mkdirSync(path.join(source, "resume"), { recursive: true })
+    mkdirSync(path.join(source, "bin"), { recursive: true })
+    mkdirSync(path.join(source, "state"), { recursive: true })
+    mkdirSync(path.join(source, "logs"), { recursive: true })
+    writeFileSync(path.join(source, "profile.md"), "profile")
+    writeFileSync(path.join(source, "resume", "base.md"), "resume")
+    writeFileSync(path.join(source, "bin", "scheduled-search.sh"), "old")
+    writeFileSync(path.join(source, "state", "search.lock"), "lock")
+    writeFileSync(path.join(source, "logs", "scheduler.log"), "old log")
+
+    const result = await migrateDataDirectory(source, target)
+    assert.equal(result.files, 2)
+    assert.equal(readFileSync(path.join(target, "profile.md"), "utf8"), "profile")
+    assert.equal(readFileSync(path.join(target, "resume", "base.md"), "utf8"), "resume")
+    assert.equal(readFileSync(path.join(source, "profile.md"), "utf8"), "profile")
+    assert.throws(() => readFileSync(path.join(target, "bin", "scheduled-search.sh")))
+    assert.throws(() => readFileSync(path.join(target, "state", "search.lock")))
+    assert.throws(() => readFileSync(path.join(target, "logs", "scheduler.log")))
+
+    mkdirSync(path.join(target, "extra"))
+    writeFileSync(path.join(target, "extra", "x"), "x")
+    await assert.rejects(() => migrateDataDirectory(source, target))
+  } finally {
+    rmSync(source, { recursive: true, force: true })
+    rmSync(target, { recursive: true, force: true })
+  }
 })

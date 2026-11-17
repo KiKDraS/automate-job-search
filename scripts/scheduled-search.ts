@@ -22,18 +22,19 @@ import {
   AUTOMATION_FILE,
   DEFAULT_AUTOMATION,
   PENDING_FILE,
+  SEARCH_LOCK_FILE,
   type AutomationConfig,
 } from "../lib/automation.ts"
 import { buildNotificationCommand, formatNotificationFallback } from "../lib/notify.ts"
 import { resolveOpencodePath } from "../lib/opencode-bin.ts"
 import { todayIso } from "../lib/jobstore.ts"
 
-const repoPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
+const runtimePath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const dataDir = resolveDataDir()
 const reportsDir = path.join(dataDir, "reports")
 const logsDir = path.join(dataDir, "logs")
 const stateDir = path.join(dataDir, "state")
-const lockPath = path.join(stateDir, "search.lock")
+const lockPath = path.join(dataDir, SEARCH_LOCK_FILE)
 const pinnedOpencode = process.env["JOBSEARCH_OPENCODE_BIN"]
 const opencodeBin =
   pinnedOpencode !== undefined && resolveOpencodePath({ override: pinnedOpencode }) !== null
@@ -57,7 +58,7 @@ function runOpenCode(prompt: string, config: AutomationConfig): RunResult {
   if (config.model.trim() !== "") args.push("--model", config.model.trim())
   args.push(prompt)
   const options = {
-    cwd: repoPath,
+    cwd: runtimePath,
     encoding: "utf8" as const,
     timeout: config.maxRuntimeMinutes * 60 * 1000,
     maxBuffer: 20 * 1024 * 1024,
@@ -116,6 +117,16 @@ Run \`/job/setup\` to finish the missing data, then retry with \`/job/retry\`.
 }
 
 async function main(): Promise<void> {
+  try {
+    await fs.access(dataDir)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error(`data directory unavailable: ${dataDir} (${message})`)
+    console.error("Move it to a path the scheduler can read, then run /job/schedule --repair.")
+    process.exitCode = 3
+    return
+  }
+
   const config = await readConfig()
   if (!config.enabled) {
     console.log("Automation is disabled; nothing to do.")
@@ -175,6 +186,7 @@ async function main(): Promise<void> {
     const elapsed = Date.now() - startedAt
     const log = [
       `# Scheduled search ${new Date().toISOString()}`,
+      `Runtime: ${runtimePath}`,
       `Model: ${config.model === "" ? "OpenCode default" : config.model}`,
       `Exit: ${result.status ?? "null"}`,
       result.error ? `Error: ${result.error.message}` : "",

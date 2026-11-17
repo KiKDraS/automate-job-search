@@ -20,16 +20,28 @@ reads. Keep it to one batch of questions at a time.
 
 ### 1. Data folder and existing setup
 
-Run `npx tsx scripts/data-dir.ts` first — it prints the path and its source.
-If the source is `env` or `config`, the user already chose: confirm the path
-in one line, and change it only if they want (then call
-`jobsearch_set_data_dir` with the new absolute path). If the source is
-`default`, ask: "Where should I keep your job-search data?" Default:
+Run `npx tsx scripts/data-dir.ts` first — it prints the path, its source, and
+`safety` (`safe` or `protected`). If the source is `env` or `config`, the user
+already chose: confirm the path in one line, and change it only if they want
+(then call `jobsearch_set_data_dir` with the new absolute path). If the source
+is `default`, ask: "Where should I keep your job-search data?" Default:
 `~/.jobsearch` (recommended — outside this repository, so nothing personal
-can be committed). Never accept a path inside the repo, and always call
+can be committed, and outside the folders macOS and Windows protect from
+scheduled jobs). Never accept a path inside the repo, and always call
 `jobsearch_set_data_dir` with the chosen path — it validates, creates the
 folder, records the choice, and grants this session access. No manual
 configuration, no restarts.
+
+If `safety` says `protected` (Documentos, Escritorio, Descargas, iCloud, or
+OneDrive), explain in one line that the daily automation cannot read that
+folder reliably and offer to move the data now:
+
+    npx tsx scripts/data-dir.ts migrate --to ~/.jobsearch
+
+It copies the data, updates `jobsearch.json`, and leaves the old folder in
+place. Then call `jobsearch_set_data_dir` with the new path. Do not continue
+to automation with a protected path unless the user insists and grants Full
+Disk Access; see `.opencode/docs/automation-runtime.md`.
 
 Then confirm the chat language: read `<data dir>/language.md`. If it is
 missing, ask the bilingual question (`coach.md`, "First contact") and write
@@ -140,14 +152,20 @@ one batch, with defaults:
 8. Maximum applications per run? (0 = no cap)
 9. Runtime cap in minutes? (60)
 
+The scheduler runs from a runtime copy in the application-data folder, so the
+project can stay where it is — including `~/Documents`. If the data directory
+is still protected, resolve that first (step 1). The runtime copy and
+permissions are in `.opencode/docs/automation-runtime.md`.
+
 If the user says yes, run:
 
     npx tsx scripts/schedule.ts enable --time "09:00" --interval daily \
       --notify --feed --apply --max-applications 0 --max-runtime 60
 
 Add `--model "<provider/model>"` only when the user chose one. Show the
-summary: schedule, next run, model, OS scheduler, and how to change it with
-`/job/schedule`. If the OS scheduler fails, show the exact error.
+summary: schedule, next run, model, OS scheduler, runtime path, data-dir
+safety, and how to change it with `/job/schedule`. If the OS scheduler fails,
+show the exact error.
 
 If the user says no, do not install anything; `/job/schedule` stays available.
 

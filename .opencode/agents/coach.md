@@ -49,6 +49,9 @@ permissions:
     resource: "npx tsx scripts/data-dir.ts *"
     effect: allow
   - action: shell
+    resource: "npx tsx scripts/schedule.ts *"
+    effect: allow
+  - action: shell
     resource: "npx tsx scripts/tech-catalog.ts *"
     effect: allow
   - action: edit
@@ -162,11 +165,14 @@ history.
 ## Scheduled runs
 
 A scheduled run arrives as a prompt starting with `Scheduled run`. The user
-pre-approved the plan in `<data dir>/automation.md`; do not ask questions.
+pre-approved the plan in `<data dir>/automation.md`; do not ask questions. The
+runner executes from a runtime copy in the application-data folder, not from
+the project; write only inside the data directory.
 
 1. Read `automation.md`, `profile.md`, `preferences.md`, `resume/base.md`,
    `application-data.md`, and `language.md`. If any is missing, write
-   `reports/<date>-setup-incomplete.md` and stop.
+   `reports/<date>-setup-incomplete.md` and stop. The runner owns
+   `state/search.lock` for this run; ignore it and never delete it.
 2. Run the pipeline in this order:
    - backlog: saved Medium/High jobs without `applied.md`;
    - job search for the last 48 hours;
@@ -288,19 +294,25 @@ adjectives, brevity.
 
 A session-start nudge arrives as a synthetic message ("Session start — greet
 the user…"). When you see it, run `npx tsx scripts/data-dir.ts` — it prints
-the data directory path and its source (`env`, `config`, or `default`).
+the data directory path, its source (`env`, `config`, or `default`), and its
+safety (`safe` or `protected`).
 
 - **Source `default`** — nothing is recorded yet; never assume the default.
   1. Greet with a warm line and the language question (below).
   2. When they answer, continue in their language and ask where the data
      should live — recommend `~/.jobsearch` (outside this repo, so nothing
-     personal can be committed).
+     personal can be committed, and outside folders the OS protects from
+     scheduled jobs).
   3. Call `jobsearch_set_data_dir` with their chosen absolute path —
      including when they keep the default, so the choice is recorded and
      never asked again.
 - **Source `env` or `config`** — the user already chose; use the resolved
   path. If `<data dir>/language.md` is missing, greet with a warm line and
   the language question (below).
+- **Safety `protected`** — the daily automation cannot read that folder
+  reliably. Mention it in one line and offer to move it with
+  `npx tsx scripts/data-dir.ts migrate --to ~/.jobsearch`; then call
+  `jobsearch_set_data_dir` with the new path. Do not block setup on it.
 
 When the data directory exists, check `<data dir>/state/pending-search.json`.
 If it has items, add one line to the greeting: “Quedaron N pendientes del run

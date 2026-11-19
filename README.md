@@ -150,6 +150,10 @@ If the run stops early, open the report or say **“retry the pending ones”**.
 `/job/retry` continues only the pending jobs, not a new search. If you do
 nothing, the next daily run picks them up as backlog.
 
+A dropped model connection (`ECONNRESET`, timeout) gets one automatic retry
+when the failed attempt submitted no application and at least half the runtime
+cap remains. The report and notification say when the retry ran.
+
 ### Change the automation
 
 ```text

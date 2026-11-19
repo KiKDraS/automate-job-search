@@ -18,7 +18,8 @@ and permission rules are in `.opencode/docs/automation-runtime.md`.
 - Standing auto-apply **on** when enabling.
 - No application cap (`0`).
 - Runtime cap **60 minutes**.
-- Model: **OpenCode default** (empty).
+- Model: **OpenCode default** (the model configured in OpenCode; empty in
+  `automation.md`).
 
 ## Commands
 
@@ -37,7 +38,7 @@ Flags:
 - `--time HH:MM` — shorthand for a single time
 - `--search-window N` — hours to look back per run (1–168)
 - `--interval "daily"` or `--interval "every 12h"` (1–24 hours; multiple times require daily)
-- `--model <provider/model>` — empty means OpenCode default; `--default-model` clears it
+- `--model <provider/model#variant>` — explicit automation model; empty means the OpenCode default; `--default-model` clears it
 - `--opencode-bin <path>` — override the CLI path when auto-detection fails
 - `--max-applications N` — `0` means no cap
 - `--max-runtime N` — 5–240 minutes
@@ -66,7 +67,8 @@ Flags:
    - “a las 11:30 y 18:30” → `--times "11:30,18:30" --interval daily`
    - “buscá las últimas 24 horas” → `--search-window 24`
    - “cada 12 horas” → `--interval "every 12h"`
-   - “usá el modelo X” → `--model X`
+   - “usá el modelo X” → `--model X#max` (or the variant you want)
+   - “volvé al modelo por defecto” → `--default-model`
    - “sin feed” → `--no-feed`
    - “sin auto-apply” → `--no-apply`
    - “repará el scheduler” → `repair`
@@ -77,7 +79,7 @@ Flags:
    scheduler files, and prints:
    - times and next run,
    - search window,
-   - model (or OpenCode default),
+   - model (explicit, or the resolved OpenCode default),
    - OS scheduler used,
    - runtime path and data-dir safety,
    - config path,

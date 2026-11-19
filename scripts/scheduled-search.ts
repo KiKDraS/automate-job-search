@@ -27,6 +27,7 @@ import {
 } from "../lib/automation.ts"
 import { buildNotificationCommand, formatNotificationFallback } from "../lib/notify.ts"
 import { resolveOpencodePath } from "../lib/opencode-bin.ts"
+import { applicationsWrittenSince, canRetryRun, isTransportFailure } from "../lib/retry.ts"
 import { todayIso } from "../lib/jobstore.ts"
 
 const runtimePath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
@@ -48,19 +49,35 @@ interface RunResult {
   error?: Error
 }
 
+interface Attempt {
+  index: number
+  result: RunResult
+  elapsedMs: number
+}
+
+const RETRY_DELAY_MS = 60_000
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 function quoteWindowsArg(value: string): string {
   if (!/[\s&|<>^]/.test(value)) return value
   return `"${value.replaceAll('"', '""')}"`
 }
 
-function runOpenCode(prompt: string, config: AutomationConfig): RunResult {
+function runOpenCode(
+  prompt: string,
+  config: AutomationConfig,
+  timeoutMs = config.maxRuntimeMinutes * 60_000,
+): RunResult {
   const args = ["run", "--auto", "--agent", "coach"]
   if (config.model.trim() !== "") args.push("--model", config.model.trim())
   args.push(prompt)
   const options = {
     cwd: runtimePath,
     encoding: "utf8" as const,
-    timeout: config.maxRuntimeMinutes * 60 * 1000,
+    timeout: timeoutMs,
     maxBuffer: 20 * 1024 * 1024,
   }
   if (process.platform !== "win32") {
@@ -182,20 +199,51 @@ async function main(): Promise<void> {
 
   try {
     const prompt = buildScheduledPrompt(dataDir, config)
-    const result = runOpenCode(prompt, config)
-    const elapsed = Date.now() - startedAt
+    const attempts: Attempt[] = []
+    let result = runOpenCode(prompt, config)
+    let elapsed = Date.now() - startedAt
+    attempts.push({ index: 1, result, elapsedMs: elapsed })
+
+    if (isTransportFailure(result.stderr, result.error)) {
+      const applicationsWritten = await applicationsWrittenSince(dataDir, startedAt)
+      const retry = canRetryRun({
+        status: result.status,
+        elapsedMs: elapsed,
+        maxRuntimeMinutes: config.maxRuntimeMinutes,
+        applicationsWritten,
+      })
+      if (retry) {
+        console.log("Transport error; retrying once in 60 seconds.")
+        await sleep(RETRY_DELAY_MS)
+        const remainingMs = Math.max(
+          5 * 60_000,
+          config.maxRuntimeMinutes * 60_000 - (Date.now() - startedAt),
+        )
+        result = runOpenCode(prompt, config, remainingMs)
+        elapsed = Date.now() - startedAt
+        attempts.push({ index: 2, result, elapsedMs: elapsed })
+      } else {
+        console.log(
+          "Transport error; not retrying because an application was written or the runtime budget is spent.",
+        )
+      }
+    }
+
     const log = [
       `# Scheduled search ${new Date().toISOString()}`,
       `Runtime: ${runtimePath}`,
       `Model: ${config.model === "" ? "OpenCode default" : config.model}`,
-      `Exit: ${result.status ?? "null"}`,
-      result.error ? `Error: ${result.error.message}` : "",
-      "",
-      result.stdout,
-      result.stderr,
-    ]
-      .filter((line) => line !== "")
-      .join("\n")
+      `Attempts: ${attempts.length}`,
+      ...attempts.flatMap((attempt) => [
+        "",
+        `# Attempt ${attempt.index} — exit ${attempt.result.status ?? "null"} (${Math.round(
+          attempt.elapsedMs / 1000,
+        )}s)`,
+        attempt.result.error ? `Error: ${attempt.result.error.message}` : "",
+        attempt.result.stdout,
+        attempt.result.stderr,
+      ]),
+    ].join("\n")
     await fs.writeFile(logPath, `${log}\n`)
 
     const reportPath = path.join(reportsDir, `${todayIso()}.md`)
@@ -210,6 +258,7 @@ The scheduled run did not finish its report. See the log:
 
 - ${logPath}
 
+Attempts: ${attempts.length}
 Exit code: ${result.status ?? "null"}
 ${result.error ? `Error: ${result.error.message}` : ""}
 `,
@@ -231,6 +280,7 @@ ${result.error ? `Error: ${result.error.message}` : ""}
           finishedAt: new Date().toISOString(),
           exitCode: result.status,
           durationMs: elapsed,
+          attempts: attempts.length,
           pending,
           log: logPath,
           report: reportPath,
@@ -241,13 +291,15 @@ ${result.error ? `Error: ${result.error.message}` : ""}
     )
 
     if (result.status === 0) {
+      const retried = attempts.length > 1 ? " tras reintento" : ""
       const body =
         pending > 0
-          ? `Run terminado. ${pending} pendiente(s). Reporte: ${reportPath}`
-          : `Run terminado sin pendientes. Reporte: ${reportPath}`
+          ? `Run${retried} terminado. ${pending} pendiente(s). Reporte: ${reportPath}`
+          : `Run${retried} terminado sin pendientes. Reporte: ${reportPath}`
       await notify("Búsqueda diaria terminada", body, config.notify)
     } else {
-      await notify("Búsqueda diaria con error", `Revisá el reporte: ${reportPath}`, config.notify)
+      const retried = attempts.length > 1 ? " tras 2 intentos" : ""
+      await notify("Búsqueda diaria con error", `Revisá el reporte${retried}: ${reportPath}`, config.notify)
       process.exitCode = result.status ?? 1
     }
   } finally {

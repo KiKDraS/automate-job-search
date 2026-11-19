@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-11-19
+
+### Fixed
+
+- A transient model transport error (`ECONNRESET`, timeout) gets one automatic
+  retry when the failed attempt submitted no application and at least half the
+  runtime cap remains. The retry is logged and reported.
+
 ## [0.10.0] - 2026-11-17
 
 ### Added

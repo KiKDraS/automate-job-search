@@ -28,6 +28,11 @@ import {
 } from "../lib/scheduler.ts"
 import { buildNotificationCommand } from "../lib/notify.ts"
 import {
+  applicationsWrittenSince,
+  canRetryRun,
+  isTransportFailure,
+} from "../lib/retry.ts"
+import {
   buildRuntimeOpencodeConfig,
   compareRuntime,
   isInsidePath,
@@ -1085,7 +1090,8 @@ test("runtimeBrowserProfileDir seeds a dedicated profile without lock files", as
   }
 })
 
-test("buildRuntimeOpencodeConfig adds a stable browser profile", () => {  const source = `{
+test("buildRuntimeOpencodeConfig adds a stable browser profile", () => {
+  const source = `{
   "mcp": {
     "servers": {
       "playwright": {
@@ -1221,5 +1227,44 @@ test("migrateDataDirectory copies data, leaves the source and drops scheduler ar
   } finally {
     rmSync(source, { recursive: true, force: true })
     rmSync(target, { recursive: true, force: true })
+  }
+})
+
+test("isTransportFailure recognizes connection resets and timeouts", () => {
+  assert.equal(
+    isTransportFailure("Transport: ECONNRESET: The socket connection was closed unexpectedly."),
+    true,
+  )
+  assert.equal(isTransportFailure("", new Error("fetch failed")), true)
+  assert.equal(isTransportFailure("Error: ETIMEDOUT"), true)
+  assert.equal(isTransportFailure("Error: model not found"), false)
+  assert.equal(isTransportFailure(""), false)
+})
+
+test("canRetryRun requires a failure, no submission and half the budget", () => {
+  const base = {
+    status: 1,
+    elapsedMs: 10 * 60_000,
+    maxRuntimeMinutes: 60,
+    applicationsWritten: false,
+  }
+  assert.equal(canRetryRun(base), true)
+  assert.equal(canRetryRun({ ...base, status: 0 }), false)
+  assert.equal(canRetryRun({ ...base, applicationsWritten: true }), false)
+  assert.equal(canRetryRun({ ...base, elapsedMs: 31 * 60_000 }), false)
+})
+
+test("applicationsWrittenSince detects applied.md and applications.md", async () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "ajs-retry-"))
+  try {
+    mkdirSync(path.join(dir, "jobs", "acme"), { recursive: true })
+    writeFileSync(path.join(dir, "jobs", "acme", "applied.md"), "x")
+    const now = Date.now()
+    assert.equal(await applicationsWrittenSince(dir, now - 10_000), true)
+    assert.equal(await applicationsWrittenSince(dir, now + 10_000), false)
+    writeFileSync(path.join(dir, "applications.md"), "row")
+    assert.equal(await applicationsWrittenSince(dir, now - 10_000), true)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
   }
 })

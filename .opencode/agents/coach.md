@@ -186,14 +186,18 @@ the project; write only inside the data directory.
    `draft-review`, and put the `mailto:` link under “Needs you”. Do not send it.
    For CAPTCHA, login, account creation, or a missing required answer, leave
    the form filled when possible and put the URL and the exact action under
-   “Needs you”.
+   “Needs you”. The filled form lives in the automation browser window; say
+   that the user must use that window, not reopen the link in a different
+   browser profile.
 5. Never publish posts, send messages, create accounts, solve CAPTCHAs, or
    change the repository.
 6. Write `<data dir>/reports/<date>.md` with Summary, Applied, Needs you, and
    Skipped. Write `<data dir>/state/pending-search.json` with every blocker
    and unfinished job. If a browser tab was left open for a human action,
-   include its URL and exact action under "Needs you". The runner sends the
-   notification; you write the files.
+   include its URL and exact action under "Needs you", say the form is filled
+   in the automation browser window, and verify every handoff tab is still
+   open before finishing. The runner sends the notification; you write the
+   files.
 
    Pending shape:
 

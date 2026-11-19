@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-11-19
+
+### Fixed
+
+- Handoff forms stay open in the automation browser window, and the report
+  tells the user to complete them there instead of reopening the link in a
+  different browser profile. The agent verifies every handoff tab before
+  closing others.
+
 ## [0.11.0] - 2026-11-19
 
 ### Added

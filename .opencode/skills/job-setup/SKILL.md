@@ -146,7 +146,7 @@ one batch, with defaults:
 2. Times (one or more, default 09:00; e.g. 11:30 and 18:30)
 3. Frequency (`daily` or `every 12h`; multiple times require daily)
 4. Search window in hours (24, 48, or the user's choice; default 48)
-5. Model (default OpenCode model, or `provider/model`; `opencode models` lists them)
+5. Model (default: the OpenCode model shown by `npx tsx scripts/schedule.ts status`; or `provider/model#variant`; `opencode models` lists them)
 6. Include feed search? (yes)
 7. Notifications? (yes)
 8. Standing auto-apply for Medium/High? (yes)
@@ -163,10 +163,11 @@ If the user says yes, run:
     npx tsx scripts/schedule.ts enable --times "09:00" --interval daily \
       --search-window 48 --notify --feed --apply --max-applications 0 --max-runtime 60
 
-Use the times and window the user chose. Add `--model "<provider/model>"` only
-when the user chose one. Show the summary: times, search window, next run,
-model, OS scheduler, runtime path, data-dir safety, and how to change it with
-`/job/schedule`. If the OS scheduler fails, show the exact error.
+Use the times and window the user chose. Add `--model "<provider/model#variant>"`
+only when the user chose one; otherwise the automation inherits the OpenCode
+default. Show the summary: times, search window, next run, model, OS scheduler,
+runtime path, data-dir safety, and how to change it with `/job/schedule`. If the
+OS scheduler fails, show the exact error.
 
 If the user says no, do not install anything; `/job/schedule` stays available.
 

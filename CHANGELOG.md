@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-19
+
+### Added
+
+- The automation model defaults to the model configured in OpenCode;
+  `/job/schedule status` shows the resolved model. `automation.md` keeps an
+  explicit `provider/model#variant` when the user wants one, so `#max` and
+  other variants survive.
+
+### Changed
+
+- Setup, schedule, and README explain that `/models` applies only to the
+  current session, the automation model is stored in `automation.md`, and
+  changing it applies on the next run.
+
 ## [0.10.1] - 2026-11-19
 
 ### Fixed

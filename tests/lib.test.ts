@@ -27,6 +27,7 @@ import {
   windowsTaskName,
 } from "../lib/scheduler.ts"
 import { buildNotificationCommand } from "../lib/notify.ts"
+import { resolveOpencodeDefaultModel } from "../lib/model.ts"
 import {
   applicationsWrittenSince,
   canRetryRun,
@@ -670,7 +671,7 @@ test("parseAutomationConfig round-trips the Markdown config", () => {
 - enabled: true
 - times: "08:30,18:30"
 - interval: daily
-- model: "opencode/deepseek-v4.1-flash-free"
+- model: "opencode-go/deepseek-v4.1-flash#max"
 - standingApproval: true
 - maxApplicationsPerRun: 0
 - includeBacklog: true
@@ -684,7 +685,7 @@ test("parseAutomationConfig round-trips the Markdown config", () => {
   assert.equal(config.enabled, true)
   assert.deepEqual(config.times, ["08:30", "18:30"])
   assert.equal(config.interval, "daily")
-  assert.equal(config.model, "opencode/deepseek-v4.1-flash-free")
+  assert.equal(config.model, "opencode-go/deepseek-v4.1-flash#max")
   assert.equal(config.maxApplicationsPerRun, 0)
   assert.equal(config.includeFeedSearch, false)
   assert.equal(config.searchWindowHours, 24)
@@ -704,6 +705,13 @@ test("parseAutomationConfig accepts the legacy single time", () => {
 
 test("validateAutomationConfig rejects bad times, intervals and models", () => {
   assert.deepEqual(validateAutomationConfig(DEFAULT_AUTOMATION), [])
+  assert.deepEqual(
+    validateAutomationConfig({
+      ...DEFAULT_AUTOMATION,
+      model: "opencode-go/deepseek-v4.1-flash#max",
+    }),
+    [],
+  )
   assert.ok(validateAutomationConfig({ ...DEFAULT_AUTOMATION, times: ["9:00"] }).length > 0)
   assert.ok(validateAutomationConfig({ ...DEFAULT_AUTOMATION, times: [] }).length > 0)
   assert.ok(
@@ -1264,6 +1272,44 @@ test("applicationsWrittenSince detects applied.md and applications.md", async ()
     assert.equal(await applicationsWrittenSince(dir, now + 10_000), false)
     writeFileSync(path.join(dir, "applications.md"), "row")
     assert.equal(await applicationsWrittenSince(dir, now - 10_000), true)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test("resolveOpencodeDefaultModel reads the OpenCode config", () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "ajs-model-"))
+  try {
+    mkdirSync(path.join(dir, "opencode"), { recursive: true })
+    const jsonc = path.join(dir, "opencode", "opencode.jsonc")
+    writeFileSync(
+      jsonc,
+      `{
+  // OpenCode default
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode-go/deepseek-v4.1-flash#max",
+}
+`,
+    )
+    const options = { env: { XDG_CONFIG_HOME: dir }, home: dir }
+    assert.equal(
+      resolveOpencodeDefaultModel(options),
+      "opencode-go/deepseek-v4.1-flash#max",
+    )
+    writeFileSync(
+      jsonc,
+      `{
+  "model": { "providerID": "opencode-go", "model": "deepseek-v4.1-flash" }
+}`,
+    )
+    assert.equal(resolveOpencodeDefaultModel(options), "opencode-go/deepseek-v4.1-flash")
+    writeFileSync(jsonc, '{ "$schema": "https://opencode.ai/config.json" }')
+    assert.equal(resolveOpencodeDefaultModel(options), null)
+    writeFileSync(
+      path.join(dir, "opencode", "opencode.json"),
+      '{"model":"openai/gpt-6.1-sol"}',
+    )
+    assert.equal(resolveOpencodeDefaultModel(options), "openai/gpt-6.1-sol")
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }

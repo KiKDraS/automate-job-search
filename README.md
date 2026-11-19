@@ -127,7 +127,7 @@ end of `/job/setup`, and you can change it anytime with `/job/schedule`.
 | Auto-apply | Medium/High with standing approval |
 | Applications per run | No cap |
 | Runtime cap | 60 minutes |
-| Model | OpenCode default |
+| Model | OpenCode default (the model configured in OpenCode) |
 
 What the run does, in order:
 
@@ -162,7 +162,7 @@ cap remains. The report and notification say when the retry ran.
 /job/schedule --times "11:30,18:30" # two runs per day
 /job/schedule --search-window 24    # look back 24 hours per run
 /job/schedule --interval "every 12h"
-/job/schedule --model provider/model
+/job/schedule --model provider/model#variant
 /job/schedule --default-model
 /job/schedule --no-feed
 /job/schedule --notify / --no-notify
@@ -171,9 +171,12 @@ cap remains. The report and notification say when the retry ran.
 /job/schedule --disable / --enable
 ```
 
-`opencode models` lists the model IDs. Leave the model empty to use the
-OpenCode default. The settings live in `<data dir>/automation.md`; the command
-writes that file and reinstalls the scheduler for you.
+`opencode models` lists the model IDs. Leave the automation model empty to
+inherit the OpenCode default (the model configured in OpenCode), or set an
+explicit `provider/model#variant`. The model lives in
+`<data dir>/automation.md`; `/job/schedule --model` changes it and applies on
+the next run. The OpenCode root default does not retain variants, so include
+`#max`, `#high`, or `#low` in the automation model when you want one.
 
 The installer resolves the `opencode` CLI from `PATH` and the common install
 locations: Homebrew (Apple Silicon and Intel), npm, pnpm, Bun, the curl
@@ -291,10 +294,10 @@ No paid subscription required. The toolkit is token-aware by design:
 deterministic work runs in code, browser data never floods the conversation,
 and every agent has a step budget.
 
-Pick a free model from [OpenCode Zen](https://opencode.ai/zen) as your session
-model — Coach and all subagents inherit it. Scheduled runs can use a different
-model: choose it with `/job/schedule --model provider/model`, or leave it empty
-for the OpenCode default.
+Pick a model for your session — Coach and all subagents inherit it. The
+scheduled search uses its own model: set it with
+`/job/schedule --model provider/model#variant`, or leave it empty to inherit
+the OpenCode default.
 
 ## Privacy and safety
 

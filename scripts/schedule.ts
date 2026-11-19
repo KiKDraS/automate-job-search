@@ -56,6 +56,7 @@ import {
   type WrapperSpec,
 } from "../lib/scheduler.ts"
 import { findNodePath, knownOpencodePaths, resolveOpencodePath } from "../lib/opencode-bin.ts"
+import { resolveOpencodeDefaultModel } from "../lib/model.ts"
 import {
   buildRuntimeOpencodeConfig,
   findChromePath,
@@ -169,6 +170,12 @@ function wrapperSpec(opencodePath: string): WrapperSpec {
 function formatNext(config: AutomationConfig): string {
   const next = nextRunAt(config)
   return next === null ? "not scheduled" : next.toLocaleString()
+}
+
+function formatModel(config: AutomationConfig): string {
+  if (config.model.trim() !== "") return config.model
+  const fallback = resolveOpencodeDefaultModel()
+  return fallback === null ? "OpenCode default" : `OpenCode default (${fallback})`
 }
 
 function describeDataDir(): string {
@@ -439,7 +446,7 @@ async function statusLine(config: AutomationConfig): Promise<void> {
     }`,
   )
   console.log(`Search window: ${config.searchWindowHours} hours`)
-  console.log(`Model: ${config.model === "" ? "OpenCode default" : config.model}`)
+  console.log(`Model: ${formatModel(config)}`)
   console.log(`Next run: ${formatNext(config)}`)
   console.log(`Scheduler: ${detectScheduler()}`)
   console.log(`Installed: ${(await isInstalled(config)) ? "yes" : "no"}`)
@@ -637,6 +644,7 @@ async function main(): Promise<void> {
   console.log(`Automation ${config.enabled ? "enabled" : "updated"}.`)
   console.log(`Schedule: ${config.interval === "daily" ? `daily at ${config.times.join(", ")}` : config.interval}`)
   console.log(`Search window: ${config.searchWindowHours} hours`)
+  console.log(`Model: ${formatModel(config)}`)
   console.log(`Next run: ${formatNext(config)}`)
   console.log(`Scheduler target: ${target}`)
   console.log(`Data dir: ${describeDataDir()}`)

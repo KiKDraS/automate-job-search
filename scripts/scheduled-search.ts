@@ -27,6 +27,7 @@ import {
 } from "../lib/automation.ts"
 import { buildNotificationCommand, formatNotificationFallback } from "../lib/notify.ts"
 import { resolveOpencodePath } from "../lib/opencode-bin.ts"
+import { cleanupExpiredData } from "../lib/cleanup.ts"
 import { applicationsWrittenSince, canRetryRun, isTransportFailure } from "../lib/retry.ts"
 import { todayIso } from "../lib/jobstore.ts"
 
@@ -198,6 +199,22 @@ async function main(): Promise<void> {
   const startedAt = Date.now()
 
   try {
+    let cleanupCount = 0
+    try {
+      const cleanup = await cleanupExpiredData(dataDir, { days: 30, apply: true })
+      cleanupCount = cleanup.deleted.length
+      if (cleanupCount > 0) {
+        console.log(`Cleanup: deleted ${cleanupCount} expired item(s).`)
+      }
+      for (const failure of cleanup.failed) {
+        console.error(`Cleanup failed: ${failure.path}: ${failure.reason}`)
+      }
+    } catch (error) {
+      console.error(
+        `Cleanup failed: ${error instanceof Error ? error.message : String(error)}`,
+      )
+    }
+
     const prompt = buildScheduledPrompt(dataDir, config)
     const attempts: Attempt[] = []
     let result = runOpenCode(prompt, config)
@@ -233,6 +250,7 @@ async function main(): Promise<void> {
       `# Scheduled search ${new Date().toISOString()}`,
       `Runtime: ${runtimePath}`,
       `Model: ${config.model === "" ? "OpenCode default" : config.model}`,
+      `Cleanup: ${cleanupCount} deleted`,
       `Attempts: ${attempts.length}`,
       ...attempts.flatMap((attempt) => [
         "",
@@ -281,6 +299,7 @@ ${result.error ? `Error: ${result.error.message}` : ""}
           exitCode: result.status,
           durationMs: elapsed,
           attempts: attempts.length,
+          cleaned: cleanupCount,
           pending,
           log: logPath,
           report: reportPath,

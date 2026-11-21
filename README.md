@@ -253,6 +253,24 @@ LinkedIn. If it was asleep or off, the OS runs the job when it wakes or starts,
 where supported. The agent never creates accounts, solves CAPTCHAs, sends
 messages, publishes posts, or changes the repository during a scheduled run.
 
+### Retention
+
+The scheduled run cleans old data at the start:
+
+- a `jobs/<folder>/` is deleted 30 days after a successful application
+  (`applied.md` with a `submitted` status);
+- a `feed/<date>-*.md` lead is deleted 30 days after its lead date, together
+  with its `-email.md` draft.
+
+`applications.md` and `job-history.md` keep the history. Items in
+`state/pending-search.json` are never deleted. Run it manually with:
+
+```text
+npx tsx scripts/cleanup.ts          # dry run
+npx tsx scripts/cleanup.ts --apply  # delete
+npx tsx scripts/cleanup.ts --days 45
+```
+
 ## Commands
 
 | Command | What it does |

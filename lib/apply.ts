@@ -31,6 +31,40 @@ function oneLine(value: string): string {
   return value.replace(/\s+/g, " ").trim()
 }
 
+export interface AppliedMarkdown {
+  date: string
+  status: string
+  role?: string
+  company?: string
+  url?: string
+  method?: string
+  fit?: string
+  confirmation?: string
+  resume?: string
+}
+
+/** Read the date, status, and log fields from an existing `applied.md`. */
+export function parseAppliedMarkdown(source: string): AppliedMarkdown | null {
+  const date = source.match(/^- Date:\s*(\d{4}-\d{2}-\d{2})\s*$/m)?.[1]
+  const status = source.match(/^- Status:\s*(.+?)\s*$/m)?.[1]
+  if (date === undefined || status === undefined) return null
+  const heading = source.match(/^# Application — (.+) at (.+)\s*$/m)
+  const field = (label: string): string | undefined =>
+    source.match(new RegExp(`^- ${label}:\\s*(.+?)\\s*$`, "m"))?.[1]
+  const confirmation = field("Confirmation")?.replace(/^"(.*)"$/, "$1")
+  return {
+    date,
+    status,
+    role: heading?.[1]?.trim(),
+    company: heading?.[2]?.trim(),
+    url: field("Job URL"),
+    method: field("Method"),
+    fit: field("Fit"),
+    confirmation,
+    resume: field("Resume"),
+  }
+}
+
 export function formatAppliedMarkdown(entry: AppliedEntry, date = todayIso()): string {
   const lines = [
     `# Application — ${oneLine(entry.role)} at ${oneLine(entry.company)}`,

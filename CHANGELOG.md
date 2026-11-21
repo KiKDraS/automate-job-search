@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-21
+
+### Added
+
+- Retention cleanup: the scheduled run deletes `jobs/` folders 30 days after
+  a successful application and `feed/` leads 30 days after their lead date,
+  skipping pending items. `scripts/cleanup.ts` runs the same cleanup manually,
+  with a dry run by default.
+
+### Changed
+
+- `feed-search` caps doubled: 10 scrolls, 60 posts, and 20 saved leads per run.
+
 ## [0.11.1] - 2026-11-19
 
 ### Fixed

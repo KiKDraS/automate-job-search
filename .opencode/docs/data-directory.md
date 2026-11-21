@@ -93,6 +93,12 @@ never hand-build the path.
   application with date, company, role, fit, method, confirmation, job URL,
   and folder. It is written by `scripts/apply-log.ts` alongside `applied.md`.
   Manual submissions use `source: user` and `status: submitted (manual)`.
+- Retention: the scheduled run deletes `jobs/<folder>/` 30 days after a
+  successful application (`applied.md` with a `submitted` status) and
+  `feed/<date>-*.md` leads 30 days after their lead date, including the
+  `-email.md` draft. `applications.md` and `job-history.md` remain, and
+  pending items are skipped. Manual cleanup:
+  `npx tsx scripts/cleanup.ts [--apply]`.
 - `feed/` holds one file per High or Medium hiring post found in the LinkedIn
   feed: author, post URL, fit, why, email if published, and the post text
   delimited as untrusted data. A matching `<lead>-email.md` holds the

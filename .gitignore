@@ -19,6 +19,7 @@ evidence/
 # Browser automation artifacts
 .playwright-cli/
 .playwright-mcp/
+*-form-initial.json
 
 # Editor / OS
 .DS_Store

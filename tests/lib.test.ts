@@ -56,8 +56,10 @@ import {
   formatApplicationIndexRow,
   formatAppliedMarkdown,
   parseAppliedEntry,
+  parseAppliedMarkdown,
   upsertApplicationIndexRow,
 } from "../lib/apply.ts"
+import { cleanupExpiredData } from "../lib/cleanup.ts"
 import { isLikelyScanned, joinPages } from "../lib/resume-text.ts"
 import { detectAts } from "../lib/ats.ts"
 import {
@@ -1310,6 +1312,145 @@ test("resolveOpencodeDefaultModel reads the OpenCode config", () => {
       '{"model":"openai/gpt-6.1-sol"}',
     )
     assert.equal(resolveOpencodeDefaultModel(options), "openai/gpt-6.1-sol")
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test("parseAppliedMarkdown reads the date and status", () => {
+  const source = `# Application — React Developer at Acme
+
+- Date: 2026-10-22
+- Status: submitted (manual)
+`
+  const record = parseAppliedMarkdown(source)
+  assert.equal(record?.date, "2026-10-22")
+  assert.equal(record?.status, "submitted (manual)")
+  assert.equal(record?.role, "React Developer")
+  assert.equal(record?.company, "Acme")
+  assert.equal(parseAppliedMarkdown("# no fields"), null)
+})
+
+test("cleanupExpiredData removes old submissions and feed leads", async () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "ajs-cleanup-"))
+  const now = new Date(2026, 10, 21) // 2026-11-21
+  try {
+    const jobs = path.join(dir, "jobs")
+    const feed = path.join(dir, "feed")
+    const state = path.join(dir, "state")
+    mkdirSync(jobs, { recursive: true })
+    mkdirSync(feed, { recursive: true })
+    mkdirSync(state, { recursive: true })
+
+    function addJob(folder: string, date: string, status: string): void {
+      mkdirSync(path.join(jobs, folder), { recursive: true })
+      writeFileSync(
+        path.join(jobs, folder, "applied.md"),
+        `# Application — Role at Acme\n\n- Date: ${date}\n- Job URL: https://example.com/job\n- Method: LinkedIn Easy Apply\n- Fit: Medium\n- Status: ${status}\n- Confirmation: "sent"\n- Resume: resume.pdf\n`,
+      )
+      writeFileSync(path.join(jobs, folder, "resume.pdf"), "pdf")
+    }
+
+    addJob("old", "2026-10-22", "submitted")
+    addJob("manual", "2026-10-22", "submitted (manual)")
+    addJob("recent", "2026-11-01", "submitted")
+    addJob("pending", "2026-10-01", "submitted")
+    addJob("draft", "2026-10-01", "draft")
+    mkdirSync(path.join(jobs, "unparsable"), { recursive: true })
+    writeFileSync(
+      path.join(jobs, "unparsable", "applied.md"),
+      "# Application\n\n- Date: 2026-10-01\n- Status: submitted\n",
+    )
+    mkdirSync(path.join(jobs, "no-applied"))
+    writeFileSync(path.join(jobs, "no-applied", "posting.md"), "posting")
+
+    writeFileSync(path.join(dir, "applications.md"), "| log |\n")
+    writeFileSync(
+      path.join(state, "pending-search.json"),
+      JSON.stringify({
+        generatedAt: "2026-11-21T00:00:00.000Z",
+        items: [
+          {
+            jobFolder: "jobs/pending",
+            url: "",
+            company: "",
+            role: "",
+            stage: "login",
+            action: "x",
+          },
+          {
+            jobFolder: "feed/2026-10-01-pending-react.md",
+            url: "",
+            company: "",
+            role: "",
+            stage: "lead",
+            action: "x",
+          },
+        ],
+      }),
+    )
+
+    writeFileSync(
+      path.join(feed, "2026-10-01-acme-react.md"),
+      "# Feed lead\n\n- Date: 2026-10-01\n- Fit: Medium\n",
+    )
+    writeFileSync(path.join(feed, "2026-10-01-acme-react-email.md"), "draft")
+    writeFileSync(
+      path.join(feed, "2026-11-10-recent-react.md"),
+      "# Feed lead\n\n- Date: 2026-11-10\n",
+    )
+    writeFileSync(
+      path.join(feed, "2026-10-01-pending-react.md"),
+      "# Feed lead\n\n- Date: 2026-10-01\n",
+    )
+
+    const dry = await cleanupExpiredData(dir, { now, days: 30 })
+    assert.deepEqual(
+      dry.candidates.map((item) => item.path).sort(),
+      [
+        "feed/2026-10-01-acme-react.md",
+        "jobs/manual",
+        "jobs/old",
+        "jobs/unparsable",
+      ],
+    )
+    assert.equal(dry.deleted.length, 0)
+
+    const applied = await cleanupExpiredData(dir, { now, days: 30, apply: true })
+    assert.equal(applied.deleted.length, 3)
+    assert.equal(applied.backfilled.length, 2)
+    assert.ok(
+      applied.failed.some((item) => item.path === "jobs/unparsable"),
+    )
+    assert.throws(() => readFileSync(path.join(jobs, "old", "applied.md")))
+    assert.throws(() => readFileSync(path.join(jobs, "manual", "resume.pdf")))
+    assert.throws(() => readFileSync(path.join(feed, "2026-10-01-acme-react.md")))
+    assert.throws(() =>
+      readFileSync(path.join(feed, "2026-10-01-acme-react-email.md")),
+    )
+    assert.ok(
+      readFileSync(path.join(jobs, "unparsable", "applied.md"), "utf8").includes(
+        "submitted",
+      ),
+    )
+    const index = readFileSync(path.join(dir, "applications.md"), "utf8")
+    assert.ok(index.includes("jobs/old"))
+    assert.ok(index.includes("jobs/manual"))
+    assert.ok(
+      readFileSync(path.join(jobs, "recent", "applied.md"), "utf8").includes(
+        "2026-11-01",
+      ),
+    )
+    assert.ok(
+      readFileSync(path.join(jobs, "pending", "applied.md"), "utf8").includes(
+        "2026-10-01",
+      ),
+    )
+    assert.ok(
+      readFileSync(path.join(feed, "2026-10-01-pending-react.md"), "utf8").includes(
+        "Feed lead",
+      ),
+    )
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }

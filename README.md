@@ -284,9 +284,11 @@ npx tsx scripts/cleanup.ts --days 45
 ### Reports
 
 Each run writes `reports/YYYY-MM-DD.md` and a friendly
-`reports/YYYY-MM-DD.html`. The HTML puts **Needs you** first, with clickable
-links and paths; the notification shows the first two pending items. The OS
-opens the HTML by default; `/job/schedule --no-open-report` disables it.
+`reports/YYYY-MM-DD.html`. The HTML puts pending cards first, with clickable
+links and paths; the notification shows the first two pending items. A pending
+item already shown as a card is removed from **Needs you**, so the same email
+or form is not listed twice; feed leads and advice without a card remain. The
+OS opens the HTML by default; `/job/schedule --no-open-report` disables it.
 `/job/report` prints the pending items and their paths; `/job/report --open`
 opens the HTML.
 

@@ -29,7 +29,7 @@ import {
 } from "../lib/scheduler.ts"
 import { buildNotificationCommand } from "../lib/notify.ts"
 import { buildOpenCommand } from "../lib/open.ts"
-import { buildReportHtml, formatPendingSummary } from "../lib/report-html.ts"
+import { buildReportHtml, filterNeedsYou, formatPendingSummary } from "../lib/report-html.ts"
 import { collectReportCards, parseApplyReview, type ReportCard } from "../lib/report-data.ts"
 import { resolveOpencodeDefaultModel } from "../lib/model.ts"
 import {
@@ -1741,6 +1741,30 @@ test("parseApplyReview reads three-column and bullet review formats", () => {
   assert.equal(review.captcha, "")
 })
 
+test("parseApplyReview reads the plain-text review sheet from the skill", () => {
+  const review = parseApplyReview(`APPLY REVIEW — React Developer at Acme
+URL: https://example.com/apply
+Folder: jobs/acme
+ATS: Greenhouse
+Fit: Medium
+
+First name: Ana
+Email: ana@example.com
+Portfolio: https://ana.test
+Resume: resume.pdf
+Cover letter: not requested
+Also sent: none
+`)
+  assert.equal(review.url, "https://example.com/apply")
+  assert.equal(review.ats, "Greenhouse")
+  assert.equal(review.fit, "Medium")
+  assert.deepEqual(review.fields, [
+    { label: "First name", value: "Ana" },
+    { label: "Email", value: "ana@example.com" },
+    { label: "Portfolio", value: "https://ana.test" },
+  ])
+})
+
 test("collectReportCards builds email and form cards from the data dir", async () => {
   const dir = mkdtempSync(path.join(os.tmpdir(), "ajs-report-data-"))
   const reportsDir = path.join(dir, "reports")
@@ -1892,6 +1916,74 @@ Adjunto mi CV.
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
+})
+
+test("filterNeedsYou drops card items but keeps feed leads and advice", () => {
+  const cards: ReportCard[] = [
+    {
+      kind: "other",
+      item: {
+        company: "Acme",
+        role: "React Developer",
+        url: "mailto:jobs@acme.test",
+        stage: "email_draft",
+        action: "Send the email",
+        jobFolder: "jobs/acme",
+      },
+    },
+  ]
+  const markdown = `# Run
+
+## Summary
+
+- ok
+
+## Needs you
+
+1. **Acme — React Developer (Medium)** — send the approved email.
+   - Mailto: mailto:jobs@acme.test
+   - Draft: jobs/acme/application-email.md
+
+2. **Leads del feed (3 Medium).** Ninguno publica email.
+
+## Skipped
+
+- none
+`
+  const filtered = filterNeedsYou(markdown, cards)
+  assert.ok(filtered.includes("Leads del feed"))
+  assert.ok(!filtered.includes("Acme — React Developer"))
+  assert.ok(!filtered.includes("jobs/acme/application-email.md"))
+  assert.ok(filtered.includes("## Needs you"))
+  assert.ok(filtered.includes("## Skipped"))
+})
+
+test("filterNeedsYou removes an empty Needs you section", () => {
+  const cards: ReportCard[] = [
+    {
+      kind: "other",
+      item: {
+        company: "Acme",
+        role: "React Developer",
+        url: "https://example.com/job",
+        stage: "captcha",
+        action: "Solve it",
+        jobFolder: "jobs/acme",
+      },
+    },
+  ]
+  const filtered = filterNeedsYou(
+    "## Summary\n\n- ok\n\n## Needs you\n\n1. **Acme — React Developer** — solve it.\n\n## Skipped\n\n- none\n",
+    cards,
+  )
+  assert.ok(!filtered.includes("Needs you"))
+  assert.ok(filtered.includes("## Summary"))
+  assert.ok(filtered.includes("## Skipped"))
+})
+
+test("filterNeedsYou leaves the Markdown untouched without cards", () => {
+  const markdown = "## Needs you\n\n1. **Acme — React Developer** — solve it.\n"
+  assert.equal(filterNeedsYou(markdown, []), markdown)
 })
 
 test("formatPendingSummary truncates and reports extras", () => {

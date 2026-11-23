@@ -154,6 +154,14 @@ A dropped model connection (`ECONNRESET`, timeout) gets one automatic retry
 when the failed attempt submitted no application and at least half the runtime
 cap remains. The report and notification say when the retry ran.
 
+### Duplicates
+
+`scripts/history.ts filter` drops jobs already in `job-history.md` or
+`applications.md`; `scripts/history.ts backlog` lists saved folders that are
+neither applied nor in the index, and skips companies listed under
+`Excluded companies` in `preferences.md`. A manual submission without
+`applied.md` still blocks a second application.
+
 ### Change the automation
 
 ```text

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-23
+
+### Added
+
+- `applications.md` is the applied index: the search filter, backlog, and apply
+  flows block a second application by normalized URL or company+role, even when
+  the job has no `applied.md`.
+- `history.ts applied` checks a job before filling a form;
+  `history.ts backlog` lists saved folders that are neither applied nor in the
+  index, and skips `Excluded companies` from `preferences.md`.
+
+### Fixed
+
+- New Coach sessions get the session-start greeting. The plugin no longer
+  requires the `session.created` event to carry the agent and accepts the
+  canonical project location.
+
 ## [0.12.0] - 2026-11-21
 
 ### Added

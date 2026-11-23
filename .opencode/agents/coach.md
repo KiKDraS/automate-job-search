@@ -52,6 +52,9 @@ permissions:
     resource: "npx tsx scripts/schedule.ts *"
     effect: allow
   - action: shell
+    resource: "npx tsx scripts/report.ts *"
+    effect: allow
+  - action: shell
     resource: "npx tsx scripts/tech-catalog.ts *"
     effect: allow
   - action: edit

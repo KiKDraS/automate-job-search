@@ -21,6 +21,7 @@ export interface AutomationConfig {
   includeFeedSearch: boolean
   searchWindowHours: number
   notify: boolean
+  openReport: boolean
   maxRuntimeMinutes: number
 }
 
@@ -54,6 +55,7 @@ export const DEFAULT_AUTOMATION: AutomationConfig = {
   includeFeedSearch: true,
   searchWindowHours: 48,
   notify: true,
+  openReport: true,
   maxRuntimeMinutes: 60,
 }
 
@@ -64,6 +66,7 @@ const BOOLEAN_KEYS = new Set([
   "includeJobSearch",
   "includeFeedSearch",
   "notify",
+  "openReport",
 ])
 
 const NUMBER_KEYS = new Set([
@@ -142,6 +145,7 @@ export function formatAutomationConfig(config: AutomationConfig): string {
 - includeFeedSearch: ${config.includeFeedSearch}
 - searchWindowHours: ${config.searchWindowHours}
 - notify: ${config.notify}
+- openReport: ${config.openReport}
 - maxRuntimeMinutes: ${config.maxRuntimeMinutes}
 `
 }

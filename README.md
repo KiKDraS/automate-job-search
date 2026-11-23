@@ -128,6 +128,7 @@ end of `/job/setup`, and you can change it anytime with `/job/schedule`.
 | Applications per run | No cap |
 | Runtime cap | 60 minutes |
 | Model | OpenCode default (the model configured in OpenCode) |
+| Open report | On |
 
 What the run does, in order:
 
@@ -174,6 +175,7 @@ neither applied nor in the index, and skips companies listed under
 /job/schedule --default-model
 /job/schedule --no-feed
 /job/schedule --notify / --no-notify
+/job/schedule --open-report / --no-open-report
 /job/schedule --max-applications 10 # 0 = no cap
 /job/schedule --max-runtime 45
 /job/schedule --disable / --enable
@@ -279,12 +281,22 @@ npx tsx scripts/cleanup.ts --apply  # delete
 npx tsx scripts/cleanup.ts --days 45
 ```
 
+### Reports
+
+Each run writes `reports/YYYY-MM-DD.md` and a friendly
+`reports/YYYY-MM-DD.html`. The HTML puts **Needs you** first, with clickable
+links and paths; the notification shows the first two pending items. The OS
+opens the HTML by default; `/job/schedule --no-open-report` disables it.
+`/job/report` prints the pending items and their paths; `/job/report --open`
+opens the HTML.
+
 ## Commands
 
 | Command | What it does |
 | --- | --- |
 | `/job/setup` | Onboarding: resume, preferences, work history |
 | `/job/search` | Find and score jobs posted in the last 48 hours, plus feed hiring leads |
+| `/job/report` | Show the latest report, pending items, and their paths |
 | `/job/feed-search` | Search LinkedIn posts for hiring leads (feed only) |
 | `/job/application-email` | Draft an application email for a feed lead with an email |
 | `/job/tailor` | Tailored resume for a saved job |

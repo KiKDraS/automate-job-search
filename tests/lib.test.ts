@@ -14,6 +14,7 @@ import {
   parseAutomationConfig,
   parseTimes,
   validateAutomationConfig,
+  type PendingState,
 } from "../lib/automation.ts"
 import {
   buildCronLines,
@@ -27,6 +28,8 @@ import {
   windowsTaskName,
 } from "../lib/scheduler.ts"
 import { buildNotificationCommand } from "../lib/notify.ts"
+import { buildOpenCommand } from "../lib/open.ts"
+import { buildReportHtml, formatPendingSummary } from "../lib/report-html.ts"
 import { resolveOpencodeDefaultModel } from "../lib/model.ts"
 import {
   applicationsWrittenSince,
@@ -688,6 +691,7 @@ test("parseAutomationConfig round-trips the Markdown config", () => {
 - includeFeedSearch: false
 - searchWindowHours: 24
 - notify: true
+- openReport: false
 - maxRuntimeMinutes: 45
 `
   const config = parseAutomationConfig(source)
@@ -698,6 +702,7 @@ test("parseAutomationConfig round-trips the Markdown config", () => {
   assert.equal(config.maxApplicationsPerRun, 0)
   assert.equal(config.includeFeedSearch, false)
   assert.equal(config.searchWindowHours, 24)
+  assert.equal(config.openReport, false)
   assert.equal(config.maxRuntimeMinutes, 45)
   assert.deepEqual(parseAutomationConfig(formatAutomationConfig(config)), config)
 })
@@ -1554,4 +1559,78 @@ test("backlog excludes applied folders and applications.md rows", async () => {
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
+})
+
+test("buildReportHtml renders pending cards and the Markdown body", () => {
+  const pending: PendingState = {
+    generatedAt: "2026-11-23T00:00:00.000Z",
+    items: [
+      {
+        company: "Acme",
+        role: "React Developer",
+        url: "https://example.com/job",
+        stage: "needs_answer",
+        action: "Answer <script>alert(1)</script>",
+      },
+      {
+        company: "Soviant",
+        role: "Full Stack",
+        url: "mailto:jobs@example.com?subject=Hi",
+        stage: "email_draft",
+        action: "Send the email",
+        jobFolder: "jobs/soviant",
+      },
+    ],
+  }
+  const html = buildReportHtml({
+    date: "2026-11-23",
+    markdown:
+      "# Run\n\n## Summary\n\n- ok\n\n## Needs you\n\n1. old\n\n## Skipped\n\n- none\n",
+    pending,
+    status: "completed",
+    model: "opencode-go/deepseek-v4.1-flash",
+    reportPath: "/data/reports/2026-11-23.md",
+  })
+  assert.ok(html.includes("Acme — React Developer"))
+  assert.ok(html.includes("Falta una respuesta"))
+  assert.ok(html.includes("mailto:jobs@example.com?subject=Hi"))
+  assert.ok(html.includes("Enviar email"))
+  assert.ok(html.includes("&lt;script&gt;alert(1)&lt;/script&gt;"))
+  assert.ok(!html.includes("<script>alert(1)</script>"))
+  assert.ok(html.includes("old"))
+  assert.ok(html.includes("<h2>Summary</h2>"))
+  assert.ok(html.includes("<h2>Skipped</h2>"))
+  assert.ok(html.includes("2026-11-23.md"))
+})
+
+test("formatPendingSummary truncates and reports extras", () => {
+  const summary = formatPendingSummary(
+    {
+      generatedAt: "2026-11-23T00:00:00.000Z",
+      items: [
+        { company: "A", role: "R", url: "", stage: "x", action: "123456789012345" },
+        { company: "B", role: "S", url: "", stage: "x", action: "short" },
+        { company: "C", role: "T", url: "", stage: "x", action: "more" },
+      ],
+    },
+    { maxItems: 2, maxChars: 10 },
+  )
+  assert.ok(summary.includes("123456789…"))
+  assert.ok(summary.includes("+1 más"))
+  assert.ok(!summary.includes("C — T"))
+})
+
+test("buildOpenCommand is cross-platform", () => {
+  assert.deepEqual(buildOpenCommand("darwin", "/tmp/report.html"), {
+    command: "open",
+    args: ["/tmp/report.html"],
+  })
+  assert.deepEqual(buildOpenCommand("linux", "/tmp/report.html"), {
+    command: "xdg-open",
+    args: ["/tmp/report.html"],
+  })
+  assert.deepEqual(buildOpenCommand("win32", "C:\\report.html"), {
+    command: "cmd",
+    args: ["/c", "start", "", "C:\\report.html"],
+  })
 })

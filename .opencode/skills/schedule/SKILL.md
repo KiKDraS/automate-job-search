@@ -15,6 +15,7 @@ and permission rules are in `.opencode/docs/automation-runtime.md`.
 - Search window **48 hours**.
 - Feed search **on**.
 - Notifications **on**.
+- Open the HTML report after each run **on**.
 - Standing auto-apply **on** when enabling.
 - No application cap (`0`).
 - Runtime cap **60 minutes**.
@@ -43,6 +44,7 @@ Flags:
 - `--max-applications N` — `0` means no cap
 - `--max-runtime N` — 5–240 minutes
 - `--notify` / `--no-notify`
+- `--open-report` / `--no-open-report` — open the HTML report after each run
 - `--feed` / `--no-feed`
 - `--apply` / `--no-apply`
 - `--allow-protected-data-dir` — only with Full Disk Access already granted

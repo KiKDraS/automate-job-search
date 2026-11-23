@@ -149,9 +149,10 @@ one batch, with defaults:
 5. Model (default: the OpenCode model shown by `npx tsx scripts/schedule.ts status`; or `provider/model#variant`; `opencode models` lists them)
 6. Include feed search? (yes)
 7. Notifications? (yes)
-8. Standing auto-apply for Medium/High? (yes)
-9. Maximum applications per run? (0 = no cap)
-10. Runtime cap in minutes? (60)
+8. Open the HTML report after each run? (yes)
+9. Standing auto-apply for Medium/High? (yes)
+10. Maximum applications per run? (0 = no cap)
+11. Runtime cap in minutes? (60)
 
 The scheduler runs from a runtime copy in the application-data folder, so the
 project can stay where it is — including `~/Documents`. If the data directory
@@ -161,13 +162,15 @@ permissions are in `.opencode/docs/automation-runtime.md`.
 If the user says yes, run:
 
     npx tsx scripts/schedule.ts enable --times "09:00" --interval daily \
-      --search-window 48 --notify --feed --apply --max-applications 0 --max-runtime 60
+      --search-window 48 --notify --open-report --feed --apply \
+      --max-applications 0 --max-runtime 60
 
-Use the times and window the user chose. Add `--model "<provider/model#variant>"`
-only when the user chose one; otherwise the automation inherits the OpenCode
-default. Show the summary: times, search window, next run, model, OS scheduler,
-runtime path, data-dir safety, and how to change it with `/job/schedule`. If the
-OS scheduler fails, show the exact error.
+Use `--no-open-report` when the user declines the HTML report. Add
+`--model "<provider/model#variant>"` only when the user chose one; otherwise
+the automation inherits the OpenCode default. Show the summary: times, search
+window, next run, model, OS scheduler, runtime path, data-dir safety, and how
+to change it with `/job/schedule`. If the OS scheduler fails, show the exact
+error.
 
 If the user says no, do not install anything; `/job/schedule` stays available.
 

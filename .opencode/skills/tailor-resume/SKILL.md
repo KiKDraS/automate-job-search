@@ -70,6 +70,8 @@ the requirement; Coach skips the job. Do not ask the user mid-run.
 ## Rules
 
 - Never invent or inflate titles, dates, numbers, employers, or skills.
+- If the base resume states a years-of-experience figure, replace it with the
+  total computed by `scripts/experience.ts`; never copy a stale total.
 - Keep the user's register; no AI vocabulary (`voice-rules.md`).
 - The draft goes through `draft-review` before the user sees it
   (`approval-flow.md`, Gate 2).

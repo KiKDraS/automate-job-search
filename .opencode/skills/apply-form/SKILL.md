@@ -97,6 +97,12 @@ Use this alias table, plus the values in `application-data.md` and
 | Resume / CV | resume, cv, curriculum |
 | Cover letter | cover letter, carta de presentación |
 | How did you hear about us? | how did you hear, cómo nos conociste; answer `LinkedIn` when that is the source |
+| Total years of experience | years of experience, años de experiencia, experience |
+
+For a generic "years of experience" field, compute the unique total with
+`npx tsx scripts/experience.ts` from `profile.md`; never use a fixed number.
+Skill-specific fields (for example React.js or TypeScript years) use the
+recorded per-skill answer.
 
 Do not fill EEO or demographic questions unless the answer is recorded in
 `application-data.md`. Do not answer "expected salary" with a number when only

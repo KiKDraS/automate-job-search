@@ -21,6 +21,12 @@ all artifacts. Prose craft — vocabulary, em dashes, patterns — lives in the
    numbers are omitted, not estimated.
 5. **Match the user's register.** Formal for cover letters, conversational
    for LinkedIn outreach, unless the user says otherwise.
+6. **Count all experience.** In emails, DMs, outreach, and cover letters,
+   total experience is computed by `scripts/experience.ts` from the role dates
+   in `profile.md`; never hard-code a number. Count every role the profile
+   lists, not just the most recent production work. Scope skill-specific
+   figures explicitly when used. If the profile has no role dates, do not state
+   a total.
 
 ## Spoken cadence
 

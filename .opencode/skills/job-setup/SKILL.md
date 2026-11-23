@@ -103,6 +103,13 @@ Ask for, in one batch: current/most recent role (company, title, dates),
 2–3 previous roles, top 8 skills, and 3–5 concrete achievements with real
 numbers where possible.
 
+Capture role dates in the `## Roles` format: `<Mon YYYY> – <Mon YYYY>` or
+`<Mon YYYY> – Present`. Mark unpaid gaps as
+`Career break (<Mon YYYY> – <Mon YYYY>)`. After writing `profile.md`, run
+`npx tsx scripts/experience.ts` and show the unique calendar total and the
+rounded `N+ years`; ask the user to confirm the dates, not a stored total.
+Never write a total into `profile.md`.
+
 Then propose the `## Stack` split from the resume and the skills answer:
 which technologies are **Primary** and which are **Working knowledge**. Show
 the proposal and ask the user to confirm, correct, or add missing terms.
@@ -115,9 +122,10 @@ factual: tailoring may only use what is in this file.
 ### 5. Profile approval
 
 Show `<data dir>/profile.md` in full and ask for explicit approval in the
-user's chat language (for example, "Does this look right?"). Only after the
-explicit OK, use it for tailoring or search. If the user changes anything,
-update the file and show the changed lines again.
+user's chat language (for example, "Does this look right?"). Include the
+experience total computed from the role dates. Only after the explicit OK, use
+it for tailoring or search. If the user changes anything, update the file and
+show the changed lines again.
 
 For an existing profile, do this once before the first search that uses it.
 If `## Stack` is missing, propose it from the resume and ask for confirmation
@@ -136,6 +144,10 @@ Ask in one batch, prefilled from the resume and preferences:
 Write `<data dir>/application-data.md` using the bullets from the `apply`
 skill. Never guess: if the user does not know an answer, write `not recorded`
 and note that automated forms needing it will be skipped and queued.
+
+The generic "years of experience" answer is not stored: compute it with
+`npx tsx scripts/experience.ts` when a form asks. Skill-specific years the
+user states (for example, React.js or TypeScript) stay as recorded.
 
 ### 7. Automation
 

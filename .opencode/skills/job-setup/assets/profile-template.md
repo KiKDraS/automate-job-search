@@ -2,8 +2,9 @@
 
 ## Roles
 
-- <Company> — <Title> (<start>–<end>): <one line of scope>
-- <Company> — <Title> (<start>–<end>): <one line of scope>
+- <Company> — <Title> (<Mon YYYY> – <Mon YYYY>): <one line of scope>
+- <Company> — <Title> (<Mon YYYY> – <Mon YYYY> | Present): <one line of scope>
+- Career break (<Mon YYYY> – <Mon YYYY>): <reason, if the user wants to record it>
 
 ## Skills
 

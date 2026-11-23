@@ -80,6 +80,8 @@ sends, never opens a mail client, and never handles credentials.
 - Draft-only. Never send, never use SMTP/API, never open a mail client.
 - Use only the email address present in the feed lead; never guess or build
   one from a name and domain. A Cc is allowed only when the post asks for it.
+- If the body states years, compute them with `scripts/experience.ts` from
+  `profile.md`; never use a fixed total.
 - If the post specifies a subject, use it exactly; do not reformat it.
 - Every claim traces to `profile.md`, the resume, the post, or the user's
   brief. For a Low lead, state the gap in the report; do not present the email

@@ -79,6 +79,7 @@ const result = await tools.playwright.browser_evaluate({
       const text = (selector) => (el.querySelector(selector)?.innerText || '').trim()
       return {
         id,
+        url: id ? 'https://www.linkedin.com/jobs/view/' + id + '/' : href,
         title: text('.base-search-card__title'),
         company: text('.base-search-card__subtitle'),
         location: text('.job-search-card__location'),
@@ -112,7 +113,10 @@ The guest extraction returns `{ cards, total }` per page:
 - `unresolved`: cards with no ID; keep title, company, `href`, and the reason.
 
 Merge pages, dedupe by job ID, then write only the `resolved` array to
-`<data dir>/.tmp/candidates.json` (JSON array), then:
+`<data dir>/.tmp/candidates.json` (JSON array). Each record must include
+`title`, `company`, `location`, and the canonical `url`
+(`https://www.linkedin.com/jobs/view/<id>/`); `history.ts filter` reads those
+fields, then:
 
     npx tsx scripts/history.ts filter --file <data dir>/.tmp/candidates.json
 
@@ -158,7 +162,10 @@ not wait for the whole list, so an interrupted run keeps what is already saved.
 
 Then move it into the job folder (never read the file yourself):
 
-    npx tsx scripts/save-posting.ts --file .playwright-mcp/posting.txt --company "<company>" --role "<role>" --url "<url>"
+    npx tsx scripts/save-posting.ts --file .playwright-mcp/posting.txt --company "<company>" --role "<role>" --url "https://www.linkedin.com/jobs/view/<id>/"
+
+Use the canonical `/jobs/view/<id>/` URL, not the guest API endpoint, so
+dedupe and applications.md keep one identity per job.
 
 Then run the adaptive stack check before calling the fit High:
 

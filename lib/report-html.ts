@@ -194,8 +194,79 @@ export interface ReportHtmlOptions {
   reportPath?: string
 }
 
+const NEEDS_YOU_HEADING = /^##\s+(needs you|necesita(?:s)? de vos|pendientes)\s*$/i
+
+function matchKey(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+}
+
+/**
+ * Remove "Needs you" entries already rendered as cards, keeping feed leads,
+ * advice, and anything else that has no card. The Markdown body is still the
+ * fallback when there are no cards.
+ */
+export function filterNeedsYou(markdown: string, cards: ReportCard[]): string {
+  if (cards.length === 0) return markdown
+  const lines = markdown.split(/\r?\n/)
+  const start = lines.findIndex((line) => NEEDS_YOU_HEADING.test(line))
+  if (start === -1) return markdown
+  let end = lines.length
+  for (let index = start + 1; index < lines.length; index += 1) {
+    if (/^##\s+/.test(lines[index] ?? "")) {
+      end = index
+      break
+    }
+  }
+  const section = lines.slice(start + 1, end)
+  const blocks: string[][] = []
+  let current: string[] = []
+  for (const line of section) {
+    if (/^\d+\.\s+/.test(line) && current.length > 0) {
+      blocks.push(current)
+      current = []
+    }
+    current.push(line)
+  }
+  if (current.length > 0) blocks.push(current)
+
+  const keys = cards.map((card) => ({
+    company: matchKey(card.item.company),
+    role: matchKey(card.item.role),
+    folder: (card.item.jobFolder ?? "").replaceAll("\\", "/"),
+    url: card.item.url,
+  }))
+  const keep = blocks.filter((block) => {
+    const text = block.join("\n")
+    const normalized = matchKey(text)
+    return !keys.some((key) => {
+      if (key.folder !== "" && text.includes(key.folder)) return true
+      if (key.url !== "" && text.includes(key.url)) return true
+      return (
+        key.company !== "" &&
+        key.role !== "" &&
+        normalized.includes(key.company) &&
+        normalized.includes(key.role)
+      )
+    })
+  })
+  const kept = keep.flat()
+  if (kept.join("\n").trim() === "") {
+    return [...lines.slice(0, start), ...lines.slice(end)]
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim()
+  }
+  return [...lines.slice(0, start + 1), ...kept, ...lines.slice(end)].join("\n")
+}
+
 export function buildReportHtml(options: ReportHtmlOptions): string {
   const cards = options.cards
+  const markdown = filterNeedsYou(options.markdown, cards)
   const body = cards
     .map((card, index) =>
       card.kind === "email"
@@ -263,7 +334,7 @@ export function buildReportHtml(options: ReportHtmlOptions): string {
 <main>
   <h2>Pendientes</h2>
   ${cards.length === 0 ? '<p class="empty">Sin pendientes.</p>' : body}
-  ${markdownToHtml(options.markdown)}
+  ${markdownToHtml(markdown)}
 </main>
 ${footer}
 <script>

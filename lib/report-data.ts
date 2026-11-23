@@ -70,7 +70,7 @@ const FORM_STAGES = new Set([
 
 function field(source: string, label: string): string | undefined {
   return source
-    .match(new RegExp(`^- ${label}:\\s*(.+?)\\s*$`, "m"))?.[1]
+    .match(new RegExp(`^\\s*(?:-\\s*)?${label}:\\s*(.+?)\\s*$`, "m"))?.[1]
     ?.trim()
 }
 
@@ -155,6 +155,40 @@ function bulletPairs(text: string): FormField[] {
   return fields
 }
 
+const META_LABELS = new Set([
+  "url",
+  "job url",
+  "apply url",
+  "post url",
+  "link",
+  "folder",
+  "ats",
+  "method",
+  "fit",
+  "status",
+  "result",
+  "resume",
+  "cover letter",
+  "also sent",
+  "source",
+  "date",
+  "confirmation",
+  "blocker",
+  "note",
+])
+
+function plainPairs(text: string): FormField[] {
+  const fields: FormField[] = []
+  for (const line of text.split(/\r?\n/)) {
+    const match = line.match(/^\s*([A-Za-z][^:|]{1,60}):\s+(.+?)\s*$/)
+    if (match === null) continue
+    const label = (match[1] ?? "").trim()
+    if (META_LABELS.has(label.toLowerCase())) continue
+    fields.push({ label, value: (match[2] ?? "").trim() })
+  }
+  return fields
+}
+
 function uniqueFields(fields: FormField[]): FormField[] {
   const seen = new Set<string>()
   const unique: FormField[] = []
@@ -174,6 +208,21 @@ function bullets(text: string): string[] {
     .filter((line) => line.startsWith("- "))
     .map((line) => line.slice(2).trim())
     .filter((line) => line !== "")
+}
+
+function sectionItems(text: string): string[] {
+  const dashed = bullets(text)
+  if (dashed.length > 0) return dashed
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(
+      (line) =>
+        line !== "" &&
+        !line.startsWith("#") &&
+        !line.startsWith("|") &&
+        !/^:?-{3,}:?$/.test(line),
+    )
 }
 
 function firstField(source: string, labels: readonly string[]): string | undefined {
@@ -218,12 +267,18 @@ export function parseApplyReview(source: string): Review {
     "answers",
   ])
   const fields = uniqueFields([...tableFields(filled), ...bulletPairs(filled)])
-  const blankValues = fields
+  const resolvedFields =
+    fields.length > 0
+      ? fields
+      : uniqueFields(
+          plainPairs(filled.trim() !== "" ? filled : map.size === 0 ? source : ""),
+        )
+  const blankValues = resolvedFields
     .filter((item) => /^(left blank|not answered|blank|—|-)$/i.test(item.value.trim()))
     .map((item) => item.label)
   const missing = [
     ...new Set([
-      ...bullets(
+      ...sectionItems(
         sectionsMatching(map, ["still blank", "missing", "needs answer", "unanswered", "not filled"]),
       ),
       ...blankValues,
@@ -246,8 +301,8 @@ export function parseApplyReview(source: string): Review {
     ats: firstField(source, ["ATS", "Method"]),
     fit: firstField(source, ["Fit"]),
     status: firstField(source, ["Status", "Result"]),
-    fields,
-    premarked: bullets(
+    fields: resolvedFields,
+    premarked: sectionItems(
       sectionsMatching(map, ["pre-marked", "prefilled", "pre-filled", "checkboxes"]),
     ),
     missing,

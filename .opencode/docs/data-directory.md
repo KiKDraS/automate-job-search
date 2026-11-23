@@ -40,7 +40,8 @@ never hand-build the path.
 ├── reports/                   # daily search reports (.md and .html)
 ├── state/                     # lock, pending-search.json, last-run.json
 ├── feed/                      # hiring posts found in the LinkedIn feed
-│   └── <date>-<company>-<role>.md
+│   ├── <date>-<company>-<role>.md
+│   └── <date>-<company>-<role>-email.md  # draft email for that lead
 ├── presence/                  # LinkedIn profile audits, post drafts, comment drafts
 │   ├── profile-audit.md       # current profile audit + copy suggestions
 │   ├── story-bank.md          # confirmed moments the user has told
@@ -53,6 +54,8 @@ never hand-build the path.
         ├── resume.md          # tailored resume
         ├── resume.pdf         # tailored resume export (uploaded by apply)
         ├── cover-letter.md    # cover letter
+        ├── application-email.md # copy-ready email draft: To, Cc, Subject, Attach, body
+        ├── apply-review.md    # form review: URL, fields used, blanks, CAPTCHA, blocker
         ├── outreach.md        # current outreach draft: recipient, language, text, evidence
         └── applied.md         # application record: what was sent, when, confirmation
 ```

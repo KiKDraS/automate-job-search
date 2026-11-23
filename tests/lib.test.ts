@@ -30,6 +30,7 @@ import {
 import { buildNotificationCommand } from "../lib/notify.ts"
 import { buildOpenCommand } from "../lib/open.ts"
 import { buildReportHtml, formatPendingSummary } from "../lib/report-html.ts"
+import { collectReportCards, parseApplyReview, type ReportCard } from "../lib/report-data.ts"
 import { resolveOpencodeDefaultModel } from "../lib/model.ts"
 import {
   applicationsWrittenSince,
@@ -128,7 +129,7 @@ Adjunto mi CV.
   assert.equal(draft?.to, "jobs@acme.com")
   assert.equal(draft?.body, "Hola, me interesa el rol.\n\nAdjunto mi CV.")
   const mailto = buildMailto(draft!)
-  assert.ok(mailto.startsWith("mailto:jobs%40acme.com?"))
+  assert.ok(mailto.startsWith("mailto:jobs@acme.com?"))
   assert.ok(mailto.includes("subject=Application"))
   assert.ok(mailto.includes("body=Hola"))
   assert.equal(parseEmailDraft("no fields"), null)
@@ -1563,17 +1564,20 @@ test("backlog excludes applied folders and applications.md rows", async () => {
 })
 
 test("buildReportHtml renders pending cards and the Markdown body", () => {
-  const pending: PendingState = {
-    generatedAt: "2026-11-23T00:00:00.000Z",
-    items: [
-      {
+  const cards: ReportCard[] = [
+    {
+      kind: "other",
+      item: {
         company: "Acme",
         role: "React Developer",
         url: "https://example.com/job",
         stage: "needs_answer",
         action: "Answer <script>alert(1)</script>",
       },
-      {
+    },
+    {
+      kind: "email",
+      item: {
         company: "Soviant",
         role: "Full Stack",
         url: "mailto:jobs@example.com?subject=Hi",
@@ -1581,13 +1585,18 @@ test("buildReportHtml renders pending cards and the Markdown body", () => {
         action: "Send the email",
         jobFolder: "jobs/soviant",
       },
-    ],
-  }
+      draft: { to: "jobs@example.com", subject: "Hi", body: "Hello body" },
+      mailto: "mailto:jobs@example.com?subject=Hi",
+      attach: "resume/base.pdf",
+      attachHref: "../resume/base.pdf",
+      draftPath: "/data/jobs/soviant/application-email.md",
+    },
+  ]
   const html = buildReportHtml({
     date: "2026-11-23",
     markdown:
       "# Run\n\n## Summary\n\n- ok\n\n## Needs you\n\n1. old\n\n## Skipped\n\n- none\n",
-    pending,
+    cards,
     status: "completed",
     model: "opencode-go/deepseek-v4.1-flash",
     reportPath: "/data/reports/2026-11-23.md",
@@ -1595,13 +1604,294 @@ test("buildReportHtml renders pending cards and the Markdown body", () => {
   assert.ok(html.includes("Acme — React Developer"))
   assert.ok(html.includes("Falta una respuesta"))
   assert.ok(html.includes("mailto:jobs@example.com?subject=Hi"))
-  assert.ok(html.includes("Enviar email"))
+  assert.ok(html.includes("Email para enviar"))
+  assert.ok(html.includes("Hello body"))
+  assert.ok(html.includes("Copiar email"))
   assert.ok(html.includes("&lt;script&gt;alert(1)&lt;/script&gt;"))
   assert.ok(!html.includes("<script>alert(1)</script>"))
   assert.ok(html.includes("old"))
   assert.ok(html.includes("<h2>Summary</h2>"))
   assert.ok(html.includes("<h2>Skipped</h2>"))
   assert.ok(html.includes("2026-11-23.md"))
+})
+
+test("buildReportHtml renders form cards with data, CAPTCHA and resume", () => {
+  const cards: ReportCard[] = [
+    {
+      kind: "form",
+      item: {
+        company: "Acme",
+        role: "React Developer",
+        url: "https://example.com/apply",
+        stage: "captcha",
+        action: "Resolvé el CAPTCHA y enviá una vez",
+      },
+      url: "https://example.com/apply",
+      ats: "Greenhouse",
+      fields: [
+        { label: "First name", value: "Ana" },
+        { label: "Email", value: "ana@example.com" },
+      ],
+      premarked: ["Work authorization: yes"],
+      missing: ["Portfolio URL"],
+      captcha: "Cloudflare challenge",
+      blocker: "",
+      resumePath: "/data/jobs/acme/resume.pdf",
+      resumeHref: "../jobs/acme/resume.pdf",
+      resumeExists: true,
+      resumeFallback: false,
+      reviewPath: "/data/jobs/acme/apply-review.md",
+    },
+  ]
+  const html = buildReportHtml({
+    date: "2026-11-23",
+    markdown: "# Run\n",
+    cards,
+    status: "completed",
+  })
+  assert.ok(html.includes("CAPTCHA"))
+  assert.ok(html.includes("First name: Ana"))
+  assert.ok(html.includes("Email: ana@example.com"))
+  assert.ok(html.includes("Copiar datos"))
+  assert.ok(html.includes("Portfolio URL"))
+  assert.ok(html.includes("Cloudflare challenge"))
+  assert.ok(html.includes("resume.pdf"))
+  assert.ok(html.includes("https://example.com/apply"))
+  assert.ok(html.includes("Resolvé el CAPTCHA y enviá una vez"))
+})
+
+test("parseApplyReview reads the filled table and blockers", () => {
+  const review = parseApplyReview(`# Apply review — Acme
+
+- URL: https://example.com/apply
+- ATS: Greenhouse
+- Fit: Medium
+- Status: blocked
+
+## Filled state
+
+| Field | Value |
+| --- | --- |
+| First name | Ana |
+| Email | ana@example.com |
+| country | Argentina |
+
+## Pre-marked checkboxes
+
+- Work authorization: yes
+
+## Still blank
+
+- Portfolio URL
+- Desired salary
+
+## CAPTCHA
+
+Cloudflare challenge after submit.
+
+## Blocker
+
+None.
+`)
+  assert.equal(review.url, "https://example.com/apply")
+  assert.equal(review.ats, "Greenhouse")
+  assert.equal(review.fit, "Medium")
+  assert.equal(review.status, "blocked")
+  assert.deepEqual(review.fields, [
+    { label: "First name", value: "Ana" },
+    { label: "Email", value: "ana@example.com" },
+    { label: "country", value: "Argentina" },
+  ])
+  assert.deepEqual(review.premarked, ["Work authorization: yes"])
+  assert.deepEqual(review.missing, ["Portfolio URL", "Desired salary"])
+  assert.equal(review.captcha, "Cloudflare challenge after submit.")
+  assert.equal(review.blocker, "None.")
+})
+
+test("parseApplyReview reads three-column and bullet review formats", () => {
+  const review = parseApplyReview(`# Apply review — Senior Frontend Developer at DataArt
+
+- URL: https://www.dataart.team/vacancies/rct00067
+- ATS: Generic form
+- Fit: High
+- Status: SUBMITTED
+
+## Form fields and answers (final state)
+
+| Field | Required | Answer |
+| --- | --- | --- |
+| Name | yes | Anahi Noel |
+| Email | yes | anahiforesi@gmail.com |
+| Tell us about yourself | no | left blank |
+
+## Notes
+
+- reCAPTCHA: invisible reCAPTCHA v3; no visible challenge.
+`)
+  assert.equal(review.url, "https://www.dataart.team/vacancies/rct00067")
+  assert.equal(review.ats, "Generic form")
+  assert.equal(review.fit, "High")
+  assert.equal(review.status, "SUBMITTED")
+  assert.deepEqual(review.fields, [
+    { label: "Name", value: "Anahi Noel" },
+    { label: "Email", value: "anahiforesi@gmail.com" },
+    { label: "Tell us about yourself", value: "left blank" },
+  ])
+  assert.deepEqual(review.missing, ["Tell us about yourself"])
+  assert.equal(review.captcha, "")
+})
+
+test("collectReportCards builds email and form cards from the data dir", async () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "ajs-report-data-"))
+  const reportsDir = path.join(dir, "reports")
+  mkdirSync(reportsDir, { recursive: true })
+  mkdirSync(path.join(dir, "jobs", "soviant"), { recursive: true })
+  writeFileSync(
+    path.join(dir, "jobs", "soviant", "application-email.md"),
+    `# Application email
+
+- To: jobs@example.com
+- Cc: —
+- Subject: Full Stack application
+- Attach: resume/base.pdf
+
+## Body
+
+Hello,
+
+I am applying for the role.
+
+Ana
+`,
+  )
+  mkdirSync(path.join(dir, "jobs", "acme"), { recursive: true })
+  writeFileSync(
+    path.join(dir, "jobs", "acme", "apply-review.md"),
+    `# Apply review
+
+- URL: https://example.com/apply
+- ATS: Lever
+
+## Filled state
+
+| Field | Value |
+| --- | --- |
+| Email | ana@example.com |
+
+## Still blank
+
+- Portfolio URL
+
+## CAPTCHA
+
+Challenge pending.
+`,
+  )
+  writeFileSync(path.join(dir, "jobs", "acme", "resume.pdf"), "%PDF-1.4 test")
+  mkdirSync(path.join(dir, "resume"), { recursive: true })
+  writeFileSync(path.join(dir, "resume", "base.pdf"), "%PDF-1.4 base")
+
+  const pending: PendingState = {
+    generatedAt: "2026-11-23T00:00:00.000Z",
+    items: [
+      {
+        company: "Soviant",
+        role: "Full Stack",
+        url: "mailto:jobs@example.com",
+        stage: "email_draft",
+        action: "Send the email",
+        jobFolder: "jobs/soviant",
+      },
+      {
+        company: "Acme",
+        role: "React Developer",
+        url: "https://example.com/apply",
+        stage: "captcha",
+        action: "Solve the CAPTCHA",
+        jobFolder: "jobs/acme",
+      },
+    ],
+  }
+  try {
+    const cards = await collectReportCards(dir, pending, reportsDir)
+    assert.equal(cards.length, 2)
+    const email = cards[0]
+    assert.ok(email !== undefined && email.kind === "email")
+    if (email !== undefined && email.kind === "email") {
+      assert.equal(email.draft.to, "jobs@example.com")
+      assert.equal(email.draft.cc, undefined)
+      assert.equal(email.draft.subject, "Full Stack application")
+      assert.ok(email.draft.body.includes("I am applying for the role."))
+      assert.ok(email.mailto.startsWith("mailto:jobs@example.com"))
+      assert.ok(email.mailto.includes("subject=Full+Stack+application"))
+      assert.equal(email.attachHref, "../resume/base.pdf")
+    }
+    const form = cards[1]
+    assert.ok(form !== undefined && form.kind === "form")
+    if (form !== undefined && form.kind === "form") {
+      assert.equal(form.url, "https://example.com/apply")
+      assert.deepEqual(form.fields, [{ label: "Email", value: "ana@example.com" }])
+      assert.deepEqual(form.missing, ["Portfolio URL"])
+      assert.equal(form.captcha, "Challenge pending.")
+      assert.equal(form.resumePath, path.join(dir, "jobs", "acme", "resume.pdf"))
+      assert.equal(form.resumeExists, true)
+      assert.equal(form.resumeFallback, false)
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test("collectReportCards reads a feed draft next to the lead file", async () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "ajs-report-feed-"))
+  const reportsDir = path.join(dir, "reports")
+  mkdirSync(reportsDir, { recursive: true })
+  mkdirSync(path.join(dir, "feed"), { recursive: true })
+  writeFileSync(path.join(dir, "feed", "2026-11-19-acme.md"), "# Lead\n")
+  writeFileSync(
+    path.join(dir, "feed", "2026-11-19-acme-email.md"),
+    `# Application email
+
+- To: jobs@acme.test
+- Subject: Application — React Developer
+- Attach: resume/base.pdf
+
+## Body
+
+Hola,
+
+Adjunto mi CV.
+`,
+  )
+  const pending: PendingState = {
+    generatedAt: "2026-11-23T00:00:00.000Z",
+    items: [
+      {
+        company: "Acme",
+        role: "React Developer",
+        url: "mailto:jobs@acme.test",
+        stage: "email_draft",
+        action: "Send the email",
+        jobFolder: "feed/2026-11-19-acme.md",
+      },
+    ],
+  }
+  try {
+    const cards = await collectReportCards(dir, pending, reportsDir)
+    assert.equal(cards.length, 1)
+    const card = cards[0]
+    assert.ok(card !== undefined && card.kind === "email")
+    if (card !== undefined && card.kind === "email") {
+      assert.equal(card.draft.to, "jobs@acme.test")
+      assert.ok(card.draft.body.includes("Adjunto mi CV."))
+      assert.equal(
+        card.draftPath,
+        path.join(dir, "feed", "2026-11-19-acme-email.md"),
+      )
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
 })
 
 test("formatPendingSummary truncates and reports extras", () => {

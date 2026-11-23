@@ -290,6 +290,12 @@ opens the HTML by default; `/job/schedule --no-open-report` disables it.
 `/job/report` prints the pending items and their paths; `/job/report --open`
 opens the HTML.
 
+Pending cards are copy-ready. An email card shows To, Cc, Subject, the
+attachment, and the full body with copy buttons and a `mailto:` link. A
+blocked form card shows the apply URL, the resume to send, every field and
+value used, what is still blank, the CAPTCHA state, and the exact action.
+`/job/report` prints the same content in full.
+
 ## Commands
 
 | Command | What it does |

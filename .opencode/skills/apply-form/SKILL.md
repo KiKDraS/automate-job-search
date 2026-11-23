@@ -102,8 +102,10 @@ Do not fill EEO or demographic questions unless the answer is recorded in
 `application-data.md`. Do not answer "expected salary" with a number when only
 a monthly target exists; use the recorded answer or leave it empty/skip.
 
-If a required field has no recorded answer, return `NEEDS_ANSWER` with the
-label, type, and options, and stop. Never invent an answer.
+If a required field has no recorded answer, write
+`<job folder>/apply-review.md` with the fields already filled and the missing
+label, then return `NEEDS_ANSWER` with the label, type, and options, and stop.
+Never invent an answer.
 
 ### 4. Fill one step
 
@@ -132,7 +134,11 @@ blocks progress twice, stop and report the step and label.
 ### 6. Record the review sheet
 
 One `execute` call re-extracts every filled field, the file names, the checked
-consents, and the review text. Record it:
+consents, and the review text. Write the sheet to
+`<job folder>/apply-review.md` in the format of
+`.opencode/docs/apply-review.md` (one `Field | Value` row per answer, `Still
+blank`, `CAPTCHA`, and `Blocker` sections). The report reads that file. At
+minimum, record this shape:
 
 ```text
 APPLY REVIEW — <role> at <company>

@@ -101,6 +101,7 @@ import { buildPostingMarkdown, unwrapEvalResult } from "../lib/posting.ts"
 import { buildResumeHtml, markdownToHtml } from "../lib/resume-html.ts"
 import { buildFeedMarkdown } from "../lib/feed.ts"
 import { buildMailto, parseEmailDraft } from "../lib/email.ts"
+import { computeExperience, formatMonths, roundedYears } from "../lib/experience.ts"
 
 test("buildJobSearchUrl supports a two-day window", () => {
   const url = new URL(
@@ -2188,4 +2189,60 @@ test("stripSalaryFilter removes f_SAL and rejects invalid URLs", () => {
   )
   assert.equal(stripSalaryFilter("not a url"), null)
   assert.equal(stripSalaryFilter("ftp://example.com/x"), null)
+})
+
+test("computeExperience counts unique calendar time and keeps the raw sum", () => {
+  const profile = `# Profile
+
+## Roles
+
+- A — Dev (Jan 2020 – Dec 2020): first role
+- B — Dev (Jun 2020 – Dec 2021): overlaps A
+- Career break (Jan 2022 – Jun 2022): paused
+- C — Dev (Jul 2022 – Present): current role
+
+## Skills
+
+React
+`
+
+  const result = computeExperience(profile, "2023-06")
+  assert.equal(result.activeRoles, 3)
+  assert.equal(result.breaks, 1)
+  assert.equal(result.uniqueMonths, 36)
+  assert.equal(result.sumMonths, 43)
+  assert.equal(result.uniqueLabel, "3 years")
+  assert.equal(result.sumLabel, "3 years 7 months")
+  assert.equal(result.rounded, "3+ years")
+  assert.deepEqual(result.warnings, [])
+})
+
+test("computeExperience uses Present as of the requested month", () => {
+  const result = computeExperience(
+    "## Roles\n- A — Dev (Jan 2020 – Present): current\n",
+    "2026-11",
+  )
+  assert.equal(result.uniqueMonths, 83)
+  assert.equal(result.rounded, "6+ years")
+})
+
+test("computeExperience warns on missing dates and missing roles section", () => {
+  const noDates = computeExperience("## Roles\n- A — Dev: no dates\n## Skills\n", "2026-11")
+  assert.equal(noDates.rounded, "not stated")
+  assert.equal(noDates.warnings.length, 1)
+  assert.ok(noDates.warnings[0]?.includes("role without a date range"))
+
+  const noRoles = computeExperience("# Profile\n## Skills\n", "2026-11")
+  assert.equal(noRoles.rounded, "not stated")
+  assert.ok(noRoles.warnings.some((warning) => warning.includes("no ## Roles")))
+})
+
+test("experience labels round down and never invent a total", () => {
+  assert.equal(formatMonths(0), "0 months")
+  assert.equal(formatMonths(1), "1 month")
+  assert.equal(formatMonths(12), "1 year")
+  assert.equal(formatMonths(81), "6 years 9 months")
+  assert.equal(roundedYears(11), "less than 1 year")
+  assert.equal(roundedYears(12), "1+ year")
+  assert.equal(roundedYears(81), "6+ years")
 })

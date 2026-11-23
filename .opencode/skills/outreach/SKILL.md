@@ -56,6 +56,8 @@ agent.
 
 - Draft-only: no sending, no connection requests, no automation.
 - Never invent a person, a mutual connection, or shared history.
+- Years of experience: compute with `scripts/experience.ts` from `profile.md`;
+  never hard-code a total.
 - No AI vocabulary; em-dash density per `voice-rules.md`.
 - Language: job-tied messages follow the posting's language; otherwise the
   chat language. The user's override wins (`voice-rules.md`).

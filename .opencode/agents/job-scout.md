@@ -46,7 +46,10 @@ them in one round.
 - If LinkedIn shows a login wall or challenge: stop immediately and report
   "login required" to Coach. Never attempt credentials or bypasses.
 - Feed scan: load `feed-search`; max 10 scrolls and 60 posts; save High/Medium
-  leads only; never like, comment, connect, message, follow, or repost.
+  leads only with `Apply URL`, `Apply note`, `Contact method`, and
+  `MP requested`; report them so Coach can add the lead card and draft an MP
+  when the post asks for one. Never like, comment, connect, message, follow,
+  or repost.
 - Apply: submit for every saved job scored Medium or High, without a second
   OK. Verify the form still matches the answers before clicking Submit; write
   `applied.md` and append `applications.md` after the confirmation. If a

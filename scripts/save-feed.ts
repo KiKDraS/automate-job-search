@@ -6,7 +6,10 @@
  *   npx tsx scripts/save-feed.ts --file <.playwright-mcp/feed.txt>
  *     --company "<company>" --role "<role>"
  *     --author "<name>" --fit "High|Medium" --why "<one line>"
- *     [--email "<address>"] [--url "<post url>"] [--date YYYY-MM-DD]
+ *     [--email "<address>"] [--url "<post url>"]
+ *     [--apply-url "<url>"] [--apply-note "<what it opens>"]
+ *     [--contact "apply link|email|MP|none"] [--mp-requested]
+ *     [--date YYYY-MM-DD]
  *
  * Reads the file (an artifact of browser_evaluate's `filename` option),
  * unwraps JSON-string encoding when present, and writes
@@ -33,6 +36,12 @@ async function main(): Promise<void> {
   const fit = flagValue(SCRIPT, args, "--fit")
   const why = flagValue(SCRIPT, args, "--why")
   const email = flagValue(SCRIPT, args, "--email")
+  const applyUrl = flagValue(SCRIPT, args, "--apply-url")
+  const applyNote = flagValue(SCRIPT, args, "--apply-note")
+  const mpRequested = args.includes("--mp-requested")
+  const contact =
+    flagValue(SCRIPT, args, "--contact") ??
+    (email !== undefined ? "email" : applyUrl !== undefined ? "apply link" : "none")
   if (
     file === undefined ||
     company === undefined ||
@@ -43,7 +52,7 @@ async function main(): Promise<void> {
   ) {
     return fail(
       SCRIPT,
-      "usage: --file <path> --company <c> --role <r> --author <a> --fit <High|Medium> --why <text> [--email <address>] [--url <u>] [--date YYYY-MM-DD]",
+      "usage: --file <path> --company <c> --role <r> --author <a> --fit <High|Medium> --why <text> [--email <address>] [--url <u>] [--apply-url <u>] [--apply-note <text>] [--contact <method>] [--mp-requested] [--date YYYY-MM-DD]",
     )
   }
   const date = flagValue(SCRIPT, args, "--date") ?? todayIso()
@@ -65,7 +74,23 @@ async function main(): Promise<void> {
   const target = path.join(dir, `${date}-${slugify(company)}-${slugify(role)}.md`)
   await fs.writeFile(
     target,
-    buildFeedMarkdown({ company, role, url, author, fit, why, date, email }, content),
+    buildFeedMarkdown(
+      {
+        company,
+        role,
+        url,
+        author,
+        fit,
+        why,
+        date,
+        email,
+        applyUrl,
+        applyNote,
+        contact,
+        mpRequested,
+      },
+      content,
+    ),
   )
   console.log(target)
 }

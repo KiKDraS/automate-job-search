@@ -38,7 +38,7 @@ the best query is the English LATAM one.
 
 - `React developer LATAM remote`
 
-It produced the only front-end-first High fit (DataArt, Senior Frontend
+It produced the only front-end-first High fit (Acme, Senior Frontend
 Developer, React/TS, 4+ years, Remote LATAM).
 
 **Secondary local sweep:**
@@ -113,7 +113,14 @@ For each candidate, extract:
 - company, or the author if no company is named
 - location / remote status; use `not stated` when absent
 - salary; use `not stated` when absent
-- apply URL, if the post links to a LinkedIn job, Greenhouse, or Lever
+- apply URL: a LinkedIn job, Greenhouse, Lever, or short link (`lnkd.in`,
+  `bit.ly`). For a roundup, use the link for the specific role, not the
+  general list.
+- apply note: what the link opens (direct role, roundup, multi-vacancy list)
+- contact method: `email`, `apply link`, `MP`, or `none`
+- MP requested: `yes` when the post asks for a DM/MP/message ("MP", "mensaje
+  privado", "DM", "message me", "inbox", "escribime", "contáctame"); otherwise
+  `no`
 - email addresses in the post text, if any
 - author name and post URL if the DOM exposes one; otherwise `not available`
 
@@ -140,12 +147,19 @@ Then:
     npx tsx scripts/save-feed.ts --file .playwright-mcp/feed-post.txt \
       --company "<company>" --role "<role>" --author "<author>" \
       --fit "<High|Medium>" --why "<one line>" \
-      [--email "<address>"] [--url "<post url>"]
+      [--email "<address>"] [--url "<post url>"] \
+      [--apply-url "<url>"] [--apply-note "<what it opens>"] \
+      [--contact "email|apply link|MP|none"] [--mp-requested]
 
 Extract emails with `/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i`; if there are
 several, pass the first and list the rest in the why. Omit `--email` when the
 post has none. Omit `--url` when the result does not expose one; the record
 uses `not available`. Never invent either.
+
+Always pass `--apply-url` when the post contains one, even if it is a short
+link. Pass `--mp-requested` only when the post asks for a DM/MP; the report
+then adds an "Armar MP" action and Coach drafts it with `outreach` before the
+user sends.
 
 A Low post with an email is saved as a contact lead: `--fit Low` and
 `--why "email contact — <why>"`. It is not an endorsement; the fit stays Low. It writes
@@ -179,7 +193,7 @@ Then:
 
 ### 7. If the post links to a job, save the posting
 
-For a LinkedIn job, Greenhouse, or Lever URL:
+For a LinkedIn job, Greenhouse, Lever, or a short link that resolves to one:
 
 1. Open the link and extract the posting body to `.playwright-mcp/posting.txt`.
 2. `npx tsx scripts/save-posting.ts --file .playwright-mcp/posting.txt --company "<company>" --role "<role>" --url "<apply url>"`.
@@ -187,8 +201,13 @@ For a LinkedIn job, Greenhouse, or Lever URL:
 4. Return the folder path and `apply` / `apply-external` in the report, so
    Coach can run the automatic apply flow.
 
-If the post is a direct recruiter post with no job URL, leave it as a lead.
-Outreach is a separate, draft-only skill.
+If the post asks for a DM/MP (`MP requested: yes`), draft it with `outreach`
+(artifact-writer), pass `draft-review`, and write it next to the lead as
+`feed/<lead-slug>-outreach.md`. Return the path and the recipient. Do not send.
+
+If the post is a direct recruiter post with no job URL, leave it as a lead. The
+report card shows the apply link, the MP draft when one exists, and the exact
+action. Outreach is a separate, draft-only skill.
 
 ### 8. Report
 
@@ -197,7 +216,9 @@ Return compact:
 - Query used, scrolls and posts scanned.
 - Genuine hiring posts; High/Medium/Low counts.
 - Shortlist rows: role — company/author — location — post URL or "not
-  available" — fit — why — feed file or job folder.
+  available" — apply URL — fit — why — feed file or job folder.
+- MP drafts when the post requested one: recipient, file path, and that it is
+  not sent.
 - Saved leads, skipped duplicates/Low/old/promoted, cap skips.
 - Any login wall, unreadable search, or failed extraction.
 

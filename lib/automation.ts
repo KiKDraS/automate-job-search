@@ -257,7 +257,9 @@ export function buildScheduledPrompt(dataDir: string, config: AutomationConfig):
     ? "Auto-apply Medium/High fits without another approval."
     : "Do not apply; save the jobs and list them for the user."
   const feed = config.includeFeedSearch ? "Run the feed search too." : "Skip the feed search."
-  const backlog = config.includeBacklog ? "Start with the backlog." : "Skip the backlog."
+  const backlog = config.includeBacklog
+    ? "Start with the backlog: run npx tsx scripts/history.ts backlog and skip Excluded companies."
+    : "Skip the backlog."
   const max =
     config.maxApplicationsPerRun === 0
       ? "No application cap."

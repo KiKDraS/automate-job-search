@@ -23,25 +23,51 @@ interface SessionCreatedEvent {
   durable?: { aggregateID?: string }
 }
 
+interface SessionLike {
+  agent?: string
+  parentID?: string
+  location?: { directory?: string }
+}
+
+function matchesLocation(
+  directory: string | undefined,
+  roots: string[],
+): boolean {
+  if (directory === undefined || directory === "") return true
+  return roots.some(
+    (root) => directory === root || directory.startsWith(`${root}/`),
+  )
+}
+
 export default Plugin.define({
   id: "coach-greeting",
   async setup(ctx) {
     const controller = new AbortController()
+    const roots = [ctx.location.directory, ctx.location.project?.canonical].filter(
+      (root): root is string => typeof root === "string" && root !== "",
+    )
     void (async () => {
       try {
         for await (const event of ctx.event.subscribe({ signal: controller.signal })) {
           const parsed: SessionCreatedEvent = typeof event === "string" ? JSON.parse(event) : event
           if (parsed.type !== "session.created") continue
-          if (parsed.location?.directory !== ctx.location.directory) continue
-          if (parsed.data?.agent !== "coach") continue
           const sessionID = parsed.data?.sessionID ?? parsed.durable?.aggregateID
           if (typeof sessionID !== "string") continue
 
           const key = GREETED_PREFIX + sessionID
           if (await ctx.storage.get(key)) continue
 
-          const session = await ctx.session.get({ sessionID })
+          const session = (await ctx.session.get({ sessionID })) as SessionLike
           if (session.parentID) continue
+
+          const agent = parsed.data?.agent ?? session.agent
+          if (agent !== undefined && agent !== "coach") continue
+          if (
+            !matchesLocation(parsed.location?.directory, roots) &&
+            !matchesLocation(session.location?.directory, roots)
+          ) {
+            continue
+          }
 
           const messages = await ctx.session.context({ sessionID })
           if (messages.length > 0) continue

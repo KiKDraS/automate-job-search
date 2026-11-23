@@ -60,6 +60,13 @@ import {
   upsertApplicationIndexRow,
 } from "../lib/apply.ts"
 import { cleanupExpiredData } from "../lib/cleanup.ts"
+import {
+  companyRoleKey,
+  isApplied,
+  listBacklogFolders,
+  normalizeAppliedUrl,
+  readAppliedIndex,
+} from "../lib/applied.ts"
 import { isLikelyScanned, joinPages } from "../lib/resume-text.ts"
 import { detectAts } from "../lib/ats.ts"
 import {
@@ -1451,6 +1458,99 @@ test("cleanupExpiredData removes old submissions and feed leads", async () => {
         "Feed lead",
       ),
     )
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test("applied index matches normalized URLs and company+role", async () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "ajs-applied-"))
+  try {
+    writeFileSync(
+      path.join(dir, "applications.md"),
+      `# Applications
+
+| Date | Company | Role | Fit | Method | Status | Confirmation | Job URL | Folder |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-19 | INDI Staffing Services | React Senior Developer - Remote Work | High | LinkedIn Easy Apply | submitted | sent | https://www.linkedin.com/jobs/view/4492050725/?trackingId=x | jobs/indi-staffing-services-react-senior-developer-remote-work-2026-11-19 |
+| 2026-11-21 | Shapely | Full-Stack Developer | Medium | manual | submitted (manual) | reported | https://careers.getshapely.com/jobs/1 | jobs/shapely-full-stack-developer-2026-11-19 |
+`,
+    )
+    const index = await readAppliedIndex(dir)
+    assert.equal(index.rows.length, 2)
+    assert.notEqual(
+      isApplied(index, { url: "https://www.linkedin.com/jobs/view/4492050725/" }),
+      null,
+    )
+    assert.notEqual(
+      isApplied(index, {
+        company: "INDI Staffing Services",
+        role: "React Senior Developer - Remote Work",
+      }),
+      null,
+    )
+    assert.notEqual(
+      isApplied(index, { company: "shapely", role: "full stack developer" }),
+      null,
+    )
+    assert.equal(isApplied(index, { company: "Acme", role: "React Developer" }), null)
+    assert.notEqual(
+      isApplied(index, {
+        folder: "jobs/shapely-full-stack-developer-2026-11-19",
+      }),
+      null,
+    )
+    assert.equal(
+      normalizeAppliedUrl("https://de.linkedin.com/jobs/view/4492050725?trackingId=x"),
+      "https://www.linkedin.com/jobs/view/4492050725/",
+    )
+    assert.equal(companyRoleKey("Acme, Inc.", "React Developer"), "acme inc::react developer")
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test("backlog excludes applied folders and applications.md rows", async () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "ajs-backlog-"))
+  try {
+    const jobs = path.join(dir, "jobs")
+    for (const name of [
+      "applied",
+      "rowed",
+      "rowed-different-date",
+      "new",
+      "no-posting",
+      "bairesdev-role",
+    ]) {
+      mkdirSync(path.join(jobs, name), { recursive: true })
+    }
+    writeFileSync(
+      path.join(dir, "preferences.md"),
+      "# Job Preferences\n\n- Excluded companies: BairesDev\n",
+    )
+    writeFileSync(path.join(jobs, "applied", "posting.md"), "posting")
+    writeFileSync(path.join(jobs, "bairesdev-role", "posting.md"), "posting")
+    writeFileSync(
+      path.join(jobs, "rowed-different-date", "posting.md"),
+      "# Posting — React Developer at Acme\n",
+    )
+    writeFileSync(
+      path.join(jobs, "applied", "applied.md"),
+      "# Application\n\n- Date: 2026-11-20\n- Status: submitted\n",
+    )
+    writeFileSync(path.join(jobs, "rowed", "posting.md"), "posting")
+    writeFileSync(path.join(jobs, "new", "posting.md"), "posting")
+    writeFileSync(
+      path.join(dir, "applications.md"),
+      `# Applications
+
+| Date | Company | Role | Fit | Method | Status | Confirmation | Job URL | Folder |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 2026-11-21 | Acme | React Developer | Medium | manual | submitted (manual) | reported | https://example.com/job | jobs/rowed |
+`,
+    )
+    const folders = await listBacklogFolders(dir)
+    assert.deepEqual(folders, [path.join(jobs, "new")])
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }

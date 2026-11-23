@@ -43,7 +43,20 @@ published in the last 48 hours. Do not widen to week or month unless the user
 explicitly asks for an exception.
 
 Do not add `f_SAL` to the search URL. The builder deletes it; the salary
-filter is intentionally out of scope.
+filter is intentionally out of scope. The authenticated UI can re-inject it
+from the saved session. After navigating, check `location.href`; if it has
+`f_SAL`, remove it once and reload:
+
+```js
+await tools.playwright.browser_evaluate({
+  function: "() => { const u = new URL(location.href); if (!u.searchParams.has('f_SAL')) return 'clean'; u.searchParams.delete('f_SAL'); location.replace(u.toString()); return 'cleaned' }"
+})
+```
+
+Wait for the page and check again. Remove any visible salary filter chip. If
+`f_SAL` returns or LinkedIn redirects to `/jobs/search-results/?currentJobId=…`
+instead of a list, treat the authenticated UI as blocked: report it and use the
+guest fallback; do not keep retrying.
 
 ### 3. Extract candidates and resolve each card ID on click
 

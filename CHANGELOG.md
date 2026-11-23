@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.1] - 2026-11-23
+
+### Fixed
+
+- The job search strips an `f_SAL` salary filter that the authenticated
+  LinkedIn UI re-injects, and treats a `/jobs/search-results/?currentJobId=`
+  redirect as a blocked UI instead of an empty result list. Added
+  `linkedin.ts clean-url` for cleaning a copied URL.
+
 ## [0.14.0] - 2026-11-23
 
 ### Added

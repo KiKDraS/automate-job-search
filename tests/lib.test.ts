@@ -77,6 +77,7 @@ import {
   jobIdFromUrl,
   normalizeJobUrl,
   normalizeUrl,
+  stripSalaryFilter,
 } from "../lib/linkedin-url.ts"
 import {
   appendHistory,
@@ -1633,4 +1634,19 @@ test("buildOpenCommand is cross-platform", () => {
     command: "cmd",
     args: ["/c", "start", "", "C:\\report.html"],
   })
+})
+
+test("stripSalaryFilter removes f_SAL and rejects invalid URLs", () => {
+  assert.equal(
+    stripSalaryFilter(
+      "https://www.linkedin.com/jobs/search/?keywords=x&f_SAL=f_SA_id_225001%3A272001&f_TPR=r86400",
+    ),
+    "https://www.linkedin.com/jobs/search/?keywords=x&f_TPR=r86400",
+  )
+  assert.equal(
+    stripSalaryFilter("https://www.linkedin.com/jobs/search/?keywords=x&f_TPR=r86400"),
+    "https://www.linkedin.com/jobs/search/?keywords=x&f_TPR=r86400",
+  )
+  assert.equal(stripSalaryFilter("not a url"), null)
+  assert.equal(stripSalaryFilter("ftp://example.com/x"), null)
 })

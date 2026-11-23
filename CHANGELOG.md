@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-11-23
+
+### Added
+
+- `lib/experience.ts` and `scripts/experience.ts`: total experience is derived
+  from the role dates in `profile.md`. Overlapping roles count once, career
+  breaks are excluded, the raw sum of role durations stays as a reference, and
+  the result rounds to `N+ years`.
+- `job-setup` captures parseable role dates, runs the script, and asks the user
+  to confirm the dates instead of a stored total.
+- `voice-rules`, `application-email`, `cover-letter`, `outreach`,
+  `apply-form`, and `tailor-resume` use the computed total instead of a
+  hard-coded number. A generic "years of experience" form field uses the
+  unique calendar total; skill-specific years stay as recorded.
+
+### Changed
+
+- Coach and `artifact-writer` can run `scripts/experience.ts`.
+
 ## [0.16.1] - 2026-11-23
 
 ### Fixed

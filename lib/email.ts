@@ -32,5 +32,6 @@ export function parseEmailDraft(source: string): EmailDraft | null {
 export function buildMailto(draft: EmailDraft): string {
   const params = new URLSearchParams({ subject: draft.subject, body: draft.body })
   if (draft.cc !== undefined && draft.cc.trim() !== "") params.set("cc", draft.cc)
-  return `mailto:${encodeURIComponent(draft.to)}?${params.toString()}`
+  const address = encodeURI(draft.to).replaceAll("?", "%3F").replaceAll("#", "%23")
+  return `mailto:${address}?${params.toString()}`
 }

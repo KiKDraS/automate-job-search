@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-11-23
+
+### Added
+
+- Report cards are copy-ready. Email pending items show To, Cc, Subject, the
+  attachment, and the full body with copy buttons and a `mailto:` link. Blocked
+  form items show the apply URL, the resume to send, every field and value
+  used, blanks, CAPTCHA state, and the exact action.
+- `/job/report` prints the full email body and form data.
+- Apply skills write `<job folder>/apply-review.md`
+  (`.opencode/docs/apply-review.md`); the report reads it.
+
+### Changed
+
+- `mailto:` addresses keep `@` unencoded.
+
 ## [0.14.1] - 2026-11-23
 
 ### Fixed

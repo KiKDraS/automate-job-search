@@ -60,6 +60,7 @@ first, and update it in the same change as the decision that caused it.
 | Token economy | `.opencode/docs/token-economy.md` |
 | Git flow | `.opencode/docs/git-flow.md` |
 | Fit scoring | `.opencode/docs/fit-scoring.md` |
+| Apply review file | `.opencode/docs/apply-review.md` |
 | Browser setup | `.opencode/docs/browser-setup.md` |
 | LinkedIn UI patterns | `.opencode/docs/linkedin-ui-patterns.md` |
 | Untrusted content | `.opencode/docs/untrusted-content.md` |

@@ -15,6 +15,8 @@ sends, never opens a mail client, and never handles credentials.
 - The post text for the role and requirements.
 - The job folder's tailored `resume.pdf` when one exists; otherwise the base
   resume is the attachment the user will send.
+- The job folder when Coach provides one. The report reads
+  `<job folder>/application-email.md` for the copy-ready card.
 
 ## Steps
 
@@ -60,6 +62,11 @@ sends, never opens a mail client, and never handles credentials.
    | --- | --- |
    | ... | ... |
    ```
+
+   If Coach provided a job folder, write the same content to
+   `<job folder>/application-email.md` and use that path in the handoff. The
+   report reads it to show To, Cc, Subject, attachment, and the full body with
+   copy buttons.
 
 4. Print the `mailto:` handoff (do not open it):
 

@@ -22,16 +22,21 @@ only the returned value enters context.
 
 ## Profile and login
 
-- The browser runs headful with a persistent profile (Playwright MCP's
-  per-workspace default location). Sessions survive restarts. Scheduled runs
-  use the same profile.
+- Interactive sessions run the browser **headful** with a persistent profile.
+  Scheduled runs use the same profile **headless**, so no Chrome window opens
+  or steals focus. The runtime config adds `--headless`; the project config
+  stays headful for `/job/retry` and manual work.
 - Guest job discovery does not need a LinkedIn session. If LinkedIn is logged
   out, the search can still read guest results; only Easy Apply stops and
   reports `login required`.
 - First run: the user logs into LinkedIn **manually in the opened window**.
-  Agents never type credentials and never handle 2FA codes.
-- When LinkedIn shows a checkpoint or challenge: stop the task, tell the user,
-  and wait. Never attempt to bypass a challenge.
+  Agents never type credentials and never handle 2FA codes. `/job/schedule
+  login` opens the runtime profile headful for this step.
+- In a scheduled run, a login wall or challenge is a pending item: stop, close
+  the tabs you opened, and write the URL, resume, and copy-ready data to the
+  report. Do not leave an invisible tab for the user.
+- In an interactive session, when LinkedIn shows a checkpoint or challenge:
+  stop the task, tell the user, and wait. Never attempt to bypass a challenge.
 - One browser instance at a time; finish or close tasks cleanly.
 
 ## CAPTCHA handoff
@@ -41,13 +46,14 @@ empty, the submit will not fire no matter how many times the button is clicked.
 
 - Check for the widget and token before clicking Submit (`apply`,
   `apply-external`). If it is empty, stop and report `CAPTCHA_REQUIRED`; do not
-  click repeatedly, inject a token, or use a solver. In an autonomous run,
-  Coach skips the job and the user can complete it later from the log.
-- If the user is present and asks to finish it, they complete the challenge in
-  the open browser window. After their confirmation, verify the token is
-  non-empty and submit once.
-- If the user is unavailable, leave the form open and report it. The
-  application is not submitted.
+  click repeatedly, inject a token, or use a solver. In a scheduled run, close
+  the tabs and write the pending card; the user can finish it later from the
+  log.
+- If the user is present in an interactive session and asks to finish it, they
+  complete the challenge in the open browser window. After their confirmation,
+  verify the token is non-empty and submit once.
+- In a scheduled (headless) run, never leave a tab open: the pending card has
+  the URL, fields, resume, and exact action.
 - Never bypass a challenge. A CAPTCHA is the user's step, not the agent's.
 
 ## Token discipline (mandatory)
@@ -67,8 +73,8 @@ profile page.
 ## Etiquette and safety
 
 - Human-paced, low-volume usage: small batches, pauses between navigations.
-  Assisted apply leaves the Review modal open between the fill and the
-  approved submit; that wait is expected.
+  Assisted apply in an interactive session leaves the Review modal open between
+  the fill and the approved submit; that wait is expected.
 - Never use `browser_run_code_unsafe` (also blocked by permissions).
 - `browser_file_upload` is allowed only inside the application flow the user
   asked for. Never upload anything else.

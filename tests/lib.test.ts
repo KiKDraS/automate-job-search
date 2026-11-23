@@ -20,6 +20,7 @@ import {
   buildCronLines,
   buildLaunchdPlist,
   buildPosixWrapper,
+  buildSystemdService,
   buildSystemdTimer,
   buildWindowsTaskArgs,
   buildWindowsWrapper,
@@ -825,10 +826,18 @@ test("scheduler builders cover launchd, systemd, cron and Windows", () => {
   assert.ok(plist.includes("<integer>9</integer>"))
   assert.ok(plist.includes("<integer>18</integer>"))
   assert.ok(plist.includes("/data/bin/scheduled-search.sh"))
+  assert.ok(plist.includes("<key>ProcessType</key>"))
+  assert.ok(plist.includes("<string>Background</string>"))
+  assert.ok(plist.includes("<key>LowPriorityIO</key>"))
+  assert.ok(plist.includes("<key>Nice</key>"))
+  assert.ok(plist.includes("<integer>10</integer>"))
   const intervalPlist = buildLaunchdPlist({ ...spec, interval: "every 12h" })
   assert.ok(intervalPlist.includes("<key>StartInterval</key>"))
   assert.ok(intervalPlist.includes(String(12 * 60 * 60)))
 
+  const service = buildSystemdService(spec)
+  assert.ok(service.includes("Nice=10"))
+  assert.ok(service.includes("IOSchedulingClass=idle"))
   const timer = buildSystemdTimer(spec)
   assert.ok(timer.includes("OnCalendar=*-*-* 09:00:00"))
   assert.ok(timer.includes("OnCalendar=*-*-* 18:30:00"))
@@ -898,6 +907,8 @@ test("notification and wrapper builders are platform-specific", () => {
   assert.ok(windows.includes("JOBSEARCH_OPENCODE_BIN"))
   assert.ok(windows.includes("JOBSEARCH_HOME"))
   assert.ok(windows.includes("set \"PATH="))
+  assert.ok(windows.includes("/LOW"))
+  assert.ok(windows.includes("/WAIT"))
 })
 
 test("automationReady lists missing user data", async () => {
@@ -1164,12 +1175,15 @@ test("buildRuntimeOpencodeConfig adds a stable browser profile", () => {
 `
   const result = buildRuntimeOpencodeConfig(source, "/Users/test/profile")
   assert.equal(result.injected, true)
+  assert.ok(result.content.includes('"--headless"'))
   assert.ok(result.content.includes('"--user-data-dir"'))
   assert.ok(result.content.includes('"/Users/test/profile"'))
   assert.ok(result.content.includes("--allow-unrestricted-file-access"))
+  assert.ok(!source.includes('"--headless"'))
   const already = buildRuntimeOpencodeConfig(result.content, "/other")
   assert.equal(already.injected, true)
   assert.ok(already.content.includes("/Users/test/profile"))
+  assert.equal(already.content, result.content)
   assert.equal(buildRuntimeOpencodeConfig("{}", "/profile").injected, false)
 })
 
@@ -2166,6 +2180,10 @@ test("buildOpenCommand is cross-platform", () => {
     command: "open",
     args: ["/tmp/report.html"],
   })
+  assert.deepEqual(buildOpenCommand("darwin", "/tmp/report.html", { background: true }), {
+    command: "open",
+    args: ["-g", "/tmp/report.html"],
+  })
   assert.deepEqual(buildOpenCommand("linux", "/tmp/report.html"), {
     command: "xdg-open",
     args: ["/tmp/report.html"],
@@ -2174,6 +2192,10 @@ test("buildOpenCommand is cross-platform", () => {
     command: "cmd",
     args: ["/c", "start", "", "C:\\report.html"],
   })
+  assert.deepEqual(
+    buildOpenCommand("win32", "C:\\report.html", { background: true }),
+    { command: "cmd", args: ["/c", "start", "", "/B", "C:\\report.html"] },
+  )
 })
 
 test("stripSalaryFilter removes f_SAL and rejects invalid URLs", () => {

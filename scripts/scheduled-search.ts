@@ -317,7 +317,7 @@ ${result.error ? `Error: ${result.error.message}` : ""}
         `Report HTML failed: ${error instanceof Error ? error.message : String(error)}`,
       )
     }
-    const opened = htmlWritten && config.openReport && openFile(htmlPath)
+    const opened = htmlWritten && config.openReport && openFile(htmlPath, { background: true })
 
     await fs.writeFile(
       path.join(stateDir, "last-run.json"),

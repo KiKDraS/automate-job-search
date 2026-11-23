@@ -197,11 +197,12 @@ the project; write only inside the data directory.
    draft it with `outreach`, pass `draft-review`, and attach it to the lead
    card; do not send it. For a feed lead with an apply link, the card action is
    to open the link and apply.
-   For CAPTCHA, login, account creation, or a missing required answer, leave
-   the form filled when possible and put the URL and the exact action under
-   “Needs you”. The filled form lives in the automation browser window; say
-   that the user must use that window, not reopen the link in a different
-   browser profile.
+   For CAPTCHA, login, account creation, or a missing required answer, fill
+   what you can and put the URL, exact action, and resume under “Needs you”.
+   In a scheduled run the browser is headless: do not leave a tab or window;
+   the card carries everything the user needs. In an interactive retry
+   (headful), leave the tab open only when the user is present and say which
+   window to use.
 5. Never publish posts, send messages, create accounts, solve CAPTCHAs, or
    change the repository.
 6. Write `<data dir>/reports/<date>.md` with Summary, Applied, Needs you, and
@@ -212,12 +213,12 @@ the project; write only inside the data directory.
    decide whether to pursue it). Before finishing, check that every blocked
    form has `<job folder>/apply-review.md`
    (`.opencode/docs/apply-review.md`); the report reads it to show the URL,
-   fields used, blanks, CAPTCHA, and resume. If a browser tab was left open
-   for a human action,
-   include its URL and exact action under "Needs you", say the form is filled
-   in the automation browser window, and verify every handoff tab is still
-   open before finishing. The runner sends the notification; you write the
-   files.
+   fields used, blanks, CAPTCHA, and resume. In a scheduled (headless) run,
+   close every tab and do not claim one is open. In an interactive retry, if a
+   tab was left open for a human action, include its URL and exact action under
+   "Needs you", say the form is filled in the automation browser window, and
+   verify every handoff tab is still open before finishing. The runner sends
+   the notification; you write the files.
 
    Pending shape:
 

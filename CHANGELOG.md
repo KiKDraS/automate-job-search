@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-11-23
+
+### Changed
+
+- Scheduled runs use a **headless** Playwright MCP browser, so no Chrome window
+  opens or steals focus. Interactive sessions (`/job/retry`, manual work) stay
+  headful, and `/job/schedule login` opens the persistent profile once for
+  sign-in.
+- The scheduled report still opens automatically, in the background on macOS
+  (`open -g`). Notifications are unchanged.
+- Scheduler wrappers run at low priority: launchd `ProcessType=Background`,
+  `LowPriorityIO` and `Nice`; systemd `Nice=10` and `IOSchedulingClass=idle`;
+  Windows `/LOW` with `/WAIT`.
+- In a scheduled run, a login/CAPTCHA handoff becomes a pending card with the
+  URL, resume, and copy-ready data; the run closes its tabs and leaves no
+  invisible window.
+
 ## [0.17.0] - 2026-11-23
 
 ### Added

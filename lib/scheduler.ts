@@ -96,6 +96,12 @@ ${spec.times
     </array>
     <key>RunAtLoad</key>
     <false/>
+    <key>ProcessType</key>
+    <string>Background</string>
+    <key>LowPriorityIO</key>
+    <true/>
+    <key>Nice</key>
+    <integer>10</integer>
     <key>StandardOutPath</key>
     <string>${xmlEscape(`${spec.logsDir}/scheduler.log`)}</string>
     <key>StandardErrorPath</key>
@@ -113,6 +119,8 @@ Description=Automate Job Search scheduled search
 [Service]
 Type=oneshot
 ExecStart=/bin/sh ${shellQuote(spec.wrapperPath)}
+Nice=10
+IOSchedulingClass=idle
 `
 }
 
@@ -192,7 +200,7 @@ cd /d "${spec.runtimeDir}"\r
 set "PATH=${spec.pathEnv};%PATH%"\r
 set "JOBSEARCH_OPENCODE_BIN=${spec.opencodePath}"\r
 set "JOBSEARCH_HOME=${spec.dataDir}"\r
-"${spec.nodePath}" "${spec.tsxCliPath}" "${spec.runnerPath}" >> "${spec.runtimeDir}\\logs\\scheduler.log" 2>&1\r
+start "" /LOW /B /WAIT "${spec.nodePath}" "${spec.tsxCliPath}" "${spec.runnerPath}" >> "${spec.runtimeDir}\\logs\\scheduler.log" 2>&1\r
 `
 }
 

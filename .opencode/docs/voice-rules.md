@@ -22,6 +22,15 @@ all artifacts. Prose craft — vocabulary, em dashes, patterns — lives in the
 5. **Match the user's register.** Formal for cover letters, conversational
    for LinkedIn outreach, unless the user says otherwise.
 
+## Spoken cadence
+
+User-facing prose reads as one connected story, not a list of data points.
+Each sentence adds a fact or moves the idea forward; no sentence restates the
+previous one. Vary sentence length and subject. One beat per paragraph: what
+happened, what the AI did or missed, what to do. The close does not repeat the
+case; it reinterprets it with a new distinction. If it reads aloud like a
+status report, rewrite it.
+
 ## Language
 
 - **Chat:** always the user's chat language, from `<data dir>/language.md`

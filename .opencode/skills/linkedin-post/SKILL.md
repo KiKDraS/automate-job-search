@@ -53,6 +53,12 @@ summary. Five points are five posts.
 - **Close:** a genuine question or a line that lingers. No "agree?", no
   "comment YES", no "share this".
 
+Draft the first version as one spoken paragraph, then split it into beats
+(scene, turn, takeaway). Check that no two consecutive sentences start with
+the same subject and that no two say the same thing in different words. If two
+paragraphs share an idea, give each one a different question (what happened /
+what was seen / what to do) and cut the repeated sentence.
+
 Short paragraphs, one to three sentences. Use real numbers only. No motivational
 poster lessons, no manufactured vulnerability, no recycled viral formats.
 

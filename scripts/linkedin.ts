@@ -9,11 +9,13 @@
  *     [--easy-apply] [--recent]
  *   npx tsx scripts/linkedin.ts job-id <url>
  *   npx tsx scripts/linkedin.ts normalize-job <url>
+ *   npx tsx scripts/linkedin.ts clean-url <url>
  */
 import {
   buildJobSearchUrl,
   jobIdFromUrl,
   normalizeJobUrl,
+  stripSalaryFilter,
   type ExperienceLevel,
   type JobSearchParams,
   type PostedWithin,
@@ -91,7 +93,7 @@ function main(): void {
     searchUrl(args)
     return
   }
-  if (command === "job-id" || command === "normalize-job") {
+  if (command === "job-id" || command === "normalize-job" || command === "clean-url") {
     const url = args[0]
     if (url === undefined) return fail(SCRIPT, `usage: ${command} <url>`)
     if (command === "job-id") {
@@ -100,12 +102,18 @@ function main(): void {
       console.log(id)
       return
     }
+    if (command === "clean-url") {
+      const cleaned = stripSalaryFilter(url)
+      if (cleaned === null) return fail(SCRIPT, "not an http(s) URL")
+      console.log(cleaned)
+      return
+    }
     const normalized = normalizeJobUrl(url)
     if (normalized === null) return fail(SCRIPT, "not a LinkedIn job URL")
     console.log(normalized)
     return
   }
-  return fail(SCRIPT, "usage: search-url | job-id <url> | normalize-job <url>")
+  return fail(SCRIPT, "usage: search-url | job-id <url> | normalize-job <url> | clean-url <url>")
 }
 
 main()

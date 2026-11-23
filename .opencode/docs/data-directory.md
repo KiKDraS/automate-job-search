@@ -37,7 +37,7 @@ never hand-build the path.
 ├── automation.md              # scheduled search config (time, interval, model)
 ├── bin/                       # legacy wrapper; safe to delete (new wrapper lives in the runtime)
 ├── logs/                      # scheduled run logs
-├── reports/                   # daily search reports
+├── reports/                   # daily search reports (.md and .html)
 ├── state/                     # lock, pending-search.json, last-run.json
 ├── feed/                      # hiring posts found in the LinkedIn feed
 │   └── <date>-<company>-<role>.md

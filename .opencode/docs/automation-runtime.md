@@ -72,7 +72,7 @@ opens Chrome with the scheduled profile; sign in once and close the window.
 | --- | --- |
 | `<runtime>/logs/scheduler.log` | OS-level job output; always writable |
 | `<data dir>/logs/search-*.log` | One log per scheduled run |
-| `<data dir>/reports/` | Daily reports |
+| `<data dir>/reports/` | Daily Markdown and HTML reports |
 | `<data dir>/state/` | lock, pending search, last run |
 
 Paths and rules for personal data live in `data-directory.md`.

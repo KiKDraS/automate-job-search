@@ -24,10 +24,13 @@ import {
   PENDING_FILE,
   SEARCH_LOCK_FILE,
   type AutomationConfig,
+  type PendingState,
 } from "../lib/automation.ts"
 import { buildNotificationCommand, formatNotificationFallback } from "../lib/notify.ts"
 import { resolveOpencodePath } from "../lib/opencode-bin.ts"
 import { cleanupExpiredData } from "../lib/cleanup.ts"
+import { openFile } from "../lib/open.ts"
+import { buildReportHtml, formatPendingSummary } from "../lib/report-html.ts"
 import { applicationsWrittenSince, canRetryRun, isTransportFailure } from "../lib/retry.ts"
 import { todayIso } from "../lib/jobstore.ts"
 
@@ -283,13 +286,36 @@ ${result.error ? `Error: ${result.error.message}` : ""}
       )
     }
 
-    let pending = 0
+    let pendingState: PendingState | null = null
     try {
-      const state = parsePendingState(await fs.readFile(path.join(dataDir, PENDING_FILE), "utf8"))
-      pending = state?.items.length ?? 0
+      pendingState = parsePendingState(
+        await fs.readFile(path.join(dataDir, PENDING_FILE), "utf8"),
+      )
     } catch {
       // no pending state
     }
+    const pending = pendingState?.items.length ?? 0
+
+    const htmlPath = reportPath.replace(/\.md$/, ".html")
+    let htmlWritten = false
+    try {
+      const markdown = await fs.readFile(reportPath, "utf8")
+      const html = buildReportHtml({
+        date: todayIso(),
+        markdown,
+        pending: pendingState,
+        status: result.status === 0 ? "completed" : "error",
+        model: config.model === "" ? "OpenCode default" : config.model,
+        reportPath,
+      })
+      await fs.writeFile(htmlPath, html)
+      htmlWritten = true
+    } catch (error) {
+      console.error(
+        `Report HTML failed: ${error instanceof Error ? error.message : String(error)}`,
+      )
+    }
+    const opened = htmlWritten && config.openReport && openFile(htmlPath)
 
     await fs.writeFile(
       path.join(stateDir, "last-run.json"),
@@ -303,6 +329,8 @@ ${result.error ? `Error: ${result.error.message}` : ""}
           pending,
           log: logPath,
           report: reportPath,
+          html: htmlPath,
+          opened,
         },
         null,
         2,
@@ -311,14 +339,32 @@ ${result.error ? `Error: ${result.error.message}` : ""}
 
     if (result.status === 0) {
       const retried = attempts.length > 1 ? " tras reintento" : ""
-      const body =
+      const title =
         pending > 0
-          ? `Run${retried} terminado. ${pending} pendiente(s). Reporte: ${reportPath}`
-          : `Run${retried} terminado sin pendientes. Reporte: ${reportPath}`
-      await notify("Búsqueda diaria terminada", body, config.notify)
+          ? `Búsqueda diaria — ${pending} pendiente(s)`
+          : "Búsqueda diaria terminada"
+      const lines = [
+        `Run${retried} terminado${
+          pending > 0 ? ` con ${pending} pendiente(s)` : " sin pendientes"
+        }.`,
+      ]
+      if (pending > 0) {
+        const summary = formatPendingSummary(pendingState, {
+          maxItems: 2,
+          maxChars: 80,
+        })
+        if (summary !== "") lines.push(summary)
+      }
+      lines.push(
+        opened ? "Reporte abierto." : `Reporte: ${htmlWritten ? htmlPath : reportPath}`,
+      )
+      await notify(title, lines.join("\n"), config.notify)
     } else {
       const retried = attempts.length > 1 ? " tras 2 intentos" : ""
-      await notify("Búsqueda diaria con error", `Revisá el reporte${retried}: ${reportPath}`, config.notify)
+      const body = `Revisá el reporte${retried}: ${
+        opened ? "abierto" : htmlWritten ? htmlPath : reportPath
+      }`
+      await notify("Búsqueda diaria con error", body, config.notify)
       process.exitCode = result.status ?? 1
     }
   } finally {

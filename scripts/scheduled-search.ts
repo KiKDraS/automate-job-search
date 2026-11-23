@@ -31,6 +31,7 @@ import { resolveOpencodePath } from "../lib/opencode-bin.ts"
 import { cleanupExpiredData } from "../lib/cleanup.ts"
 import { openFile } from "../lib/open.ts"
 import { buildReportHtml, formatPendingSummary } from "../lib/report-html.ts"
+import { collectReportCards } from "../lib/report-data.ts"
 import { applicationsWrittenSince, canRetryRun, isTransportFailure } from "../lib/retry.ts"
 import { todayIso } from "../lib/jobstore.ts"
 
@@ -300,10 +301,11 @@ ${result.error ? `Error: ${result.error.message}` : ""}
     let htmlWritten = false
     try {
       const markdown = await fs.readFile(reportPath, "utf8")
+      const cards = await collectReportCards(dataDir, pendingState, reportsDir)
       const html = buildReportHtml({
         date: todayIso(),
         markdown,
-        pending: pendingState,
+        cards,
         status: result.status === 0 ? "completed" : "error",
         model: config.model === "" ? "OpenCode default" : config.model,
         reportPath,

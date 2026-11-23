@@ -96,9 +96,10 @@ in the returned JSON.
   answer.
 - A field that ignores programmatic input: click it and use `browser_type`
   with the same selector. Two failures on the same control → stop and report.
-- Any required question without a recorded answer → return `NEEDS_ANSWER`
-  with the label, type, and options, and stop. Coach skips the job; do not ask
-  the user mid-run.
+- Any required question without a recorded answer → write
+  `<job folder>/apply-review.md` with the fields already filled and the
+  missing label, then return `NEEDS_ANSWER` with the label, type, and options,
+  and stop. Coach skips the job; do not ask the user mid-run.
 - If the form has multiple steps, fill one step at a time, verify, click Next,
   and keep a compact record of the values already sent. Stop at the final
   review/submit step.
@@ -120,8 +121,11 @@ in the returned JSON.
 
 Advance to the ATS review step if one exists; otherwise stay on the filled
 form. One `execute` call re-extracts every filled field, the file names, the
-checked consents, and the Review/Submit page's own text. Record it in this
-shape:
+checked consents, and the Review/Submit page's own text. Write the sheet to
+`<job folder>/apply-review.md` in the format of
+`.opencode/docs/apply-review.md` (one `Field | Value` row per answer, `Still
+blank`, `CAPTCHA`, and `Blocker` sections). The report reads that file. At
+minimum, record this shape:
 
 ```text
 APPLY REVIEW — <role> at <company>

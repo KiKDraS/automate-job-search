@@ -186,8 +186,10 @@ the project; write only inside the data directory.
 3. Auto-apply only if `standingApproval: true`; otherwise save the jobs and
    list them for the user.
 4. Do every automatic application before the human-only steps. For a feed lead
-   with an email, draft the application email with `application-email`, pass
-   `draft-review`, and put the `mailto:` link under “Needs you”. Do not send it.
+   with an email, draft the application email with `application-email` (pass
+   the job folder when one exists, so the draft is written to
+   `application-email.md`), pass `draft-review`, and put the `mailto:` link
+   under “Needs you”. Do not send it.
    For CAPTCHA, login, account creation, or a missing required answer, leave
    the form filled when possible and put the URL and the exact action under
    “Needs you”. The filled form lives in the automation browser window; say
@@ -197,7 +199,10 @@ the project; write only inside the data directory.
    change the repository.
 6. Write `<data dir>/reports/<date>.md` with Summary, Applied, Needs you, and
    Skipped. Write `<data dir>/state/pending-search.json` with every blocker
-   and unfinished job. If a browser tab was left open for a human action,
+   and unfinished job. Before finishing, check that every blocked form has
+   `<job folder>/apply-review.md` (`.opencode/docs/apply-review.md`); the
+   report reads it to show the URL, fields used, blanks, CAPTCHA, and resume.
+   If a browser tab was left open for a human action,
    include its URL and exact action under "Needs you", say the form is filled
    in the automation browser window, and verify every handoff tab is still
    open before finishing. The runner sends the notification; you write the

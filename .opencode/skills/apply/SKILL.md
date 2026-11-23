@@ -157,9 +157,10 @@ return r
 - A field that ignores programmatic input: click it and use `browser_type`
   with the same selector (or its ref from a compact dialog snapshot). Two
   failures on the same control → stop and report the step and label.
-- Any required question without a recorded answer → return `NEEDS_ANSWER`
-  with the label, type, and options, and stop. Coach skips the job; do not ask
-  the user mid-run.
+- Any required question without a recorded answer → write
+  `<job folder>/apply-review.md` with the fields already filled and the
+  missing label, then return `NEEDS_ANSWER` with the label, type, and options,
+  and stop. Coach skips the job; do not ask the user mid-run.
 
 ### 4. Attach the resume
 
@@ -184,7 +185,11 @@ shorten, or summarize a cover letter here. If none exists, leave it empty.
 ### 6. Record the review sheet
 
 One `execute` call extracts the Review step's own text (the form's summary of
-every field) and the progress indicator. Record it in this shape:
+every field) and the progress indicator. Write the sheet to
+`<job folder>/apply-review.md` in the format of
+`.opencode/docs/apply-review.md` (one `Field | Value` row per answer, `Still
+blank`, `CAPTCHA`, and `Blocker` sections). The report reads that file. At
+minimum, record this shape:
 
 ```text
 APPLY REVIEW — <role> at <company>

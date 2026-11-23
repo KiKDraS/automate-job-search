@@ -49,6 +49,9 @@ permissions:
     resource: "npx tsx scripts/data-dir.ts *"
     effect: allow
   - action: shell
+    resource: "npx tsx scripts/experience.ts *"
+    effect: allow
+  - action: shell
     resource: "npx tsx scripts/schedule.ts *"
     effect: allow
   - action: shell

@@ -36,6 +36,9 @@ Produces `cover-letter.md` in the job folder. Short, specific, human.
 
 - Every user claim traces to profile or resume; every employer claim to the
   posting.
+- Total experience comes from `scripts/experience.ts` (run against
+  `profile.md`); never hard-code a number in this skill. If the profile has no
+  role dates, omit it.
 - 150–250 words. If it does not fit, cut — do not cram.
 - No AI vocabulary; em-dash density per `voice-rules.md`.
 - Language follows the posting; the user's override wins (`voice-rules.md`

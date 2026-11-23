@@ -48,6 +48,18 @@ const EXPERIENCE: Record<ExperienceLevel, string> = {
   executive: "6",
 }
 
+/** Remove the LinkedIn salary facet from a URL. Null for invalid input. */
+export function stripSalaryFilter(input: string): string | null {
+  try {
+    const url = new URL(input.trim())
+    if (url.protocol !== "https:" && url.protocol !== "http:") return null
+    url.searchParams.delete("f_SAL")
+    return url.toString()
+  } catch {
+    return null
+  }
+}
+
 /** Build a LinkedIn Jobs search URL from structured parameters. */
 export function buildJobSearchUrl(params: JobSearchParams): string {
   const url = new URL("https://www.linkedin.com/jobs/search/")

@@ -23,7 +23,11 @@ Parameter names can change; if a filter visibly fails to apply, verify
 manually in the UI and update this document.
 
 `f_SAL` (salary filter) is intentionally not used. The URL builder deletes it
-if a copied URL carries it.
+if a copied URL carries it. The authenticated UI can still redirect
+`/jobs/search/` to `/jobs/search-results/?currentJobId=…` and re-inject
+`f_SAL` from the saved session. Strip it once after navigation; if it returns
+or the page opens a single job instead of a list, treat the authenticated UI
+as blocked and use the guest fallback. Never add `f_SAL` in the builder.
 
 ## Reading a results page
 

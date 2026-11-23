@@ -26,6 +26,9 @@ a CAPTCHA.
 - At most 8 steps. If the form has more, stop and report the visible step.
 - One application at a time. Never apply to a Low fit or a job already in
   history.
+- Before opening: stop if `<job folder>/applied.md` exists, and run
+  `npx tsx scripts/history.ts applied --folder "<job folder>" --company "<company>" --role "<role>" --url "<apply url>"`.
+  If it prints `already applied`, stop and report the date.
 
 ## Steps
 

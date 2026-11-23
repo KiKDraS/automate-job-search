@@ -147,6 +147,15 @@ export default Plugin.define({
       context.ui.router.navigate({ type: "session", sessionID })
     } catch (error) {
       console.error("[coach-greeting.tui]", error)
+      try {
+        context.ui.toast.show({
+          message: "Welcome unavailable; open a new session",
+          variant: "warning",
+          duration: 5000,
+        })
+      } catch {
+        // toast unavailable
+      }
     }
   },
 })

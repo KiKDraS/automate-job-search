@@ -174,7 +174,8 @@ the project; write only inside the data directory.
    `reports/<date>-setup-incomplete.md` and stop. The runner owns
    `state/search.lock` for this run; ignore it and never delete it.
 2. Run the pipeline in this order:
-   - backlog: saved Medium/High jobs without `applied.md`;
+   - backlog: run `npx tsx scripts/history.ts backlog`; skip companies in
+     `Excluded companies`; score each remaining folder;
    - job search for the window in `automation.md` (48 hours by default);
    - feed search;
    - tailor, `draft-review`, and auto-apply each Medium/High fit;

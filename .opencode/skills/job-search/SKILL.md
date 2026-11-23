@@ -29,6 +29,8 @@ steps in order; use the exact commands.
 
 - Data directory: `npx tsx scripts/data-dir.ts` (once per run).
 - Read `preferences.md` and `profile.md` once (they are small).
+- Read `Excluded companies` in `preferences.md`: drop those companies before
+  scoring, saving, or applying.
 
 ### 2. Build search URLs
 
@@ -126,10 +128,12 @@ array), then:
 
     npx tsx scripts/history.ts filter --file <data dir>/.tmp/candidates.json
 
-The output is a JSON array with only new candidates. Compute:
+The output is a JSON array with only new candidates. `filter` also drops any
+job already present in `applications.md` (by URL or company+role), even when
+it has no `applied.md`. Compute:
 
 - `new` = length of the filtered array.
-- `duplicates` = `resolved.length - new`.
+- `duplicates` = `resolved.length - new` (includes already applied).
 - `unresolved` = the extraction's unresolved list.
 
 If `resolved` is empty: report "no resolvable jobs" with `seen` and

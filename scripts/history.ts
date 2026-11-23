@@ -4,15 +4,23 @@
  *
  * Usage:
  *   npx tsx scripts/history.ts filter --file <candidates.json>
+ *   npx tsx scripts/history.ts applied [--url <url>] [--company <c>] [--role <r>] [--folder <folder>]
+ *   npx tsx scripts/history.ts backlog
  *   npx tsx scripts/history.ts append --file <section.json>
  *   npx tsx scripts/history.ts folder --company "<c>" --role "<r>" [--date YYYY-MM-DD]
  *
  * filter reads a JSON array of candidates (title, company, location + extra
- * fields) and prints the subset not present in job-history.md as compact
- * JSON on one line. append reads { terms, date?, records } and appends a
- * history section. folder creates the job folder and prints its path.
+ * fields) and prints the subset not present in job-history.md or already in
+ * applications.md. applied reports whether a job is already in the applied
+ * index. backlog lists saved job folders that are neither applied nor in the
+ * index. append reads { terms, date?, records } and appends a history section.
+ * folder creates the job folder and prints its path.
  */
 import { promises as fs } from "node:fs"
+import path from "node:path"
+import { parseAppliedMarkdown } from "../lib/apply.ts"
+import { isApplied, listBacklogFolders, readAppliedIndex } from "../lib/applied.ts"
+import { resolveDataDir } from "../lib/data-dir.ts"
 import {
   appendHistory,
   ensureJobFolder,
@@ -25,6 +33,16 @@ import {
 import { fail, flagValue } from "./args.ts"
 
 const SCRIPT = "history"
+
+function optionalValue(args: string[], flag: string): string | undefined {
+  const index = args.indexOf(flag)
+  if (index === -1) return undefined
+  const value = args[index + 1]
+  if (value === undefined || value.startsWith("--")) {
+    return fail(SCRIPT, `missing value for ${flag}`)
+  }
+  return value
+}
 
 interface Candidate {
   title: string
@@ -92,7 +110,64 @@ async function main(): Promise<void> {
     if (file === undefined) return fail(SCRIPT, "usage: filter --file <candidates.json>")
     const candidates = asCandidateList(await readJson(file))
     const seen = await seenJobKeys()
-    console.log(JSON.stringify(filterNew(candidates, seen)))
+    const index = await readAppliedIndex(resolveDataDir())
+    const fresh = filterNew(candidates, seen).filter((candidate) => {
+      const url =
+        typeof candidate["url"] === "string"
+          ? candidate["url"]
+          : typeof candidate["jobUrl"] === "string"
+            ? candidate["jobUrl"]
+            : undefined
+      return (
+        isApplied(index, {
+          url,
+          company: candidate.company,
+          role: candidate.title,
+        }) === null
+      )
+    })
+    console.log(JSON.stringify(fresh))
+    return
+  }
+
+  if (command === "applied") {
+    const url = optionalValue(args, "--url")
+    const company = optionalValue(args, "--company")
+    const role = optionalValue(args, "--role")
+    const folder = optionalValue(args, "--folder")
+    if (url === undefined && folder === undefined && (company === undefined || role === undefined)) {
+      return fail(
+        SCRIPT,
+        "usage: applied --url <url> | --folder <folder> | --company <c> --role <r>",
+      )
+    }
+    const dataDir = resolveDataDir()
+    if (folder !== undefined) {
+      const folderPath = path.isAbsolute(folder) ? folder : path.join(dataDir, folder)
+      const source = await fs.readFile(path.join(folderPath, "applied.md"), "utf8").catch(() => null)
+      if (source !== null) {
+        const record = parseAppliedMarkdown(source)
+        console.log(`already applied: ${record?.date ?? "unknown"} — applied.md`)
+        return
+      }
+    }
+    const index = await readAppliedIndex(dataDir)
+    const match = isApplied(index, { url, company, role, folder })
+    if (match !== null) {
+      console.log(`already applied: ${match.date} — ${match.company} — ${match.role}`)
+      return
+    }
+    console.log("new")
+    return
+  }
+
+  if (command === "backlog") {
+    const folders = await listBacklogFolders(resolveDataDir())
+    if (folders.length === 0) {
+      console.log("no backlog")
+      return
+    }
+    for (const folder of folders) console.log(folder)
     return
   }
 
@@ -125,7 +200,7 @@ async function main(): Promise<void> {
     return
   }
 
-  return fail(SCRIPT, "usage: filter | append | folder")
+  return fail(SCRIPT, "usage: filter | applied | backlog | append | folder")
 }
 
 await main()

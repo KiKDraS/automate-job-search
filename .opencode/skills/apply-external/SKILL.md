@@ -55,6 +55,7 @@ and filled from a previous run, resume at step 5.
 ### 1. Verify the job, folder and ATS (fill only)
 
 - If `<job folder>/applied.md` exists, stop and report already applied.
+- Also run `npx tsx scripts/history.ts applied --folder "<job folder>" --company "<company>" --role "<role>" --url "<job url>"`; if it prints `already applied`, stop and report the date.
 - If Coach gave an external URL, navigate to it. Otherwise navigate to the
   LinkedIn job URL, click Apply, and follow the employer-site link (including
   a "Continue" warning) until the ATS page opens. If the employer page opens

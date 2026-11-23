@@ -73,7 +73,13 @@ and filled from a previous run, resume at step 5.
 ### 1. Verify the job and the folder (fill only)
 
 Check the folder first: if `<job folder>/applied.md` exists, stop and report
-already applied. Then navigate to the job URL. In the same call, confirm the
+already applied. Also run:
+
+    npx tsx scripts/history.ts applied --folder "<job folder>" \
+      --company "<company>" --role "<role>" --url "<job url>"
+
+If it prints `already applied`, stop and report the date; do not fill or submit.
+Then navigate to the job URL. In the same call, confirm the
 page shows the same role and company as `posting.md`.
 
 - "Easy Apply" → click it; the modal opens.

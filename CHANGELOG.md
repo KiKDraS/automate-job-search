@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.1] - 2026-11-23
+
+### Fixed
+
+- Guest search candidates now include the canonical
+  `https://www.linkedin.com/jobs/view/<id>/` URL, so `history.ts filter`
+  matches `applications.md` and `job-history.md` correctly.
+- `save-posting` uses the canonical job URL, not the guest API endpoint.
+
 ## [0.16.0] - 2026-11-23
 
 ### Added

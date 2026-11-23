@@ -8,9 +8,13 @@
  * and mailto.
  */
 import path from "node:path"
-import { markdownToHtml } from "./resume-html.ts"
 import type { PendingState } from "./automation.ts"
-import type { EmailCardData, FormCardData, ReportCard } from "./report-data.ts"
+import type {
+  EmailCardData,
+  FormCardData,
+  LeadCardData,
+  ReportCard,
+} from "./report-data.ts"
 
 const STAGE_LABELS: Record<string, string> = {
   captcha: "CAPTCHA",
@@ -57,7 +61,96 @@ function link(href: string | undefined, label: string, className = ""): string {
   if (href === undefined) return escapeHtml(label)
   const safe = safeHref(href)
   if (safe === null) return escapeHtml(label)
-  return `<a${className === "" ? "" : ` class="${className}"`} href="${escapeHtml(safe)}">${escapeHtml(label)}</a>`
+  const external = /^https?:/i.test(safe)
+  const target = external ? ' target="_blank" rel="noopener noreferrer"' : ""
+  const classAttr = className === "" ? "" : ` class="${className}"`
+  return `<a${classAttr} href="${escapeHtml(safe)}"${target}>${escapeHtml(label)}</a>`
+}
+
+function anchor(href: string, label: string): string {
+  return link(href, label)
+}
+
+function isHref(value: string): boolean {
+  return /^(?:https?:\/\/|mailto:)/i.test(value)
+}
+
+function inlineReport(raw: string): string {
+  const pattern =
+    /(`[^`]+`|\[[^\]]+\]\((?:https?:\/\/|mailto:)[^)\s]+\)|(?:https?:\/\/|mailto:)[^\s<>()]+|\*\*[^*]+\*\*)/g
+  const parts: string[] = []
+  let last = 0
+  for (const match of raw.matchAll(pattern)) {
+    const index = match.index ?? 0
+    if (index > last) parts.push(escapeHtml(raw.slice(last, index)))
+    const token = match[0]
+    if (token.startsWith("`")) {
+      const code = token.slice(1, -1)
+      parts.push(isHref(code) ? anchor(code, code) : `<code>${escapeHtml(code)}</code>`)
+    } else if (token.startsWith("[")) {
+      const linkMatch = token.match(
+        /^\[([^\]]+)\]\(((?:https?:\/\/|mailto:)[^)\s]+)\)$/,
+      )
+      parts.push(
+        linkMatch === null
+          ? escapeHtml(token)
+          : anchor(linkMatch[2] ?? "", linkMatch[1] ?? ""),
+      )
+    } else if (token.startsWith("**")) {
+      parts.push(`<strong>${escapeHtml(token.slice(2, -2))}</strong>`)
+    } else {
+      let url = token
+      let suffix = ""
+      const trailing = url.match(/[.,;:!?]+$/)
+      if (trailing !== null) {
+        suffix = trailing[0]
+        url = url.slice(0, -suffix.length)
+      }
+      parts.push(anchor(url, url) + escapeHtml(suffix))
+    }
+    last = index + token.length
+  }
+  parts.push(escapeHtml(raw.slice(last)))
+  return parts.join("")
+}
+
+/** Report Markdown with links, code spans, and bold. */
+export function reportMarkdownToHtml(markdown: string): string {
+  const out: string[] = []
+  let inList = false
+  const closeList = (): void => {
+    if (inList) {
+      out.push("</ul>")
+      inList = false
+    }
+  }
+  for (const line of markdown.split(/\r?\n/)) {
+    const trimmed = line.trim()
+    if (trimmed === "") {
+      closeList()
+      continue
+    }
+    const heading = trimmed.match(/^(#{1,3})\s+(.*)$/)
+    if (heading) {
+      closeList()
+      const level = heading[1]?.length ?? 1
+      out.push(`<h${level}>${inlineReport(heading[2] ?? "")}</h${level}>`)
+      continue
+    }
+    const bullet = trimmed.match(/^[-*]\s+(.*)$/)
+    if (bullet) {
+      if (!inList) {
+        out.push("<ul>")
+        inList = true
+      }
+      out.push(`<li>${inlineReport(bullet[1] ?? "")}</li>`)
+      continue
+    }
+    closeList()
+    out.push(`<p>${inlineReport(trimmed)}</p>`)
+  }
+  closeList()
+  return out.join("\n")
 }
 
 function textarea(id: string, value: string, rows: number): string {
@@ -169,6 +262,66 @@ function renderForm(card: FormCardData, index: number): string {
 </article>`
 }
 
+function renderLead(card: LeadCardData, index: number): string {
+  const meta = [
+    card.author === undefined || card.author === "" ? "" : `Autor: ${card.author}`,
+    card.fit === undefined || card.fit === "" ? "" : `Fit: ${card.fit}`,
+    card.mpRequested ? "MP pedido" : "",
+  ]
+    .filter((part) => part !== "")
+    .join(" · ")
+  const why =
+    card.why === undefined || card.why === ""
+      ? ""
+      : `<p><strong>Por qué:</strong> ${escapeHtml(card.why)}</p>`
+  const note =
+    card.applyNote === undefined || card.applyNote === ""
+      ? ""
+      : `<p class="muted">${escapeHtml(card.applyNote)}</p>`
+  const cv = card.cv === undefined ? "no creado" : link(card.cv.href, "CV adaptado")
+  const mp =
+    card.message === undefined
+      ? card.mpRequested
+        ? "pedido; falta armarlo"
+        : "no pedido"
+      : `${link(card.message.href, "borrador listo")} <span class="muted">(no enviado)</span>`
+  const email =
+    card.emailAddress !== undefined
+      ? `${escapeHtml(card.emailAddress)} ${copyTextButton(card.emailAddress, "Copiar")}`
+      : card.emailDraft === undefined
+        ? "no disponible"
+        : link(card.emailDraft.href, "borrador listo")
+  const message =
+    card.message?.text === undefined
+      ? ""
+      : `<h4>MP</h4>${textarea(
+          `lead-copy-${index}`,
+          card.message.text,
+          Math.min(12, Math.max(6, card.message.text.split("\n").length + 2)),
+        )}<div class="actions">${copyButton(`lead-copy-${index}`, "Copiar MP")}${link(
+          card.message.href,
+          "Abrir borrador",
+          "button",
+        )}</div>`
+  const post =
+    card.postUrl === undefined || card.postUrl === card.applyUrl
+      ? ""
+      : link(card.postUrl, "Ver post", "button")
+  return `<article class="card">
+  <div class="card-head"><h3>${escapeHtml(card.item.company)} — ${escapeHtml(
+    card.item.role,
+  )}</h3><span class="chip">Lead</span></div>
+  ${meta === "" ? "" : `<p>${escapeHtml(meta)}</p>`}
+  ${why}
+  <p><strong>Qué tenés que hacer:</strong> ${escapeHtml(card.item.action)}</p>
+  <div class="actions">${link(card.applyUrl, "Abrir postulación", "button")}${post}</div>
+  ${note}
+  <p><strong>Artefactos:</strong> CV: ${cv} · MP: ${mp} · Email: ${email}</p>
+  ${message}
+  <p class="path">Lead: ${escapeHtml(card.leadPath)}</p>
+</article>`
+}
+
 function renderOther(card: Extract<ReportCard, { kind: "other" }>): string {
   const url = card.item.url === "" ? "" : `<p><strong>URL:</strong> ${link(card.item.url, card.item.url)}</p>`
   const folder =
@@ -239,6 +392,7 @@ export function filterNeedsYou(markdown: string, cards: ReportCard[]): string {
     role: matchKey(card.item.role),
     folder: (card.item.jobFolder ?? "").replaceAll("\\", "/"),
     url: card.item.url,
+    author: card.kind === "lead" ? matchKey(card.author ?? "") : "",
   }))
   const keep = blocks.filter((block) => {
     const text = block.join("\n")
@@ -246,6 +400,14 @@ export function filterNeedsYou(markdown: string, cards: ReportCard[]): string {
     return !keys.some((key) => {
       if (key.folder !== "" && text.includes(key.folder)) return true
       if (key.url !== "" && text.includes(key.url)) return true
+      if (
+        key.author !== "" &&
+        key.role !== "" &&
+        normalized.includes(key.author) &&
+        normalized.includes(key.role)
+      ) {
+        return true
+      }
       return (
         key.company !== "" &&
         key.role !== "" &&
@@ -261,7 +423,22 @@ export function filterNeedsYou(markdown: string, cards: ReportCard[]): string {
       .replace(/\n{3,}/g, "\n\n")
       .trim()
   }
-  return [...lines.slice(0, start + 1), ...kept, ...lines.slice(end)].join("\n")
+  let counter = 0
+  const renumbered = keep.map((block) => {
+    const firstIndex = block.findIndex((line) => line.trim() !== "")
+    if (firstIndex === -1) return block
+    const first = block[firstIndex] ?? ""
+    if (!/^\d+\.\s+/.test(first)) return block
+    counter += 1
+    const updated = [...block]
+    updated[firstIndex] = first.replace(/^\d+\./, `${counter}.`)
+    return updated
+  })
+  return [
+    ...lines.slice(0, start + 1),
+    ...renumbered.flat(),
+    ...lines.slice(end),
+  ].join("\n")
 }
 
 export function buildReportHtml(options: ReportHtmlOptions): string {
@@ -273,7 +450,9 @@ export function buildReportHtml(options: ReportHtmlOptions): string {
         ? renderEmail(card, index)
         : card.kind === "form"
           ? renderForm(card, index)
-          : renderOther(card),
+          : card.kind === "lead"
+            ? renderLead(card, index)
+            : renderOther(card),
     )
     .join("\n")
   const statusText = options.status === "error" ? "Run con error" : "Run terminado"
@@ -315,6 +494,7 @@ export function buildReportHtml(options: ReportHtmlOptions): string {
   .empty { color: #5b6b7c; font-style: italic; }
   footer { padding-top: 24px; padding-bottom: 40px; color: #5b6b7c; font-size: 13px; }
   a { color: #0b63ce; }
+  a:focus-visible, button:focus-visible { outline: 2px solid #0b63ce; outline-offset: 2px; }
   @media (prefers-color-scheme: dark) {
     body { background: #101418; color: #e6edf3; }
     .card { background: #161b22; border-color: #30363d; }
@@ -334,7 +514,7 @@ export function buildReportHtml(options: ReportHtmlOptions): string {
 <main>
   <h2>Pendientes</h2>
   ${cards.length === 0 ? '<p class="empty">Sin pendientes.</p>' : body}
-  ${markdownToHtml(markdown)}
+  ${reportMarkdownToHtml(markdown)}
 </main>
 ${footer}
 <script>

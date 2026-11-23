@@ -7,16 +7,22 @@
  *     [--posted 24h|48h|week|month] [--mode on-site|remote|hybrid]
  *     [--level internship|entry|associate|mid-senior|director|executive]
  *     [--easy-apply] [--recent]
+ *   npx tsx scripts/linkedin.ts guest-search-url --keywords "<terms>"
+ *     [--location "<place>"] [--posted 24h|48h|week|month]
+ *     [--mode on-site|remote|hybrid] [--level ...] [--easy-apply] [--recent]
+ *     [--start 0|25|50]
  *   npx tsx scripts/linkedin.ts job-id <url>
  *   npx tsx scripts/linkedin.ts normalize-job <url>
  *   npx tsx scripts/linkedin.ts clean-url <url>
  */
 import {
+  buildGuestSearchUrl,
   buildJobSearchUrl,
   jobIdFromUrl,
   normalizeJobUrl,
   stripSalaryFilter,
   type ExperienceLevel,
+  type GuestSearchParams,
   type JobSearchParams,
   type PostedWithin,
   type WorkMode,
@@ -36,8 +42,8 @@ const LEVELS: readonly string[] = [
   "executive",
 ]
 
-function searchUrl(args: string[]): void {
-  const params: JobSearchParams = { keywords: "" }
+function searchUrl(args: string[], guest: boolean): void {
+  const params: GuestSearchParams = { keywords: "" }
   for (let i = 0; i < args.length; i++) {
     const flag = args[i]
     if (flag === undefined) break
@@ -77,6 +83,17 @@ function searchUrl(args: string[]): void {
       case "--recent":
         params.sortRecent = true
         break
+      case "--start": {
+        if (!guest) return fail(SCRIPT, "--start is only valid for guest-search-url")
+        const value = valueAfter(SCRIPT, args, i, flag)
+        const start = Number(value)
+        if (!Number.isInteger(start) || start < 0 || start % 25 !== 0) {
+          return fail(SCRIPT, `invalid --start: ${value} (0, 25, 50, …)`)
+        }
+        params.start = start
+        i++
+        break
+      }
       default:
         return fail(SCRIPT, `unknown flag: ${flag}`)
     }
@@ -84,13 +101,13 @@ function searchUrl(args: string[]): void {
   if (params.keywords.trim() === "") {
     return fail(SCRIPT, "--keywords is required")
   }
-  console.log(buildJobSearchUrl(params))
+  console.log(guest ? buildGuestSearchUrl(params) : buildJobSearchUrl(params as JobSearchParams))
 }
 
 function main(): void {
   const [command, ...args] = process.argv.slice(2)
-  if (command === "search-url") {
-    searchUrl(args)
+  if (command === "search-url" || command === "guest-search-url") {
+    searchUrl(args, command === "guest-search-url")
     return
   }
   if (command === "job-id" || command === "normalize-job" || command === "clean-url") {
@@ -113,7 +130,10 @@ function main(): void {
     console.log(normalized)
     return
   }
-  return fail(SCRIPT, "usage: search-url | job-id <url> | normalize-job <url> | clean-url <url>")
+  return fail(
+    SCRIPT,
+    "usage: search-url | guest-search-url | job-id <url> | normalize-job <url> | clean-url <url>",
+  )
 }
 
 main()

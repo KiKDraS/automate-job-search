@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-11-23
+
+### Added
+
+- Feed leads render as cards with a clickable apply link that opens in a new
+  tab, author, fit, why, the exact next action, and CV/MP/email artifact
+  status. When the post asks for an MP, the card includes the approved draft
+  with a copy button.
+- `save-feed` records `Apply URL`, `Apply note`, `Contact method`, and
+  `MP requested`.
+- `linkedin.ts guest-search-url` and `buildGuestSearchUrl`: discovery through
+  LinkedIn's guest jobs API, with no salary facet and no
+  `/jobs/search-results/` redirect.
+
+### Changed
+
+- Job search discovery is guest-first. The authenticated LinkedIn UI is only
+  used to open a job and apply. Dedupe still runs through `applications.md`
+  and `job-history.md` before saving.
+- Report Markdown links and code-span URLs are clickable; external links open
+  in a new tab with `rel="noopener noreferrer"`.
+
 ## [0.15.1] - 2026-11-23
 
 ### Changed

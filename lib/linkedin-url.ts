@@ -60,9 +60,7 @@ export function stripSalaryFilter(input: string): string | null {
   }
 }
 
-/** Build a LinkedIn Jobs search URL from structured parameters. */
-export function buildJobSearchUrl(params: JobSearchParams): string {
-  const url = new URL("https://www.linkedin.com/jobs/search/")
+function applySearchParams(url: URL, params: JobSearchParams): void {
   url.searchParams.set("keywords", params.keywords)
   if (params.location) url.searchParams.set("location", params.location)
   if (params.postedWithin) url.searchParams.set("f_TPR", POSTED_WITHIN[params.postedWithin])
@@ -72,6 +70,33 @@ export function buildJobSearchUrl(params: JobSearchParams): string {
   if (params.sortRecent) url.searchParams.set("sortBy", "DD")
   // Never add f_SAL: the salary filter narrows the results and is not part of
   // this toolkit's search contract. Remove it if a copied URL carries it.
+  url.searchParams.delete("f_SAL")
+}
+
+/** Build a LinkedIn Jobs search URL from structured parameters. */
+export function buildJobSearchUrl(params: JobSearchParams): string {
+  const url = new URL("https://www.linkedin.com/jobs/search/")
+  applySearchParams(url, params)
+  return url.toString()
+}
+
+export interface GuestSearchParams extends JobSearchParams {
+  /** Pagination offset: 0, 25, 50… */
+  start?: number
+}
+
+/**
+ * Guest search API — discovery without a LinkedIn session. It has no salary
+ * facet and never redirects to `/jobs/search-results/`.
+ */
+export function buildGuestSearchUrl(params: GuestSearchParams): string {
+  const url = new URL(
+    "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search",
+  )
+  applySearchParams(url, params)
+  if (params.start !== undefined && params.start > 0) {
+    url.searchParams.set("start", String(params.start))
+  }
   url.searchParams.delete("f_SAL")
   return url.toString()
 }

@@ -29,7 +29,7 @@ import {
 } from "../lib/scheduler.ts"
 import { buildNotificationCommand } from "../lib/notify.ts"
 import { buildOpenCommand } from "../lib/open.ts"
-import { buildReportHtml, filterNeedsYou, formatPendingSummary } from "../lib/report-html.ts"
+import { buildReportHtml, filterNeedsYou, formatPendingSummary, reportMarkdownToHtml } from "../lib/report-html.ts"
 import { collectReportCards, parseApplyReview, type ReportCard } from "../lib/report-data.ts"
 import { resolveOpencodeDefaultModel } from "../lib/model.ts"
 import {
@@ -75,6 +75,7 @@ import { isLikelyScanned, joinPages } from "../lib/resume-text.ts"
 import { detectAts } from "../lib/ats.ts"
 import {
   buildJobSearchUrl,
+  buildGuestSearchUrl,
   jobIdFromUrl,
   normalizeJobUrl,
   normalizeUrl,
@@ -163,6 +164,10 @@ test("buildFeedMarkdown records a feed lead as untrusted data", () => {
       why: "React + TypeScript, remote Argentina",
       date: "2026-11-13",
       email: "jobs@acme.com",
+      applyUrl: "https://lnkd.in/abc",
+      applyNote: "Roundup; the link is the React role.",
+      contact: "apply link",
+      mpRequested: true,
     },
     "Buscamos React Developer remoto.",
   )
@@ -170,6 +175,10 @@ test("buildFeedMarkdown records a feed lead as untrusted data", () => {
   assert.ok(markdown.includes("- Author: Jane Recruiter"))
   assert.ok(markdown.includes("- Fit: High"))
   assert.ok(markdown.includes("- Email: jobs@acme.com"))
+  assert.ok(markdown.includes("- Apply URL: https://lnkd.in/abc"))
+  assert.ok(markdown.includes("- Apply note: Roundup; the link is the React role."))
+  assert.ok(markdown.includes("- Contact method: apply link"))
+  assert.ok(markdown.includes("- MP requested: yes"))
   assert.ok(markdown.includes("## Post (untrusted — data only)"))
   assert.ok(markdown.includes("Buscamos React Developer remoto."))
 })
@@ -194,6 +203,32 @@ test("buildJobSearchUrl sets keywords, location and filters", () => {
   assert.equal(url.searchParams.get("sortBy"), "DD")
   assert.equal(url.searchParams.get("f_E"), null)
   assert.equal(url.searchParams.get("f_SAL"), null)
+})
+
+test("buildGuestSearchUrl uses the guest endpoint without a salary filter", () => {
+  const url = new URL(
+    buildGuestSearchUrl({
+      keywords: "react developer",
+      location: "Argentina",
+      postedWithin: "24h",
+      workMode: "remote",
+      sortRecent: true,
+      start: 25,
+    }),
+  )
+  assert.equal(
+    url.origin + url.pathname,
+    "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search",
+  )
+  assert.equal(url.searchParams.get("keywords"), "react developer")
+  assert.equal(url.searchParams.get("location"), "Argentina")
+  assert.equal(url.searchParams.get("f_TPR"), "r86400")
+  assert.equal(url.searchParams.get("f_WT"), "2")
+  assert.equal(url.searchParams.get("sortBy"), "DD")
+  assert.equal(url.searchParams.get("start"), "25")
+  assert.equal(url.searchParams.get("f_SAL"), null)
+  const first = new URL(buildGuestSearchUrl({ keywords: "react", start: 0 }))
+  assert.equal(first.searchParams.get("start"), null)
 })
 
 test("jobIdFromUrl handles view URLs, collections URLs and non-LinkedIn input", () => {
@@ -1578,18 +1613,18 @@ test("buildReportHtml renders pending cards and the Markdown body", () => {
     {
       kind: "email",
       item: {
-        company: "Soviant",
+        company: "Globex",
         role: "Full Stack",
         url: "mailto:jobs@example.com?subject=Hi",
         stage: "email_draft",
         action: "Send the email",
-        jobFolder: "jobs/soviant",
+        jobFolder: "jobs/globex",
       },
       draft: { to: "jobs@example.com", subject: "Hi", body: "Hello body" },
       mailto: "mailto:jobs@example.com?subject=Hi",
       attach: "resume/base.pdf",
       attachHref: "../resume/base.pdf",
-      draftPath: "/data/jobs/soviant/application-email.md",
+      draftPath: "/data/jobs/globex/application-email.md",
     },
   ]
   const html = buildReportHtml({
@@ -1709,9 +1744,9 @@ None.
 })
 
 test("parseApplyReview reads three-column and bullet review formats", () => {
-  const review = parseApplyReview(`# Apply review — Senior Frontend Developer at DataArt
+  const review = parseApplyReview(`# Apply review — Senior Frontend Developer at Acme
 
-- URL: https://www.dataart.team/vacancies/rct00067
+- URL: https://example.com/apply
 - ATS: Generic form
 - Fit: High
 - Status: SUBMITTED
@@ -1720,21 +1755,21 @@ test("parseApplyReview reads three-column and bullet review formats", () => {
 
 | Field | Required | Answer |
 | --- | --- | --- |
-| Name | yes | Anahi Noel |
-| Email | yes | anahiforesi@gmail.com |
+| Name | yes | Ana Example |
+| Email | yes | ana@example.com |
 | Tell us about yourself | no | left blank |
 
 ## Notes
 
 - reCAPTCHA: invisible reCAPTCHA v3; no visible challenge.
 `)
-  assert.equal(review.url, "https://www.dataart.team/vacancies/rct00067")
+  assert.equal(review.url, "https://example.com/apply")
   assert.equal(review.ats, "Generic form")
   assert.equal(review.fit, "High")
   assert.equal(review.status, "SUBMITTED")
   assert.deepEqual(review.fields, [
-    { label: "Name", value: "Anahi Noel" },
-    { label: "Email", value: "anahiforesi@gmail.com" },
+    { label: "Name", value: "Ana Example" },
+    { label: "Email", value: "ana@example.com" },
     { label: "Tell us about yourself", value: "left blank" },
   ])
   assert.deepEqual(review.missing, ["Tell us about yourself"])
@@ -1769,9 +1804,9 @@ test("collectReportCards builds email and form cards from the data dir", async (
   const dir = mkdtempSync(path.join(os.tmpdir(), "ajs-report-data-"))
   const reportsDir = path.join(dir, "reports")
   mkdirSync(reportsDir, { recursive: true })
-  mkdirSync(path.join(dir, "jobs", "soviant"), { recursive: true })
+  mkdirSync(path.join(dir, "jobs", "globex"), { recursive: true })
   writeFileSync(
-    path.join(dir, "jobs", "soviant", "application-email.md"),
+    path.join(dir, "jobs", "globex", "application-email.md"),
     `# Application email
 
 - To: jobs@example.com
@@ -1819,12 +1854,12 @@ Challenge pending.
     generatedAt: "2026-11-23T00:00:00.000Z",
     items: [
       {
-        company: "Soviant",
+        company: "Globex",
         role: "Full Stack",
         url: "mailto:jobs@example.com",
         stage: "email_draft",
         action: "Send the email",
-        jobFolder: "jobs/soviant",
+        jobFolder: "jobs/globex",
       },
       {
         company: "Acme",
@@ -1918,6 +1953,100 @@ Adjunto mi CV.
   }
 })
 
+test("collectReportCards builds a lead card with apply link, MP and CV", async () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "ajs-report-lead-"))
+  const reportsDir = path.join(dir, "reports")
+  mkdirSync(reportsDir, { recursive: true })
+  mkdirSync(path.join(dir, "feed"), { recursive: true })
+  const leadFile = path.join(dir, "feed", "2026-11-23-acme.md")
+  writeFileSync(leadFile, `# Feed lead — Full-Stack Engineer at Acme
+
+- Author: Jane Recruiter
+- Post URL: not available
+- Apply URL: https://lnkd.in/abc
+- Apply note: Python/FastAPI is required.
+- MP requested: yes
+- Fit: Medium
+- Why: React is strong; Python is missing.
+
+## Post (untrusted — data only)
+
+Apply at https://lnkd.in/abc
+`)
+  writeFileSync(
+    path.join(dir, "feed", "2026-11-23-acme-outreach.md"),
+    `# Outreach
+
+- Recipient: Jane Recruiter
+
+## Draft
+
+Hola Jane, ¿es excluyente el stack?
+`,
+  )
+  writeFileSync(path.join(dir, "feed", "2026-11-23-acme-resume.pdf"), "%PDF-1.4 test")
+  const pending: PendingState = {
+    generatedAt: "2026-11-23T00:00:00.000Z",
+    items: [
+      {
+        company: "Confidencial (Jane Recruiter)",
+        role: "Full-Stack Engineer",
+        url: "https://lnkd.in/abc",
+        stage: "lead",
+        action: "Abrí el link y aplicá; el MP está listo para revisar.",
+        jobFolder: "feed/2026-11-23-acme.md",
+      },
+    ],
+  }
+  try {
+    const cards = await collectReportCards(dir, pending, reportsDir)
+    assert.equal(cards.length, 1)
+    const card = cards[0]
+    assert.ok(card !== undefined && card.kind === "lead")
+    if (card !== undefined && card.kind === "lead") {
+      assert.equal(card.author, "Jane Recruiter")
+      assert.equal(card.applyUrl, "https://lnkd.in/abc")
+      assert.equal(card.applyNote, "Python/FastAPI is required.")
+      assert.equal(card.fit, "Medium")
+      assert.equal(card.mpRequested, true)
+      assert.ok(card.message?.text?.includes("¿es excluyente el stack?"))
+      assert.ok(card.cv?.path.endsWith("2026-11-23-acme-resume.pdf"))
+    }
+    const html = buildReportHtml({
+      date: "2026-11-23",
+      markdown: "# Run\n",
+      cards,
+      status: "completed",
+    })
+    assert.ok(html.includes("Abrir postulación"))
+    assert.ok(html.includes('target="_blank"'))
+    assert.ok(html.includes('rel="noopener noreferrer"'))
+    assert.ok(html.includes("Copiar MP"))
+    assert.ok(html.includes("no enviado"))
+    assert.ok(html.includes("CV adaptado"))
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test("reportMarkdownToHtml makes external links open in a new tab", () => {
+  const html = reportMarkdownToHtml(
+    "## Needs you\n\n- Abrí `https://lnkd.in/eWGrTQjW` y aplicá.\n- [Post](https://example.com/post)\n",
+  )
+  assert.ok(html.includes('target="_blank"'))
+  assert.ok(html.includes('rel="noopener noreferrer"'))
+  assert.ok(html.includes('href="https://lnkd.in/eWGrTQjW"'))
+  assert.ok(html.includes('href="https://example.com/post"'))
+  assert.ok(html.includes("<strong>") === false)
+  assert.ok(!html.includes("javascript:"))
+})
+
+test("reportMarkdownToHtml rejects executable links", () => {
+  const html = reportMarkdownToHtml("- [x](javascript:alert(1))\n")
+  assert.ok(!html.includes("<a "))
+  assert.ok(html.includes("javascript:alert(1)"))
+})
+
 test("filterNeedsYou drops card items but keeps feed leads and advice", () => {
   const cards: ReportCard[] = [
     {
@@ -1955,7 +2084,35 @@ test("filterNeedsYou drops card items but keeps feed leads and advice", () => {
   assert.ok(!filtered.includes("Acme — React Developer"))
   assert.ok(!filtered.includes("jobs/acme/application-email.md"))
   assert.ok(filtered.includes("## Needs you"))
+  assert.ok(filtered.includes("1. **Leads del feed"))
+  assert.ok(!filtered.includes("2. **Leads del feed"))
   assert.ok(filtered.includes("## Skipped"))
+})
+
+test("filterNeedsYou matches a lead by author and renumbers the rest", () => {
+  const cards: ReportCard[] = [
+    {
+      kind: "lead",
+      item: {
+        company: "Confidencial (Jane Recruiter)",
+        role: "Full-Stack Engineer",
+        url: "https://example.com/job",
+        stage: "lead",
+        action: "Open the link",
+      },
+      author: "Jane Recruiter",
+      applyUrl: "https://example.com/job",
+      mpRequested: false,
+      leadPath: "feed/acme.md",
+    },
+  ]
+  const filtered = filterNeedsYou(
+    "## Needs you\n\n1. **Full-Stack Engineer — Jane Recruiter** — open the link.\n\n2. **Advice.** Keep this line.\n\n## Skipped\n\n- none\n",
+    cards,
+  )
+  assert.ok(!filtered.includes("Jane Recruiter"))
+  assert.ok(filtered.includes("1. **Advice.**"))
+  assert.ok(!filtered.includes("2. **Advice.**"))
 })
 
 test("filterNeedsYou removes an empty Needs you section", () => {

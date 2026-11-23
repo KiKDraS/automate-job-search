@@ -98,6 +98,43 @@ function printCard(item: ReportCard, index: number, dataDir: string): void {
     console.log(`   Acción: ${pending.action}`)
     return
   }
+  if (item.kind === "lead") {
+    const meta = [
+      item.author === undefined || item.author === "" ? "" : `Autor: ${item.author}`,
+      item.fit === undefined || item.fit === "" ? "" : `Fit: ${item.fit}`,
+      item.mpRequested ? "MP pedido" : "",
+    ].filter((part) => part !== "")
+    if (meta.length > 0) console.log(`   ${meta.join(" · ")}`)
+    if (item.why !== undefined && item.why !== "") console.log(`   Por qué: ${item.why}`)
+    console.log(`   Abrir postulación: ${item.applyUrl}`)
+    if (item.postUrl !== undefined && item.postUrl !== item.applyUrl) {
+      console.log(`   Post: ${item.postUrl}`)
+    }
+    console.log(`   Qué tenés que hacer: ${pending.action}`)
+    console.log(`   CV: ${item.cv === undefined ? "no creado" : item.cv.path}`)
+    console.log(
+      `   MP: ${
+        item.message === undefined
+          ? item.mpRequested
+            ? "pedido; falta armarlo"
+            : "no pedido"
+          : `${item.message.path} (borrador, no enviado)`
+      }`,
+    )
+    if (item.message?.text !== undefined) {
+      console.log("   --- inicio del MP ---")
+      for (const line of item.message.text.split(/\r?\n/)) console.log(`   ${line}`)
+      console.log("   --- fin del MP ---")
+    }
+    console.log(
+      `   Email: ${
+        item.emailAddress ??
+        (item.emailDraft === undefined ? "no disponible" : item.emailDraft.path)
+      }`,
+    )
+    console.log(`   Lead: ${item.leadPath}`)
+    return
+  }
   console.log(`   ${pending.action}`)
   if (pending.url !== "") console.log(`   Abrir: ${pending.url}`)
   if (pending.jobFolder !== undefined && pending.jobFolder !== "") {

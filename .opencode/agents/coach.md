@@ -140,8 +140,9 @@ shortlist. If a post links to a job, it saves the posting and returns the
 folder for the automatic apply flow. Direct recruiter posts are leads for
 draft-only outreach. If a saved lead has an email, offer an application email
 draft: delegate to `artifact-writer` with `application-email`, pass it through
-`draft-review`, and show it to the user. The user sends. No likes, comments,
-connections, or messages.
+`draft-review`, and show it to the user. If the post asks for a DM/MP, draft it
+with `outreach`, pass it through `draft-review`, and attach it to the lead; the
+user sends. No likes, comments, connections, or messages.
 
 ## Automatic apply
 
@@ -189,7 +190,10 @@ the project; write only inside the data directory.
    with an email, draft the application email with `application-email` (pass
    the job folder when one exists, so the draft is written to
    `application-email.md`), pass `draft-review`, and put the `mailto:` link
-   under “Needs you”. Do not send it.
+   under “Needs you”. Do not send it. For a feed lead that requested an MP,
+   draft it with `outreach`, pass `draft-review`, and attach it to the lead
+   card; do not send it. For a feed lead with an apply link, the card action is
+   to open the link and apply.
    For CAPTCHA, login, account creation, or a missing required answer, leave
    the form filled when possible and put the URL and the exact action under
    “Needs you”. The filled form lives in the automation browser window; say
@@ -199,10 +203,14 @@ the project; write only inside the data directory.
    change the repository.
 6. Write `<data dir>/reports/<date>.md` with Summary, Applied, Needs you, and
    Skipped. Write `<data dir>/state/pending-search.json` with every blocker
-   and unfinished job. Before finishing, check that every blocked form has
-   `<job folder>/apply-review.md` (`.opencode/docs/apply-review.md`); the
-   report reads it to show the URL, fields used, blanks, CAPTCHA, and resume.
-   If a browser tab was left open for a human action,
+   and unfinished job. Include every feed lead that needs a user action with
+   `stage: "lead"`, `jobFolder` pointing at `feed/<file>.md`, `url` set to its
+   apply URL, and an exact action (open the link and apply, review the MP, or
+   decide whether to pursue it). Before finishing, check that every blocked
+   form has `<job folder>/apply-review.md`
+   (`.opencode/docs/apply-review.md`); the report reads it to show the URL,
+   fields used, blanks, CAPTCHA, and resume. If a browser tab was left open
+   for a human action,
    include its URL and exact action under "Needs you", say the form is filled
    in the automation browser window, and verify every handoff tab is still
    open before finishing. The runner sends the notification; you write the
@@ -221,6 +229,14 @@ the project; write only inside the data directory.
          "role": "React Developer",
          "stage": "captcha",
          "action": "Complete the CAPTCHA and submit the filled form."
+       },
+       {
+         "jobFolder": "feed/2026-11-23-acme-react-developer.md",
+         "url": "https://example.com/job",
+         "company": "Acme",
+         "role": "React Developer",
+         "stage": "lead",
+         "action": "Leé el MP propuesto y, si te convence, enviáselo. El rol exige un stack que no está en el perfil: no apliques sin experiencia real."
        }
      ]
    }

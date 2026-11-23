@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.1] - 2026-11-23
+
+### Changed
+
+- The HTML report no longer repeats a pending item in **Needs you** when it is
+  already shown as a card. Feed leads and advice without a card remain.
+- `apply-review.md` may use the skill's plain-text sheet; the report reads
+  `Label: value` lines when there is no Markdown table.
+
 ## [0.15.0] - 2026-11-23
 
 ### Added

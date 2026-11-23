@@ -73,14 +73,16 @@ Every browser task ends with the same cleanup:
 3. Close every tab you opened, highest index first, with `browser_tabs`
    `action: "close"` and its index.
 4. For each pre-existing tab you navigated, return it to the URL you recorded.
-5. Only leave a tab open when the user must act in it: a CAPTCHA, a login wall,
-   or a missing required answer. Keep **every** such tab open — not just the
-   last one — and list each under "Needs you" with its URL and the exact
-   action. Before closing anything, list the tabs again and verify every
-   handoff tab is still open.
-6. The filled form lives in the automation browser window. Say so in the
-   report: the user must use that window, not reopen the link in a different
-   browser profile.
+5. In a **scheduled run** the browser is headless: close every tab you opened
+   and do not leave a window or tab for the user. For each CAPTCHA, login wall,
+   or missing required answer, write the URL, resume, and copy-ready data to
+   the pending item instead.
+6. In an **interactive session** (headful), leave a tab open only when the
+   user must act in it: a CAPTCHA, a login wall, or a missing required answer.
+   Keep **every** such tab open — not just the last one — and list each under
+   "Needs you" with its URL and exact action. Before closing anything, list the
+   tabs again and verify every handoff tab is still open. Say the form lives in
+   the automation browser window, not a different browser profile.
 
 Never close a tab you did not open. Do not leave search results, postings, or
 finished application forms open.

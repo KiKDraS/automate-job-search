@@ -356,22 +356,27 @@ export function playwrightProfileDir(
 }
 
 /**
- * Add `--user-data-dir` to the Playwright MCP command in a copy of the
- * project config. Returns the source unchanged when the marker is absent.
+ * Add `--headless` and `--user-data-dir` to the Playwright MCP command in a
+ * copy of the project config. Scheduled runs use this copy, so their browser
+ * never opens a visible window; interactive sessions keep the project config
+ * headful. Returns the source unchanged when the marker is absent.
  */
 export function buildRuntimeOpencodeConfig(
   source: string,
   userDataDir: string,
 ): RuntimeConfigResult {
-  if (source.includes('"--user-data-dir"')) {
-    return { content: source, injected: true }
-  }
   const marker = '"--allow-unrestricted-file-access"'
+  if (!source.includes(marker)) return { content: source, injected: false }
+  const hasHeadless = source.includes('"--headless"')
+  const hasProfile = source.includes('"--user-data-dir"')
+  if (hasHeadless && hasProfile) return { content: source, injected: true }
   const index = source.indexOf(marker)
-  if (index === -1) return { content: source, injected: false }
   const lineStart = source.lastIndexOf("\n", index) + 1
   const indent = source.slice(lineStart, index).match(/^[ \t]*/)?.[0] ?? ""
-  const insert = `,\n${indent}"--user-data-dir",\n${indent}${JSON.stringify(userDataDir)}`
+  const additions: string[] = []
+  if (!hasHeadless) additions.push('"--headless"')
+  if (!hasProfile) additions.push('"--user-data-dir"', JSON.stringify(userDataDir))
+  const insert = additions.map((value) => `,\n${indent}${value}`).join("")
   const end = index + marker.length
   return { content: source.slice(0, end) + insert + source.slice(end), injected: true }
 }

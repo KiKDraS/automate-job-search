@@ -91,11 +91,12 @@ result; you never need to address a subagent directly.
 2. **Search.** `/job/search` looks at LinkedIn postings from the last 48 hours
    and, in the same round, scans the feed for hiring posts. Discovery uses
    LinkedIn's guest jobs API, so the signed-in salary filter cannot narrow the
-   results; the LinkedIn login is only used to open a job and apply. Coach
-   shows the plan, waits for your OK, then scores fit, saves High/Medium
-   postings and leads, tailors the resume, applies to Medium/High fits, and
-   logs every submission. Say “solo empleos” or “only jobs” to skip the feed.
-   Use `/job/feed-search` when you want the feed scan alone.
+   results; the LinkedIn login is only used to open a job and apply. Scheduled
+   runs use a **headless** browser, so the search does not take over the
+   screen. Coach shows the plan, waits for your OK, then scores fit, saves
+   High/Medium postings and leads, tailors the resume, applies to Medium/High
+   fits, and logs every submission. Say “solo empleos” or “only jobs” to skip
+   the feed. Use `/job/feed-search` when you want the feed scan alone.
 3. **Review.** Open `<data dir>/applications.md` to see what was sent, where,
    and with which fit. Each job folder has an `applied.md` with the exact
    fields and answers.
@@ -292,7 +293,8 @@ Each run writes `reports/YYYY-MM-DD.md` and a friendly
 links and paths; the notification shows the first two pending items. A pending
 item already shown as a card is removed from **Needs you**, so the same email,
 form, or feed lead is not listed twice; advice and other notes without a card
-remain. The OS opens the HTML by default; `/job/schedule --no-open-report`
+remain. The OS opens the HTML by default; the scheduled run opens it in the
+background where the OS supports it, and `/job/schedule --no-open-report`
 disables it. `/job/report` prints the pending items and their paths;
 `/job/report --open` opens the HTML.
 

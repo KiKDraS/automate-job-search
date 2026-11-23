@@ -91,9 +91,11 @@ Flags:
 7. `repair` resyncs the runtime even when automation is disabled. Use it after
    changing the code, moving the project, or changing the data directory.
 8. The scheduled run uses a dedicated browser profile seeded from the project
-   profile. If a run reports a LinkedIn login wall, run
-   `npx tsx scripts/schedule.ts login`, sign in in the window it opens, and
-   close it.
+   profile. Scheduled runs are **headless**: no Chrome window opens. The report
+   still opens automatically, in the background where the OS supports it. If a
+   run reports a LinkedIn login wall, run
+   `npx tsx scripts/schedule.ts login`, sign in in the headful window it opens,
+   and close it. The profile persists for the next headless run.
 9. The installer resolves `opencode` from PATH and the known Homebrew, npm,
    pnpm, Bun, curl, and Windows locations. If it cannot find the CLI, it stops
    with a clear error; ask the user for the path and rerun with

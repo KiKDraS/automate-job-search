@@ -12,6 +12,7 @@
  *                                       [--max-applications 0] [--max-runtime 60]
  *                                       [--notify|--no-notify] [--feed|--no-feed]
  *                                       [--apply|--no-apply] [--dry-run]
+ *                                       [--open-report|--no-open-report]
  *                                       [--allow-protected-data-dir]
  *   npx tsx scripts/schedule.ts update  [same flags]
  *   npx tsx scripts/schedule.ts disable
@@ -462,6 +463,7 @@ async function statusLine(config: AutomationConfig): Promise<void> {
   console.log(`Applications: ${config.maxApplicationsPerRun === 0 ? "no cap" : config.maxApplicationsPerRun}`)
   console.log(`Runtime cap: ${config.maxRuntimeMinutes} minutes`)
   console.log(`Notifications: ${config.notify ? "on" : "off"}`)
+  console.log(`Open report: ${config.openReport ? "on" : "off"}`)
   console.log(`Feed search: ${config.includeFeedSearch ? "on" : "off"}`)
   console.log(`Standing auto-apply: ${config.standingApproval ? "on" : "off"}`)
 }
@@ -589,6 +591,8 @@ async function main(): Promise<void> {
   if (maxRuntime !== undefined) config.maxRuntimeMinutes = Number(maxRuntime)
   if (has(args, "--notify")) config.notify = true
   if (has(args, "--no-notify")) config.notify = false
+  if (has(args, "--open-report")) config.openReport = true
+  if (has(args, "--no-open-report")) config.openReport = false
   if (has(args, "--feed")) config.includeFeedSearch = true
   if (has(args, "--no-feed")) config.includeFeedSearch = false
   if (has(args, "--apply")) config.standingApproval = true
@@ -645,6 +649,7 @@ async function main(): Promise<void> {
   console.log(`Schedule: ${config.interval === "daily" ? `daily at ${config.times.join(", ")}` : config.interval}`)
   console.log(`Search window: ${config.searchWindowHours} hours`)
   console.log(`Model: ${formatModel(config)}`)
+  console.log(`Open report: ${config.openReport ? "on" : "off"}`)
   console.log(`Next run: ${formatNext(config)}`)
   console.log(`Scheduler target: ${target}`)
   console.log(`Data dir: ${describeDataDir()}`)

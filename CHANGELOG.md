@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-23
+
+### Added
+
+- Friendly HTML report at `reports/YYYY-MM-DD.html` with pending items as
+  cards, clickable links, and paths. The OS opens it after each run
+  (`openReport`, default on).
+- Notifications show the first two pending items instead of only the count.
+- `/job/report` prints the pending items and their paths; `--open` opens the
+  HTML.
+
+### Changed
+
+- `automation.md` adds `openReport`; `/job/schedule --open-report` and
+  `--no-open-report` control it.
+
 ## [0.13.0] - 2026-11-23
 
 ### Added

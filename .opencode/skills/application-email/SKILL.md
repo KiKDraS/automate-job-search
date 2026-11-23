@@ -26,7 +26,7 @@ sends, never opens a mail client, and never handles credentials.
 2. Draft:
    - **To:** the address from the feed lead.
    - **Cc:** include it only when the post asks to copy someone.
-   - **Subject:** `Application — <role> — Anahí Foresi` in the post's language,
+   - **Subject:** `Application — <role> — <Your Name>` in the post's language,
      unless the post requests a specific subject; use the post's exact subject
      then.
    - **Body:** 120–180 words.

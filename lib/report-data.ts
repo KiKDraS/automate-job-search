@@ -49,12 +49,35 @@ export interface FormCardData {
   reviewPath?: string
 }
 
+export interface LeadArtifact {
+  path: string
+  href: string
+  text?: string
+}
+
+export interface LeadCardData {
+  kind: "lead"
+  item: PendingItem
+  author?: string
+  fit?: string
+  why?: string
+  applyUrl: string
+  postUrl?: string
+  applyNote?: string
+  emailAddress?: string
+  mpRequested: boolean
+  leadPath: string
+  cv?: LeadArtifact
+  message?: LeadArtifact
+  emailDraft?: LeadArtifact
+}
+
 export interface OtherCardData {
   kind: "other"
   item: PendingItem
 }
 
-export type ReportCard = EmailCardData | FormCardData | OtherCardData
+export type ReportCard = EmailCardData | FormCardData | LeadCardData | OtherCardData
 
 const FORM_STAGES = new Set([
   "captcha",
@@ -311,12 +334,65 @@ export function parseApplyReview(source: string): Review {
   }
 }
 
+interface Lead {
+  author?: string
+  fit?: string
+  why?: string
+  applyUrl?: string
+  postUrl?: string
+  applyNote?: string
+  email?: string
+  folder?: string
+  mpRequested: boolean
+}
+
+/** Parse a saved feed lead file. */
+export function parseLead(source: string): Lead {
+  const postUrlRaw = field(source, "Post URL")
+  const applyUrlRaw = field(source, "Apply URL")
+  const email = field(source, "Email")
+  const mp = (field(source, "MP requested") ?? "").toLowerCase()
+  const usable = (value: string | undefined): string | undefined =>
+    value === undefined || ["not available", "not stated", "—", "-"].includes(value.toLowerCase())
+      ? undefined
+      : value
+  const postUrl = usable(postUrlRaw)
+  return {
+    author: field(source, "Author"),
+    fit: field(source, "Fit"),
+    why: field(source, "Why"),
+    applyUrl: usable(applyUrlRaw) ?? postUrl,
+    postUrl,
+    applyNote: field(source, "Apply note"),
+    email: usable(email),
+    folder: field(source, "Folder"),
+    mpRequested: ["yes", "user", "requested"].includes(mp),
+  }
+}
+
+/** Pull the message body from an outreach file. */
+export function outreachText(source: string): string | undefined {
+  const heading = source.match(/^##\s+(?:Draft|Message|Mensaje)\s*$/m)
+  if (heading === null || heading.index === undefined) return undefined
+  const rest = source.slice(heading.index + heading[0].length)
+  const end = rest.search(/^##\s+/m)
+  const text = (end === -1 ? rest : rest.slice(0, end)).trim()
+  return text === "" ? undefined : text
+}
+
 function relativeHref(fromDir: string, target: string): string {
   return encodeURI(path.relative(fromDir, target).replaceAll(path.sep, "/"))
 }
 
 async function isFile(file: string): Promise<boolean> {
   return fs.stat(file).then((stat) => stat.isFile(), () => false)
+}
+
+async function firstExisting(files: readonly string[]): Promise<string | null> {
+  for (const file of files) {
+    if (await isFile(file)) return file
+  }
+  return null
 }
 
 function cleanCc(cc: string | undefined): string | undefined {
@@ -382,6 +458,68 @@ export async function collectReportCards(
       continue
     }
     const folderPath = targetStat.isDirectory() ? targetPath : path.dirname(targetPath)
+
+    if (item.stage === "lead") {
+      const leadSource = targetStat.isFile()
+        ? await fs.readFile(targetPath, "utf8").catch(() => null)
+        : null
+      const lead: Lead =
+        leadSource === null ? { mpRequested: false } : parseLead(leadSource)
+      const stem = path.basename(targetPath, path.extname(targetPath))
+      const leadDir = targetStat.isDirectory() ? targetPath : path.dirname(targetPath)
+      const jobDir =
+        lead.folder === undefined ? null : path.join(dataDir, lead.folder)
+      const messagePath = await firstExisting([
+        path.join(leadDir, `${stem}-outreach.md`),
+        path.join(leadDir, `${stem}-message.md`),
+        path.join(leadDir, "outreach.md"),
+        ...(jobDir === null ? [] : [path.join(jobDir, "outreach.md")]),
+      ])
+      const cvPath = await firstExisting([
+        path.join(leadDir, `${stem}-resume.pdf`),
+        path.join(leadDir, "resume.pdf"),
+        ...(jobDir === null ? [] : [path.join(jobDir, "resume.pdf")]),
+      ])
+      const emailDraftPath = await firstExisting([
+        path.join(leadDir, `${stem}-email.md`),
+        path.join(leadDir, "application-email.md"),
+        ...(jobDir === null ? [] : [path.join(jobDir, "application-email.md")]),
+      ])
+      const messageText =
+        messagePath === null
+          ? undefined
+          : outreachText(await fs.readFile(messagePath, "utf8").catch(() => ""))
+      cards.push({
+        kind: "lead",
+        item,
+        author: lead.author,
+        fit: lead.fit,
+        why: lead.why,
+        applyUrl: lead.applyUrl ?? item.url,
+        postUrl: lead.postUrl,
+        applyNote: lead.applyNote,
+        emailAddress: lead.email,
+        mpRequested: lead.mpRequested,
+        leadPath: targetPath,
+        cv:
+          cvPath === null
+            ? undefined
+            : { path: cvPath, href: relativeHref(reportsDir, cvPath) },
+        message:
+          messagePath === null
+            ? undefined
+            : {
+                path: messagePath,
+                href: relativeHref(reportsDir, messagePath),
+                text: messageText,
+              },
+        emailDraft:
+          emailDraftPath === null
+            ? undefined
+            : { path: emailDraftPath, href: relativeHref(reportsDir, emailDraftPath) },
+      })
+      continue
+    }
 
     const found = await findEmailSource(targetPath)
     if (found !== null) {

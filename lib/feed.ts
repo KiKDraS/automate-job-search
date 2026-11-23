@@ -14,6 +14,10 @@ export interface FeedLead {
   why: string
   date: string
   email?: string
+  applyUrl?: string
+  applyNote?: string
+  contact?: string
+  mpRequested?: boolean
 }
 
 export function buildFeedMarkdown(lead: FeedLead, content: string): string {
@@ -26,6 +30,18 @@ export function buildFeedMarkdown(lead: FeedLead, content: string): string {
     `- Fit: ${lead.fit}`,
     `- Why: ${lead.why}`,
   ]
+  if (lead.applyUrl !== undefined && lead.applyUrl.trim() !== "") {
+    lines.push(`- Apply URL: ${lead.applyUrl}`)
+  }
+  if (lead.applyNote !== undefined && lead.applyNote.trim() !== "") {
+    lines.push(`- Apply note: ${lead.applyNote}`)
+  }
+  if (lead.contact !== undefined && lead.contact.trim() !== "") {
+    lines.push(`- Contact method: ${lead.contact}`)
+  }
+  if (lead.mpRequested !== undefined) {
+    lines.push(`- MP requested: ${lead.mpRequested ? "yes" : "no"}`)
+  }
   if (lead.email !== undefined && lead.email.trim() !== "") {
     lines.push(`- Email: ${lead.email}`)
   }

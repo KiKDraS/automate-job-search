@@ -23,24 +23,48 @@ Parameter names can change; if a filter visibly fails to apply, verify
 manually in the UI and update this document.
 
 `f_SAL` (salary filter) is intentionally not used. The URL builder deletes it
-if a copied URL carries it. The authenticated UI can still redirect
-`/jobs/search/` to `/jobs/search-results/?currentJobId=…` and re-inject
-`f_SAL` from the saved session. Strip it once after navigation; if it returns
-or the page opens a single job instead of a list, treat the authenticated UI
-as blocked and use the guest fallback. Never add `f_SAL` in the builder.
+if a copied URL carries it. The authenticated `/jobs/search/` page is not used
+for discovery: it can redirect to `/jobs/search-results/?currentJobId=…` and
+re-inject `f_SAL` from the saved session. Discovery uses the guest API below.
+Never add `f_SAL` in the builder.
+
+## Guest search API
+
+`https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search`
+accepts the same parameters as the Jobs search URL plus `start` (0, 25, 50…).
+It has no session, no salary facet, and returns an HTML fragment with list
+items:
+
+- Job ID: `data-entity-urn="urn:li:jobPosting:<id>"` or a
+  `/jobs/view/<id>` link.
+- Title: `.base-search-card__title`.
+- Company: `.base-search-card__subtitle`.
+- Location: `.job-search-card__location`.
+- Posted: `time[datetime]`.
+
+Canonicalize every ID to `https://www.linkedin.com/jobs/view/<id>/`. Paginate
+with `start` in steps of 25; cap at 60 cards per run. 429/999 or a
+login/challenge page means stop and report — do not retry in a loop.
+
+The guest API is discovery only. The authenticated browser is used to open the
+canonical job URL and apply (Easy Apply). A guest result does not grant an
+application path by itself.
 
 ## Reading a results page
 
-- Results are cards: title, company, location, posted time, and the job URL.
-  Extract only those fields (see `browser-setup.md`).
-- A card may not expose the job ID in the DOM. Tag the card containers, click
-  each card, and read `currentJobId` or `/jobs/view/<id>/` from the resulting
-  URL. Do not rely on `li.scaffold-layout__list-item`.
+- Guest results are cards with title, company, location, posted time, and the
+  job ID/URL. Extract only those fields (see `browser-setup.md`).
+- Do not click guest cards to discover the ID; read `data-entity-urn` or the
+  `/jobs/view/<id>` link. Keep cards without an ID as unresolved.
 - Paginate deliberately: one page at a time, cap results per run.
 - Mark and exclude "Promoted" cards from scoring.
 
 ## Reading a posting
 
+- Prefer the guest posting endpoint for the body:
+  `https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/<id>`. Extract
+  `.show-more-less-html__markup` or `.description__text`. If it is empty, open
+  the canonical `/jobs/view/<id>/` URL in the authenticated browser.
 - Capture both the LinkedIn URL and, when available, the employer's own
   careers-page URL.
 - Extract the description body once into `posting.md`, URL at the top. Full

@@ -13,8 +13,10 @@ steps in order; use the exact commands.
 - `profile.md` and `preferences.md` exist in the data directory. If not, stop
   and tell Coach to run `job-setup` first.
 - Browser: the first run opens a window where the user logs into LinkedIn
-  manually (`browser-setup.md`). If a login wall appears, stop and report
-  "login required" — never attempt credentials or bypasses.
+  manually (`browser-setup.md`). Guest discovery works without a session; the
+  login is only for opening a job and applying. If a login wall appears while
+  applying, stop and report "login required" — never attempt credentials or
+  bypasses.
 
 ## Token discipline
 
@@ -32,118 +34,91 @@ steps in order; use the exact commands.
 - Read `Excluded companies` in `preferences.md`: drop those companies before
   scoring, saving, or applying.
 
-### 2. Build search URLs
+### 2. Build guest search URLs
 
-Pick 1–3 keyword sets from the target roles in `preferences.md`. For each:
+Discovery uses the **guest search API**, not the authenticated
+`/jobs/search/` page. The guest API has no session, no salary facet, and does
+not redirect to `/jobs/search-results/`.
 
-    npx tsx scripts/linkedin.ts search-url --keywords "<terms>" [--location "<place>"] [--posted week] [--mode remote] [--recent]
+For each keyword set:
+
+    npx tsx scripts/linkedin.ts guest-search-url --keywords "<terms>" --location "<place>" --posted 48h --mode remote --recent --start 0
 
 Use `--posted 48h` for every run. This is a hard limit: only postings
 published in the last 48 hours. Do not widen to week or month unless the user
 explicitly asks for an exception.
 
-Do not add `f_SAL` to the search URL. The builder deletes it; the salary
-filter is intentionally out of scope. The authenticated UI can re-inject it
-from the saved session. After navigating, check `location.href`; if it has
-`f_SAL`, remove it once and reload:
+Paginate with `--start 25` and `--start 50`. Stop at 60 cards, at the first
+page with no cards, or on HTTP 429/999. Do not use `search-url` for discovery;
+the authenticated search UI is only for opening a job and applying.
 
-```js
-await tools.playwright.browser_evaluate({
-  function: "() => { const u = new URL(location.href); if (!u.searchParams.has('f_SAL')) return 'clean'; u.searchParams.delete('f_SAL'); location.replace(u.toString()); return 'cleaned' }"
-})
-```
+Never add `f_SAL`: the builder deletes it and the guest endpoint does not have
+a salary facet. If a copied URL carries it, run `linkedin.ts clean-url`; if it
+returns after one retry, stop and report instead of using the authenticated
+search page.
 
-Wait for the page and check again. Remove any visible salary filter chip. If
-`f_SAL` returns or LinkedIn redirects to `/jobs/search-results/?currentJobId=…`
-instead of a list, treat the authenticated UI as blocked: report it and use the
-guest fallback; do not keep retrying.
+### 3. Extract candidates from the guest API
 
-### 3. Extract candidates and resolve each card ID on click
-
-Navigate to the search URL once. The list cards do not expose a reliable job ID
-in the DOM, so tag the card containers, click each one, and read the ID from
-the URL after the click (`currentJobId` or `/jobs/view/<id>/`). Do not use
-`li.scaffold-layout__list-item`; use the semantic card containers.
-
-One `execute` call:
+Navigate to the guest URL. The API returns list items with a job ID, title,
+company, location, posted time, and a `/jobs/view/<id>` link. One `execute`
+call per page:
 
 ```js
 const searchUrl = URL
 await tools.playwright.browser_navigate({ url: searchUrl })
-
-const tagCards = async () =>
-  tools.playwright.browser_evaluate({
-    function: `() => {
-      const root = document.querySelector('.scaffold-layout__list, main') || document.body
-      const all = Array.from(root.querySelectorAll(
-        '[data-occludable-job-id], div.job-card-container, div.job-card-container--clickable'
-      ))
-      const cards = all.filter((el) => !all.some((other) => other !== el && other.contains(el)))
-      return cards.slice(0, 25).map((el, i) => {
-        el.setAttribute('data-ajs-card', String(i))
-        const link = el.querySelector('a[href*="/jobs/view/"], a[href*="currentJobId"], a.job-card-container__link, a')
-        const text = (selector) => (el.querySelector(selector)?.innerText || '').trim()
-        return {
-          i,
-          title: (link?.innerText || text('.artdeco-entity-lockup__title') || '').trim(),
-          company: text('.artdeco-entity-lockup__subtitle'),
-          location: text('.artdeco-entity-lockup__caption'),
-          posted: text('time'),
-          href: link?.href || ''
-        }
-      }).filter((card) => card.title)
-    }`
-  })
-
-const cards = await tagCards()
-const resolved = []
-const unresolved = []
-for (const card of cards) {
-  try {
-    await tools.playwright.browser_click({
-      target: `[data-ajs-card="${card.i}"] a, [data-ajs-card="${card.i}"] [role="button"]`
-    })
-    const info = await tools.playwright.browser_evaluate({
-      function: `() => {
-        const u = new URL(location.href)
-        const id = u.searchParams.get('currentJobId') || (u.pathname.match(/\\/jobs\\/view\\/(\\d+)/) || [])[1] || null
-        return { id, url: location.href }
-      }`
-    })
-    if (info.id) resolved.push({ ...card, jobId: info.id, url: info.url })
-    else unresolved.push({ ...card, reason: 'no currentJobId or /jobs/view/<id>/ after click' })
-  } catch (error) {
-    unresolved.push({ ...card, reason: String(error) })
-  }
-}
-return { seen: cards.length, resolved, unresolved }
+const result = await tools.playwright.browser_evaluate({
+  function: `() => {
+    const items = Array.from(document.querySelectorAll('li')).filter((li) =>
+      li.querySelector('.base-search-card__title')
+    )
+    const cards = items.slice(0, 25).map((el) => {
+      const link = el.querySelector("a.base-card__full-link, a[href*='/jobs/view/']")
+      const urn = el.querySelector('[data-entity-urn]')?.getAttribute('data-entity-urn') || ''
+      const href = link?.href || ''
+      const id = (href.match(/\\/jobs\\/view\\/(\\d+)/) || urn.match(/(\\d+)$/) || [])[1] || null
+      const text = (selector) => (el.querySelector(selector)?.innerText || '').trim()
+      return {
+        id,
+        title: text('.base-search-card__title'),
+        company: text('.base-search-card__subtitle'),
+        location: text('.job-search-card__location'),
+        posted: text('time'),
+        postedAt: el.querySelector('time')?.getAttribute('datetime') || '',
+        href
+      }
+    }).filter((card) => card.title)
+    return { cards, total: items.length }
+  }`
+})
+return result
 ```
 
-If a click navigates away and the list disappears, go back, re-run `tagCards`,
-and continue from the next card. If two cards in a row fail, stop and report
-the unresolved ones. If no cards are found, take ONE `browser_snapshot` with a
-small `depth` to find the current card container, fix the selector, and retry
-once.
+If the API returns 0 cards, report "guest search empty" and stop. If it returns
+429/999 or a login/challenge page, report "guest search blocked" and stop; do
+not retry more than once. Keep cards without an ID in `unresolved` with title,
+company, and href. Do not click cards; the guest cards expose the ID or a
+`/jobs/view/<id>` link.
 
-Skip any listing whose posted time is older than 2 days, even if LinkedIn
-includes it in the results. The posted label is the source of truth.
+Skip any listing whose `postedAt` is older than 2 days; if `postedAt` is empty,
+use the relative `posted` label. The posted date is the source of truth.
 
 ### 4. Dedupe and count
 
-The extraction returns `{ seen, resolved, unresolved }`:
+The guest extraction returns `{ cards, total }` per page:
 
-- `seen`: cards tagged on the page.
-- `resolved`: cards whose job ID was resolved after the click.
+- `seen`: total cards read across pages, before dedupe.
+- `resolved`: cards with a numeric job ID, canonicalized to
+  `https://www.linkedin.com/jobs/view/<id>/`.
 - `unresolved`: cards with no ID; keep title, company, `href`, and the reason.
 
-Write only the `resolved` array to `<data dir>/.tmp/candidates.json` (JSON
-array), then:
+Merge pages, dedupe by job ID, then write only the `resolved` array to
+`<data dir>/.tmp/candidates.json` (JSON array), then:
 
     npx tsx scripts/history.ts filter --file <data dir>/.tmp/candidates.json
 
-The output is a JSON array with only new candidates. `filter` also drops any
-job already present in `applications.md` (by URL or company+role), even when
-it has no `applied.md`. Compute:
+The output is a JSON array with only new candidates. `filter` drops jobs
+already in `job-history.md` and any job already present in `applications.md`
+(by URL or company+role), even when it has no `applied.md`. Compute:
 
 - `new` = length of the filtered array.
 - `duplicates` = `resolved.length - new` (includes already applied).
@@ -162,17 +137,24 @@ listing data first; do not open postings yet.
 ### 6. Save postings as you go (High and Medium fits)
 
 For each High or Medium fit, one `execute` call per posting that saves the body
-to a file. Save each one as soon as it is confirmed — do not wait for the
-whole list, so an interrupted run keeps what is already saved:
+to a file. Prefer the guest posting endpoint so reading does not depend on the
+authenticated UI:
 
 ```js
-const nav = await tools.playwright.browser_navigate({ url: POSTING_URL })
+const nav = await tools.playwright.browser_navigate({
+  url: `https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${JOB_ID}`
+})
 const r = await tools.playwright.browser_evaluate({
-  function: "() => document.querySelector('.jobs-description__content, .jobs-box__html-content, article')?.innerText ?? ''",
+  function: "() => document.querySelector('.show-more-less-html__markup, .jobs-description__content, .jobs-box__html-content, article')?.innerText ?? ''",
   filename: ".playwright-mcp/posting.txt"
 })
 return "saved"
 ```
+
+If the guest body is empty, open the canonical `/jobs/view/<id>/` URL in the
+authenticated browser and try the same extraction. If it shows a login wall or
+is gone, note it and continue. Save each one as soon as it is confirmed — do
+not wait for the whole list, so an interrupted run keeps what is already saved.
 
 Then move it into the job folder (never read the file yourself):
 
@@ -218,7 +200,7 @@ retry them or re-add them by hand.
 
 Return to Coach:
 
-- Terms used, URLs searched.
+- Terms used and guest API URLs (`start` pages).
 - Counts: `seen`, `resolved`, `new`, `duplicates`, `unresolved`, and
   High/Medium/Low.
 - Unresolved IDs: title — company — `href` or card selector — reason. If none,

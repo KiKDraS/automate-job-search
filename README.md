@@ -89,11 +89,13 @@ result; you never need to address a subagent directly.
    answers, and — at the end — whether to enable the daily search. It shows
    the profile for approval before any search uses it.
 2. **Search.** `/job/search` looks at LinkedIn postings from the last 48 hours
-   and, in the same round, scans the feed for hiring posts. Coach shows the
-   plan, waits for your OK, then scores fit, saves High/Medium postings and
-   leads, tailors the resume, applies to Medium/High fits, and logs every
-   submission. Say “solo empleos” or “only jobs” to skip the feed. Use
-   `/job/feed-search` when you want the feed scan alone.
+   and, in the same round, scans the feed for hiring posts. Discovery uses
+   LinkedIn's guest jobs API, so the signed-in salary filter cannot narrow the
+   results; the LinkedIn login is only used to open a job and apply. Coach
+   shows the plan, waits for your OK, then scores fit, saves High/Medium
+   postings and leads, tailors the resume, applies to Medium/High fits, and
+   logs every submission. Say “solo empleos” or “only jobs” to skip the feed.
+   Use `/job/feed-search` when you want the feed scan alone.
 3. **Review.** Open `<data dir>/applications.md` to see what was sent, where,
    and with which fit. Each job folder has an `applied.md` with the exact
    fields and answers.
@@ -144,6 +146,8 @@ The report has a **Needs you** section for the steps only you can do:
 
 - solve a CAPTCHA and submit the already-filled form;
 - send an application email from the prepared `mailto:` link;
+- review and send an MP for a feed lead that asked for one;
+- apply to a feed lead through its link;
 - log in or create an account;
 - answer a required question that is not in `application-data.md`.
 
@@ -286,16 +290,18 @@ npx tsx scripts/cleanup.ts --days 45
 Each run writes `reports/YYYY-MM-DD.md` and a friendly
 `reports/YYYY-MM-DD.html`. The HTML puts pending cards first, with clickable
 links and paths; the notification shows the first two pending items. A pending
-item already shown as a card is removed from **Needs you**, so the same email
-or form is not listed twice; feed leads and advice without a card remain. The
-OS opens the HTML by default; `/job/schedule --no-open-report` disables it.
-`/job/report` prints the pending items and their paths; `/job/report --open`
-opens the HTML.
+item already shown as a card is removed from **Needs you**, so the same email,
+form, or feed lead is not listed twice; advice and other notes without a card
+remain. The OS opens the HTML by default; `/job/schedule --no-open-report`
+disables it. `/job/report` prints the pending items and their paths;
+`/job/report --open` opens the HTML.
 
 Pending cards are copy-ready. An email card shows To, Cc, Subject, the
 attachment, and the full body with copy buttons and a `mailto:` link. A
 blocked form card shows the apply URL, the resume to send, every field and
-value used, what is still blank, the CAPTCHA state, and the exact action.
+value used, what is still blank, the CAPTCHA state, and the exact action. A
+feed lead card shows the author, fit, why, a clickable apply link that opens in
+a new tab, the exact action, and the CV/MP/email artifacts (or their absence).
 `/job/report` prints the same content in full.
 
 ## Commands

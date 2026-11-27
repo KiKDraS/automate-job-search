@@ -72,6 +72,14 @@ function link(href: string | undefined, label: string, className = ""): string {
   return `<a${classAttr} href="${escapeHtml(safe)}"${target}>${escapeHtml(label)}</a>`
 }
 
+function mappedHref(
+  href: string | undefined,
+  options: ReportHtmlOptions,
+): string | undefined {
+  if (href === undefined) return undefined
+  return options.fileUrl === undefined ? href : options.fileUrl(href)
+}
+
 function anchor(href: string, label: string): string {
   return link(href, label)
 }
@@ -253,7 +261,10 @@ function renderEmail(
   const attach =
     card.attach === undefined
       ? ""
-      : `<br><strong>Adjuntar:</strong> ${link(card.attachHref, card.attach)}`
+      : `<br><strong>Adjuntar:</strong> ${link(
+          mappedHref(card.attachHref, options),
+          card.attach,
+        )}`
   const actions = renderActions(card, options)
   return `<article class="card"${cardAttributes(card)}>
   <div class="card-head"><h3>${escapeHtml(card.item.company)} — ${escapeHtml(
@@ -304,7 +315,7 @@ function renderForm(
       ? ""
       : `<p><strong>Bloqueo:</strong> ${escapeHtml(card.blocker)}</p>`
   const resume = card.resumeExists
-    ? link(card.resumeHref, card.resumePath)
+    ? link(mappedHref(card.resumeHref, options), card.resumePath)
     : `${escapeHtml(card.resumePath)} <em>(no encontrado)</em>`
   const fallback = card.resumeFallback
     ? ' <span class="muted">(CV base; no hay PDF adaptado)</span>'
@@ -365,19 +376,25 @@ function renderLead(
     card.applyNote === undefined || card.applyNote === ""
       ? ""
       : `<p class="muted">${escapeHtml(card.applyNote)}</p>`
-  const cv = card.cv === undefined ? "no creado" : link(card.cv.href, "CV adaptado")
+  const cv =
+    card.cv === undefined
+      ? "no creado"
+      : link(mappedHref(card.cv.href, options), "CV adaptado")
   const mp =
     card.message === undefined
       ? card.mpRequested
         ? "pedido; falta armarlo"
         : "no pedido"
-      : `${link(card.message.href, "borrador listo")} <span class="muted">(no enviado)</span>`
+      : `${link(
+          mappedHref(card.message.href, options),
+          "borrador listo",
+        )} <span class="muted">(no enviado)</span>`
   const email =
     card.emailAddress !== undefined
       ? `${escapeHtml(card.emailAddress)} ${copyTextButton(card.emailAddress, "Copiar")}`
       : card.emailDraft === undefined
         ? "no disponible"
-        : link(card.emailDraft.href, "borrador listo")
+        : link(mappedHref(card.emailDraft.href, options), "borrador listo")
   const message =
     card.message?.text === undefined
       ? ""
@@ -386,7 +403,7 @@ function renderLead(
           card.message.text,
           Math.min(12, Math.max(6, card.message.text.split("\n").length + 2)),
         )}<div class="actions">${copyButton(`lead-copy-${index}`, "Copiar MP")}${link(
-          card.message.href,
+          mappedHref(card.message.href, options),
           "Abrir borrador",
           "button",
         )}</div>`
@@ -445,6 +462,8 @@ export interface ReportHtmlOptions {
   companyPreferences?: CompanyPreferences
   actions?: ReportAction[]
   interactive?: ReportApi
+  /** Map data-relative file hrefs to the interactive server's file endpoint. */
+  fileUrl?: (href: string) => string
 }
 
 const NEEDS_YOU_HEADING = /^##\s+(needs you|necesita(?:s)? de vos|pendientes)\s*$/i
@@ -579,10 +598,16 @@ export function buildReportHtml(options: ReportHtmlOptions): string {
     .filter((part) => part !== "")
     .join(" · ")
   const markdownName = options.reportPath === undefined ? "" : path.basename(options.reportPath)
+  const markdownHref =
+    options.fileUrl === undefined ? markdownName : options.fileUrl(`reports/${markdownName}`)
+  const pendingHref =
+    options.fileUrl === undefined
+      ? "../state/pending-search.json"
+      : options.fileUrl("state/pending-search.json")
   const footer =
     markdownName === ""
       ? ""
-      : `<footer><a href="${escapeHtml(markdownName)}">Markdown</a> · <a href="../state/pending-search.json">pending-search.json</a></footer>`
+      : `<footer><a href="${escapeHtml(markdownHref)}">Markdown</a> · <a href="${escapeHtml(pendingHref)}">pending-search.json</a></footer>`
   return `<!doctype html>
 <html lang="es">
 <head>

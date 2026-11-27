@@ -2449,7 +2449,7 @@ test("report server state parser validates the URL and token", () => {
       url: "http://127.0.0.1:4321/report?token=abc",
       date: "2026-11-27",
       startedAt: "2026-11-27T00:00:00.000Z",
-      serverVersion: 2,
+      serverVersion: 3,
     }),
   )
   assert.equal(info?.port, 4321)
@@ -2502,4 +2502,34 @@ test("buildReportHtml renders report actions and company toggles", () => {
   })
   assert.ok(interactiveHtml.includes('"actionsUrl":"/api/actions?token=abc"'))
   assert.ok(interactiveHtml.includes("Modo interactivo"))
+})
+
+test("buildReportHtml maps attachments and footer files through fileUrl", () => {
+  const cards: ReportCard[] = [
+    {
+      kind: "email",
+      item: {
+        company: "Acme",
+        role: "React Developer",
+        url: "mailto:jobs@example.com",
+        stage: "email_draft",
+        action: "Send",
+      },
+      draft: { to: "jobs@example.com", subject: "Hi", body: "Hello" },
+      mailto: "mailto:jobs@example.com?subject=Hi",
+      attach: "resume/base.pdf",
+      attachHref: "../resume/base.pdf",
+      draftPath: "/data/feed/acme-email.md",
+    },
+  ]
+  const html = buildReportHtml({
+    date: "2026-11-27",
+    markdown: "# Run\n",
+    cards,
+    reportPath: "/data/reports/2026-11-27.md",
+    fileUrl: (href) => `/api/file?path=${href}`,
+  })
+  assert.ok(html.includes('href="/api/file?path=../resume/base.pdf"'))
+  assert.ok(html.includes('href="/api/file?path=reports/2026-11-27.md"'))
+  assert.ok(html.includes('href="/api/file?path=state/pending-search.json"'))
 })

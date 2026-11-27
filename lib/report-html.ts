@@ -225,12 +225,24 @@ function actionLabel(card: ReportCard, type: string): string {
 }
 
 function renderActions(card: ReportCard, options: ReportHtmlOptions): string {
+  const folder = card.item.jobFolder ?? ""
+  const sent = (options.actions ?? []).some(
+    (action) =>
+      action.type === "mark_sent" &&
+      action.status === "pending" &&
+      ((folder !== "" && action.jobFolder === folder) ||
+        (action.company === card.item.company && action.role === card.item.role)),
+  )
   const buttons = actionTypes(card)
-    .map(
-      (type) =>
-        `<button type="button" class="action-button" data-action="${type}">${actionLabel(card, type)}</button>`,
-    )
+    .map((type) => {
+      const label = type === "mark_sent" && sent ? "Enviado reportado" : actionLabel(card, type)
+      const disabled = type === "mark_sent" && sent ? " disabled" : ""
+      return `<button type="button" class="action-button" data-action="${type}"${disabled}>${label}</button>`
+    })
     .join("")
+  const sentNote = sent
+    ? `<p class="muted">Enviado reportado — la tarjeta se oculta cuando el agente guarde el registro.</p>`
+    : ""
   const company = card.item.company
   const excluded =
     options.companyPreferences === undefined
@@ -246,6 +258,7 @@ function renderActions(card: ReportCard, options: ReportHtmlOptions): string {
   <div class="actions">${buttons}</div>
   <textarea class="note-area" data-note rows="2" placeholder="Nota para el agente (opcional)"></textarea>
   ${companyLine}
+  ${sentNote}
   <p class="muted action-status" data-action-status></p>
 </div>`
 }
@@ -469,6 +482,8 @@ export interface ReportHtmlOptions {
   interactive?: ReportApi
   /** Map data-relative file hrefs to the interactive server's file endpoint. */
   fileUrl?: (href: string) => string
+  /** Pending state exists and has zero items: drop the stale Needs you section. */
+  pendingEmpty?: boolean
 }
 
 const NEEDS_YOU_HEADING = /^##\s+(needs you|necesita(?:s)? de vos|pendientes)\s*$/i
@@ -487,8 +502,12 @@ function matchKey(value: string): string {
  * advice, and anything else that has no card. The Markdown body is still the
  * fallback when there are no cards.
  */
-export function filterNeedsYou(markdown: string, cards: ReportCard[]): string {
-  if (cards.length === 0) return markdown
+export function filterNeedsYou(
+  markdown: string,
+  cards: ReportCard[],
+  pendingEmpty = false,
+): string {
+  if (cards.length === 0 && !pendingEmpty) return markdown
   const lines = markdown.split(/\r?\n/)
   const start = lines.findIndex((line) => NEEDS_YOU_HEADING.test(line))
   if (start === -1) return markdown
@@ -498,6 +517,12 @@ export function filterNeedsYou(markdown: string, cards: ReportCard[]): string {
       end = index
       break
     }
+  }
+  if (cards.length === 0) {
+    return [...lines.slice(0, start), ...lines.slice(end)]
+      .join("\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim()
   }
   const section = lines.slice(start + 1, end)
   const blocks: string[][] = []
@@ -567,7 +592,7 @@ export function filterNeedsYou(markdown: string, cards: ReportCard[]): string {
 
 export function buildReportHtml(options: ReportHtmlOptions): string {
   const cards = options.cards
-  const markdown = filterNeedsYou(options.markdown, cards)
+  const markdown = filterNeedsYou(options.markdown, cards, options.pendingEmpty === true)
   const body = cards
     .map((card, index) =>
       card.kind === "email"
@@ -737,6 +762,13 @@ document.querySelectorAll("[data-action]").forEach((button) => {
         if (type === "dismiss") {
           if (status) status.textContent = "Desestimada. Actualizando el reporte…";
           button.textContent = "Desestimada";
+          location.reload();
+          return;
+        }
+        if (type === "mark_sent") {
+          if (status) status.textContent = "Enviado reportado. Se oculta cuando el agente guarde el registro.";
+          button.textContent = "Enviado reportado";
+          button.disabled = true;
           location.reload();
           return;
         }

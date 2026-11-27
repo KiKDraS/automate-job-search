@@ -189,6 +189,7 @@ async function main(): Promise<void> {
       cards,
       companyPreferences,
       actions: actionsState.actions,
+      pendingEmpty: pending !== null && pending.items.length === 0,
       status: "completed",
       model,
       reportPath: requested,

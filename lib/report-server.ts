@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url"
 import { openFile } from "./open.ts"
 
 export const REPORT_SERVER_FILE = path.join("state", "report-server.json")
-export const REPORT_SERVER_VERSION = 3
+export const REPORT_SERVER_VERSION = 4
 
 export interface ReportServerInfo {
   pid: number

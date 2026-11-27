@@ -198,7 +198,7 @@ function cardAttributes(card: ReportCard): string {
 
 function actionTypes(card: ReportCard): string[] {
   if (card.kind === "email") return ["mark_sent", "dismiss", "note"]
-  if (card.kind === "form") return ["retry", "dismiss", "note"]
+  if (card.kind === "form") return ["mark_sent", "retry", "dismiss", "note"]
   if (card.kind === "lead") {
     const types = ["apply", "dismiss"]
     if (card.cv === undefined) types.push("draft_cv")
@@ -210,6 +210,11 @@ function actionTypes(card: ReportCard): string[] {
 }
 
 function actionLabel(card: ReportCard, type: string): string {
+  if (type === "mark_sent") {
+    if (card.kind === "form") return "Ya envié el formulario"
+    if (card.kind === "email") return "Ya envié el email"
+    return "Ya lo envié"
+  }
   if (type === "dismiss") {
     if (card.kind === "email") return "Desestimar email"
     if (card.kind === "form") return "Desestimar postulación"

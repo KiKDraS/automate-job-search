@@ -79,6 +79,28 @@ async function main(): Promise<void> {
     return
   }
 
+  if (command === "sent") {
+    const id = flagValue(SCRIPT, args, "--id")
+    if (id === undefined) return fail(SCRIPT, "usage: sent --id <id>")
+    const state = await readActions(dataDir)
+    const action = state.actions.find((item) => item.id === id)
+    if (action === undefined) return fail(SCRIPT, `action not found: ${id}`)
+    if (action.type !== "mark_sent") return fail(SCRIPT, `action is not mark_sent: ${action.type}`)
+    const removed = await removePendingItem(dataDir, {
+      jobFolder: action.jobFolder,
+      company: action.company,
+      role: action.role,
+    })
+    await markActionProcessed(
+      dataDir,
+      action.id,
+      `manual send recorded (${removed} pending item(s) removed)`,
+    )
+    console.log(`recorded ${action.company} — ${action.role}`)
+    console.log(`${removed} pending item(s) removed; run the matching log first`)
+    return
+  }
+
   if (command === "dismiss") {
     const id = flagValue(SCRIPT, args, "--id")
     if (id === undefined) return fail(SCRIPT, "usage: dismiss --id <id>")
@@ -104,7 +126,10 @@ async function main(): Promise<void> {
     return
   }
 
-  return fail(SCRIPT, "usage: list | pending | add ... | done --id <id> | dismiss --id <id>")
+  return fail(
+    SCRIPT,
+    "usage: list | pending | add ... | done --id <id> | sent --id <id> | dismiss --id <id>",
+  )
 }
 
 await main()

@@ -172,6 +172,7 @@ function copyTextButton(text: string, label: string): string {
 
 const ACTION_LABELS: Record<string, string> = {
   apply: "Aplicar",
+  dismiss: "Desestimar",
   skip: "No aplicar",
   retry: "Reintentar",
   mark_sent: "Ya lo envié",
@@ -188,20 +189,25 @@ function cardAttributes(card: ReportCard): string {
 }
 
 function actionTypes(card: ReportCard): string[] {
-  if (card.kind === "email") return ["mark_sent", "skip", "note"]
-  if (card.kind === "form") return ["retry", "skip", "note"]
+  if (card.kind === "email") return ["mark_sent", "dismiss", "note"]
+  if (card.kind === "form") return ["retry", "dismiss", "note"]
   if (card.kind === "lead") {
-    const types = ["apply", "skip"]
+    const types = ["apply", "dismiss"]
     if (card.cv === undefined) types.push("draft_cv")
     if (card.message === undefined) types.push("draft_mp")
     types.push("note")
     return types
   }
-  return ["apply", "skip", "retry", "note"]
+  return ["apply", "dismiss", "retry", "note"]
 }
 
 function actionLabel(card: ReportCard, type: string): string {
-  if (type === "skip" && card.kind === "email") return "No enviar"
+  if (type === "dismiss") {
+    if (card.kind === "email") return "Desestimar email"
+    if (card.kind === "form") return "Desestimar postulación"
+    if (card.kind === "lead") return "Desestimar lead"
+    return "Desestimar"
+  }
   return ACTION_LABELS[type] ?? type
 }
 
@@ -698,6 +704,12 @@ document.querySelectorAll("[data-action]").forEach((button) => {
       button.disabled = true;
       try {
         await reportPost(window.__REPORT_API__.actionsUrl, payload);
+        if (type === "dismiss") {
+          if (status) status.textContent = "Desestimada. Actualizando el reporte…";
+          button.textContent = "Desestimada";
+          location.reload();
+          return;
+        }
         if (status) status.textContent = "Guardado. El agente lo procesa al inicio del próximo turno.";
         button.textContent = "Guardado";
       } catch (error) {

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-11-27
+
+### Added
+
+- **Desestimar** on every report card (email, blocked form, lead, other).
+  It removes the pending card immediately in the interactive report, records
+  a dismissed decision, and keeps the job folder, resume, drafts, and history.
+- `dismiss` report action and `actions.ts dismiss --id`, plus server-side
+  pending removal.
+- Pending cards whose folder is dismissed are filtered from the report even if
+  a run rewrites `pending-search.json`.
+
+### Changed
+
+- “No aplicar” / “No enviar” is replaced by **Desestimar** in the report UI.
+  The legacy `skip` action remains accepted for queued actions.
+
 ## [0.19.0] - 2026-11-27
 
 ### Added

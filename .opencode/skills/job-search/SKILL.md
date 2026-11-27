@@ -31,8 +31,9 @@ steps in order; use the exact commands.
 
 - Data directory: `npx tsx scripts/data-dir.ts` (once per run).
 - Read `preferences.md` and `profile.md` once (they are small).
-- Read `Excluded companies` in `preferences.md`: drop those companies before
-  scoring, saving, or applying.
+- Read `Excluded companies` in `preferences.md` and run
+  `npx tsx scripts/company.ts excluded`; drop those companies before scoring,
+  saving, or applying. The JSON overlay is the report's per-company setting.
 
 ### 2. Build guest search URLs
 

@@ -103,6 +103,29 @@ import { buildResumeHtml, markdownToHtml } from "../lib/resume-html.ts"
 import { buildFeedMarkdown } from "../lib/feed.ts"
 import { buildMailto, parseEmailDraft } from "../lib/email.ts"
 import { computeExperience, formatMonths, roundedYears } from "../lib/experience.ts"
+import {
+  isCompanyExcluded,
+  parseCompanyPreferences,
+  readCompanyPreferences,
+  setCompanyPreference,
+} from "../lib/company-preferences.ts"
+import {
+  appendAction,
+  markActionProcessed,
+  parseActions,
+  pendingActions,
+  readActions,
+  validateReportAction,
+} from "../lib/report-actions.ts"
+import {
+  isJobSkipped,
+  parseJobDecisions,
+  readJobDecisions,
+  skipJob,
+  unskipJob,
+} from "../lib/job-decisions.ts"
+import { hasGreeting, isReusableWelcome, waitForGreeting } from "../lib/greeting.ts"
+import { readReportServerInfo } from "../lib/report-server.ts"
 
 test("buildJobSearchUrl supports a two-day window", () => {
   const url = new URL(
@@ -2267,4 +2290,167 @@ test("experience labels round down and never invent a total", () => {
   assert.equal(roundedYears(11), "less than 1 year")
   assert.equal(roundedYears(12), "1+ year")
   assert.equal(roundedYears(81), "6+ years")
+})
+
+test("company preferences round-trip and exclude by normalized name", async () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "ajs-company-prefs-"))
+  try {
+    const empty = await readCompanyPreferences(dir)
+    assert.deepEqual(empty.companies, {})
+    await setCompanyPreference(dir, "Acme", false, "2026-11-27T00:00:00.000Z")
+    const excluded = await readCompanyPreferences(dir)
+    assert.equal(isCompanyExcluded(excluded, "ACME"), true)
+    assert.equal(isCompanyExcluded(excluded, "Other"), false)
+    await setCompanyPreference(dir, "Acme", true, "2026-11-27T00:00:00.000Z")
+    const allowed = await readCompanyPreferences(dir)
+    assert.equal(isCompanyExcluded(allowed, "Acme"), false)
+    const parsed = parseCompanyPreferences(
+      '{"schema":1,"companies":{"acme":{"company":"Acme","receiveOffers":false,"updatedAt":"x"}}}',
+    )
+    assert.equal(parsed?.companies["acme"]?.company, "Acme")
+    assert.equal(parseCompanyPreferences("{}"), null)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test("report actions validate, dedupe pending and mark processed", async () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "ajs-actions-"))
+  try {
+    assert.equal(
+      validateReportAction({ type: "apply", company: "", role: "Dev" }).ok,
+      false,
+    )
+    assert.equal(
+      validateReportAction({
+        type: "apply",
+        company: "Acme",
+        role: "Dev",
+        jobFolder: "../outside",
+      }).ok,
+      false,
+    )
+    const first = await appendAction(
+      dir,
+      { type: "apply", company: "Acme", role: "Dev", jobFolder: "jobs/acme", note: "go" },
+      "2026-11-27T00:00:00.000Z",
+    )
+    const second = await appendAction(
+      dir,
+      { type: "apply", company: "Acme", role: "Dev", jobFolder: "jobs/acme", note: "go" },
+      "2026-11-27T00:00:00.000Z",
+    )
+    assert.equal(first.id, second.id)
+    let state = await readActions(dir)
+    assert.equal(pendingActions(state).length, 1)
+    assert.equal(await markActionProcessed(dir, first.id, "applied"), true)
+    state = await readActions(dir)
+    assert.equal(pendingActions(state).length, 0)
+    assert.equal(state.actions[0]?.status, "processed")
+    assert.equal(state.actions[0]?.result, "applied")
+    assert.equal(parseActions("{}"), null)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test("job decisions skip and unskip folders", async () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "ajs-decisions-"))
+  try {
+    await skipJob(dir, "jobs/acme", "not interested", "2026-11-27T00:00:00.000Z")
+    let decisions = await readJobDecisions(dir)
+    assert.equal(isJobSkipped(decisions, "jobs/acme/"), true)
+    assert.equal(isJobSkipped(decisions, "jobs/other"), false)
+    await unskipJob(dir, "jobs/acme")
+    decisions = await readJobDecisions(dir)
+    assert.equal(isJobSkipped(decisions, "jobs/acme"), false)
+    assert.equal(
+      parseJobDecisions('{"schema":1,"jobs":{"jobs/acme":{"reason":"x","updatedAt":"y"}}}')
+        ?.jobs["jobs/acme"]?.reason,
+      "x",
+    )
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+test("welcome helpers require a greeting and no user message", () => {
+  assert.equal(hasGreeting([{ type: "synthetic" }]), false)
+  assert.equal(hasGreeting([{ type: "assistant" }]), true)
+  assert.equal(isReusableWelcome([{ type: "assistant" }]), true)
+  assert.equal(isReusableWelcome([{ type: "assistant" }, { type: "user" }]), false)
+  assert.equal(isReusableWelcome([]), false)
+})
+
+test("waitForGreeting polls until the assistant message or times out", async () => {
+  let calls = 0
+  const greeted = await waitForGreeting(async () => {
+    calls += 1
+    return calls >= 3 ? [{ type: "assistant" }] : []
+  }, 1000, 1)
+  assert.equal(greeted, true)
+  const missed = await waitForGreeting(async () => [], 1, 1)
+  assert.equal(missed, false)
+})
+
+test("report server state parser validates the URL and token", () => {
+  const info = readReportServerInfo(
+    JSON.stringify({
+      pid: 1,
+      port: 4321,
+      token: "abc",
+      url: "http://127.0.0.1:4321/report?token=abc",
+      date: "2026-11-27",
+      startedAt: "2026-11-27T00:00:00.000Z",
+      serverVersion: 1,
+    }),
+  )
+  assert.equal(info?.port, 4321)
+  assert.equal(readReportServerInfo('{"pid":1}'), null)
+  assert.equal(readReportServerInfo("not json"), null)
+})
+
+test("buildReportHtml renders report actions and company toggles", () => {
+  const cards: ReportCard[] = [
+    {
+      kind: "lead",
+      item: {
+        company: "Acme",
+        role: "React Developer",
+        url: "https://example.com/job",
+        stage: "lead",
+        action: "Open the link",
+        jobFolder: "feed/acme.md",
+      },
+      applyUrl: "https://example.com/job",
+      mpRequested: true,
+      leadPath: "feed/acme.md",
+    },
+  ]
+  const prefs = parseCompanyPreferences(
+    '{"schema":1,"companies":{"acme":{"company":"Acme","receiveOffers":false,"updatedAt":"x"}}}',
+  )
+  const staticHtml = buildReportHtml({
+    date: "2026-11-27",
+    markdown: "# Run\n",
+    cards,
+    companyPreferences: prefs ?? undefined,
+  })
+  assert.ok(staticHtml.includes('data-action="apply"'))
+  assert.ok(staticHtml.includes('data-action="draft_mp"'))
+  assert.ok(staticHtml.includes('data-company-pref="yes"'))
+  assert.ok(staticHtml.includes("window.__REPORT_API__ = null"))
+
+  const interactiveHtml = buildReportHtml({
+    date: "2026-11-27",
+    markdown: "# Run\n",
+    cards,
+    companyPreferences: prefs ?? undefined,
+    interactive: {
+      actionsUrl: "/api/actions?token=abc",
+      companyUrl: "/api/company?token=abc",
+    },
+  })
+  assert.ok(interactiveHtml.includes('"actionsUrl":"/api/actions?token=abc"'))
+  assert.ok(interactiveHtml.includes("Modo interactivo"))
 })

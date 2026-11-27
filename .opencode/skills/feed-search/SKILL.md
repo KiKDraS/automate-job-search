@@ -12,7 +12,8 @@ search with the target roles plus Argentina/remote terms, filtered to the last
 ## Inputs
 
 - `<data dir>/profile.md` and `preferences.md` for roles, location, and stack.
-  Skip companies listed under `Excluded companies` in `preferences.md`.
+  Skip companies listed under `Excluded companies` in `preferences.md` and in
+  `state/company-preferences.json` (`npx tsx scripts/company.ts excluded`).
 - The user's target keywords. If absent, derive them from `preferences.md`.
 - Browser: the LinkedIn session is already logged in (`browser-setup.md`).
 

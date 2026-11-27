@@ -20,6 +20,7 @@ import { promises as fs } from "node:fs"
 import path from "node:path"
 import { parseAppliedMarkdown } from "../lib/apply.ts"
 import { isApplied, listBacklogFolders, readAppliedIndex } from "../lib/applied.ts"
+import { isJobSkipped, readJobDecisions } from "../lib/job-decisions.ts"
 import { resolveDataDir } from "../lib/data-dir.ts"
 import {
   appendHistory,
@@ -162,12 +163,15 @@ async function main(): Promise<void> {
   }
 
   if (command === "backlog") {
-    const folders = await listBacklogFolders(resolveDataDir())
-    if (folders.length === 0) {
+    const dataDir = resolveDataDir()
+    const folders = await listBacklogFolders(dataDir)
+    const decisions = await readJobDecisions(dataDir)
+    const open = folders.filter((folder) => !isJobSkipped(decisions, folder))
+    if (open.length === 0) {
       console.log("no backlog")
       return
     }
-    for (const folder of folders) console.log(folder)
+    for (const folder of open) console.log(folder)
     return
   }
 

@@ -36,9 +36,13 @@ never hand-build the path.
 ├── applications.md            # consolidated log of submitted applications
 ├── automation.md              # scheduled search config (time, interval, model)
 ├── bin/                       # legacy wrapper; safe to delete (new wrapper lives in the runtime)
-├── logs/                      # scheduled run logs
+├── logs/                      # scheduled run logs + welcome.log
 ├── reports/                   # daily search reports (.md and .html)
 ├── state/                     # lock, pending-search.json, last-run.json
+│   ├── company-preferences.json  # report's per-company offer toggle
+│   ├── user-actions.json         # actions queued from the report
+│   ├── skipped-jobs.json         # persisted "do not apply" decisions
+│   └── report-server.json        # live interactive report URL/token
 ├── feed/                      # hiring posts found in the LinkedIn feed
 │   ├── <date>-<company>-<role>.md
 │   └── <date>-<company>-<role>-email.md  # draft email for that lead

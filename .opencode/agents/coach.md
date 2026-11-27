@@ -52,6 +52,18 @@ permissions:
     resource: "npx tsx scripts/experience.ts *"
     effect: allow
   - action: shell
+    resource: "npx tsx scripts/company.ts *"
+    effect: allow
+  - action: shell
+    resource: "npx tsx scripts/actions.ts *"
+    effect: allow
+  - action: shell
+    resource: "npx tsx scripts/job-decisions.ts *"
+    effect: allow
+  - action: shell
+    resource: "npx tsx scripts/report-server.ts *"
+    effect: allow
+  - action: shell
     resource: "npx tsx scripts/schedule.ts *"
     effect: allow
   - action: shell
@@ -181,10 +193,14 @@ the project; write only inside the data directory.
    `reports/<date>-setup-incomplete.md` and stop. The runner owns
    `state/search.lock` for this run; ignore it and never delete it.
 2. Run the pipeline in this order:
+   - report actions: read `state/user-actions.json`, process pending actions,
+     and mark them processed;
    - backlog: run `npx tsx scripts/history.ts backlog`; skip companies in
-     `Excluded companies`; score each remaining folder;
-   - job search for the window in `automation.md` (48 hours by default);
-   - feed search;
+     `Excluded companies` and in `state/company-preferences.json`; score each
+     remaining folder;
+   - job search for the window in `automation.md` (48 hours by default); skip
+     the same excluded companies;
+   - feed search; skip the same excluded companies;
    - tailor, `draft-review`, and auto-apply each Medium/High fit;
    - queue every blocker.
 3. Auto-apply only if `standingApproval: true`; otherwise save the jobs and
@@ -245,6 +261,36 @@ the project; write only inside the data directory.
      ]
    }
    ```
+
+## Report actions
+
+The report writes `<data dir>/state/user-actions.json`. At the start of a
+session and at every scheduled run, read it and process pending actions in
+order:
+
+- `apply`: use the automatic apply flow when the job is saved, fit Medium or
+  High, and neither `applied.md` nor `state/skipped-jobs.json` blocks it.
+  Otherwise report why it cannot be applied.
+- `skip`: run `npx tsx scripts/job-decisions.ts skip --folder "<folder>"` and
+  do not apply.
+- `retry`: continue the job with the retry flow.
+- `mark_sent`: record what the user sent (application or outreach) with the
+  matching log; never send anything yourself.
+- `draft_cv` / `draft_mp`: produce the artifact with `tailor-resume` or
+  `outreach`, pass `draft-review`, and show it.
+- `note`: include the note in the decision; do not invent an action.
+- `company` / `receiveOffers`: run
+  `npx tsx scripts/company.ts set --company "<name>" --receive yes|no`.
+  This is the JSON overlay; do not rewrite `preferences.md`.
+
+After acting, mark the action processed:
+
+    npx tsx scripts/actions.ts done --id "<id>" --result "<what happened>"
+
+If an action is ambiguous, leave it pending and explain. Company preferences
+live in `<data dir>/state/company-preferences.json`: skip companies with
+`receiveOffers: false` in the backlog, job search, and feed search. Keep
+`preferences.md` as the human-authored list; do not rewrite it from an action.
 
 ## Retry pending
 

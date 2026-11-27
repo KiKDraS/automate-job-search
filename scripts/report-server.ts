@@ -11,7 +11,7 @@
  *     [--no-open] [--timeout 240]
  */
 import { randomBytes } from "node:crypto"
-import { promises as fs } from "node:fs"
+import { createReadStream, promises as fs } from "node:fs"
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http"
 import path from "node:path"
 import { parseAutomationConfig, parsePendingState, type PendingState } from "../lib/automation.ts"
@@ -98,6 +98,13 @@ async function main(): Promise<void> {
   }
   const token = randomBytes(16).toString("hex")
   const open = !args.includes("--no-open")
+  const fileUrl = (href: string): string => {
+    const base = href.startsWith("../") ? reportsDir : dataDir
+    const absolute = path.resolve(base, href)
+    const relative = path.relative(dataDir, absolute).replaceAll(path.sep, "/")
+    if (relative.startsWith("..") || path.isAbsolute(relative)) return href
+    return `/api/file?token=${encodeURIComponent(token)}&path=${encodeURIComponent(relative)}`
+  }
 
   let timer: NodeJS.Timeout | undefined
   let info: ReportServerInfo | undefined
@@ -140,6 +147,7 @@ async function main(): Promise<void> {
             actionsUrl: `/api/actions?token=${encodeURIComponent(token)}`,
             companyUrl: `/api/company?token=${encodeURIComponent(token)}`,
           },
+          fileUrl,
           status: "completed",
           model,
           reportPath: reportFile,
@@ -150,6 +158,55 @@ async function main(): Promise<void> {
           "X-Content-Type-Options": "nosniff",
         })
         res.end(html)
+        return
+      }
+
+      if (req.method === "GET" && url.pathname === "/api/file") {
+        const requested = (url.searchParams.get("path") ?? "").replaceAll("\\", "/")
+        if (
+          requested === "" ||
+          requested.startsWith("/") ||
+          requested.split("/").includes("..")
+        ) {
+          sendJson(res, 400, { error: "invalid path" })
+          return
+        }
+        const absolute = path.resolve(dataDir, requested)
+        const relative = path.relative(dataDir, absolute)
+        if (relative.startsWith("..") || path.isAbsolute(relative)) {
+          sendJson(res, 403, { error: "forbidden" })
+          return
+        }
+        const stat = await fs.stat(absolute).catch(() => null)
+        if (stat === null || !stat.isFile()) {
+          sendJson(res, 404, { error: "not found" })
+          return
+        }
+        const types: Record<string, string> = {
+          ".pdf": "application/pdf",
+          ".md": "text/markdown; charset=utf-8",
+          ".txt": "text/plain; charset=utf-8",
+          ".json": "application/json; charset=utf-8",
+          ".png": "image/png",
+          ".jpg": "image/jpeg",
+          ".jpeg": "image/jpeg",
+          ".webp": "image/webp",
+        }
+        const type = types[path.extname(absolute).toLowerCase()]
+        if (type === undefined) {
+          sendJson(res, 403, { error: "file type not served" })
+          return
+        }
+        const name = path.basename(absolute).replaceAll('"', "")
+        const disposition = type === "application/pdf" ? "attachment" : "inline"
+        res.writeHead(200, {
+          "Content-Type": type,
+          "Content-Length": stat.size,
+          "Content-Disposition": `${disposition}; filename="${name}"`,
+          "Cache-Control": "no-store",
+          "X-Content-Type-Options": "nosniff",
+        })
+        createReadStream(absolute).pipe(res)
         return
       }
 

@@ -24,6 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - “No aplicar” / “No enviar” is replaced by **Desestimar** in the report UI.
   The legacy `skip` action remains accepted for queued actions.
 
+### Fixed
+
+- Resume, attachment, draft, Markdown, and pending-search links work in the
+  interactive report. The localhost server serves data-directory files through
+  `/api/file` with a token and path validation; static HTML keeps relative
+  links.
+
 ## [0.19.0] - 2026-11-27
 
 ### Added

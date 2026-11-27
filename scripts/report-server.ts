@@ -108,6 +108,7 @@ async function main(): Promise<void> {
 
   let timer: NodeJS.Timeout | undefined
   let info: ReportServerInfo | undefined
+  let stop: (() => Promise<void>) | undefined
 
   const server = createServer(async (req, res) => {
     if (timer !== undefined) timer.refresh()
@@ -143,6 +144,7 @@ async function main(): Promise<void> {
           cards,
           companyPreferences,
           actions: actions.actions,
+          pendingEmpty: pending !== null && pending.items.length === 0,
           interactive: {
             actionsUrl: `/api/actions?token=${encodeURIComponent(token)}`,
             companyUrl: `/api/company?token=${encodeURIComponent(token)}`,
@@ -212,6 +214,12 @@ async function main(): Promise<void> {
 
       if (req.method === "GET" && url.pathname === "/api/health") {
         sendJson(res, 200, { ok: true })
+        return
+      }
+
+      if (req.method === "POST" && url.pathname === "/api/shutdown") {
+        sendJson(res, 200, { ok: true })
+        setTimeout(() => void stop?.(), 100)
         return
       }
 
@@ -310,6 +318,7 @@ async function main(): Promise<void> {
   }
   process.on("SIGINT", () => void shutdown())
   process.on("SIGTERM", () => void shutdown())
+  stop = shutdown
 
   server.listen(port, "127.0.0.1", async () => {
     const address = server.address()

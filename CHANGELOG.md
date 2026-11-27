@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-11-27
+
+### Changed
+
+- **Ya envié el formulario/email** leaves the card visible as **“Enviado
+  reportado — pendiente de registro”**. It disappears only after the agent
+  saves the manual submission.
+- `actions.ts sent` verifies `applied.md` or an `applications.md` row before
+  removing the pending card. Without a record it fails and leaves everything
+  untouched.
+- The report server uses a stable port (45000–45999) and shuts down an older
+  server before starting the new version. Server version 5.
+- When `pending-search.json` exists and is empty, the HTML drops the stale
+  **Needs you** section instead of showing already sent/dismissed items.
+
 ## [0.20.1] - 2026-11-27
 
 ### Added

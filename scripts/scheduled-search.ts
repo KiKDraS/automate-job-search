@@ -312,6 +312,7 @@ ${result.error ? `Error: ${result.error.message}` : ""}
         cards,
         companyPreferences,
         actions: actionsState.actions,
+        pendingEmpty: pendingState !== null && pendingState.items.length === 0,
         status: result.status === 0 ? "completed" : "error",
         model: config.model === "" ? "OpenCode default" : config.model,
         reportPath,

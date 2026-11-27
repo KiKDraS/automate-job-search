@@ -279,7 +279,9 @@ order:
 - `retry`: continue the job with the retry flow.
 - `mark_sent`: record what the user sent (application or outreach) with the
   matching log; then run `npx tsx scripts/actions.ts sent --id "<id>"` to
-  remove the pending card. Never send anything yourself.
+  remove the pending card. `sent` refuses if no `applied.md` or
+  `applications.md` row exists, so log first; if the log fails, leave the
+  action pending. Never send anything yourself.
 - `draft_cv` / `draft_mp`: produce the artifact with `tailor-resume` or
   `outreach`, pass `draft-review`, and show it.
 - `note`: include the note in the decision; do not invent an action.

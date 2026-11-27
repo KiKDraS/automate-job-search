@@ -6,6 +6,7 @@
  * back to opening the static HTML (copy-to-chat actions).
  */
 import { spawn } from "node:child_process"
+import { createHash } from "node:crypto"
 import { promises as fs } from "node:fs"
 import { createRequire } from "node:module"
 import path from "node:path"
@@ -13,7 +14,7 @@ import { fileURLToPath } from "node:url"
 import { openFile } from "./open.ts"
 
 export const REPORT_SERVER_FILE = path.join("state", "report-server.json")
-export const REPORT_SERVER_VERSION = 4
+export const REPORT_SERVER_VERSION = 5
 
 export interface ReportServerInfo {
   pid: number
@@ -74,6 +75,29 @@ export async function isReportServerAlive(info: ReportServerInfo): Promise<boole
   }
 }
 
+/** Stable port per data directory (45000–45999). */
+export function reportServerPort(dataDir: string): number {
+  const hash = createHash("sha256").update(dataDir).digest()
+  return 45_000 + (hash.readUInt16BE(0) % 1_000)
+}
+
+/** Ask an older localhost report server to shut down. */
+export async function shutdownReportServer(info: ReportServerInfo): Promise<void> {
+  try {
+    await fetch(
+      `http://127.0.0.1:${info.port}/api/shutdown?token=${encodeURIComponent(info.token)}`,
+      { method: "POST", signal: AbortSignal.timeout(800) },
+    )
+  } catch {
+    // already gone
+  }
+  const deadline = Date.now() + 1_500
+  while (Date.now() < deadline) {
+    if (!(await isReportServerAlive(info))) return
+    await new Promise((resolve) => setTimeout(resolve, 100))
+  }
+}
+
 function serverScriptPath(): string {
   return path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
@@ -95,7 +119,12 @@ async function waitForServer(
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
     const info = await readReportServer(dataDir)
-    if (info !== null && info.date === date && (await isReportServerAlive(info))) {
+    if (
+      info !== null &&
+      info.date === date &&
+      info.serverVersion === REPORT_SERVER_VERSION &&
+      (await isReportServerAlive(info))
+    ) {
       return info
     }
     await new Promise((resolve) => setTimeout(resolve, 150))
@@ -117,9 +146,20 @@ export async function startReportServer(
   ) {
     return existing
   }
+  if (existing !== null && (await isReportServerAlive(existing))) {
+    await shutdownReportServer(existing)
+  }
   const child = spawn(
     process.execPath,
-    [tsxCliPath(), serverScriptPath(), "--date", date, "--no-open"],
+    [
+      tsxCliPath(),
+      serverScriptPath(),
+      "--date",
+      date,
+      "--port",
+      String(reportServerPort(dataDir)),
+      "--no-open",
+    ],
     {
       detached: true,
       stdio: "ignore",

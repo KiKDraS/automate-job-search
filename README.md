@@ -306,13 +306,23 @@ feed lead card shows the author, fit, why, a clickable apply link that opens in
 a new tab, the exact action, and the CV/MP/email artifacts (or their absence).
 `/job/report` prints the same content in full.
 
+The HTML is also interactive when the localhost report server is available:
+each card can queue **Aplicar**, **No aplicar**, **Reintentar**, **Ya lo
+envié**, **Armar CV/MP**, or a note for the agent, and toggle whether you want
+to keep receiving offers from that company. The agent reads
+`state/user-actions.json` at the next session or scheduled run and applies
+those decisions. If the server cannot start, the same buttons copy a structured
+instruction you can paste into chat. Company exclusions live in
+`state/company-preferences.json`; search, feed, and backlog skip those
+companies.
+
 ## Commands
 
 | Command | What it does |
 | --- | --- |
 | `/job/setup` | Onboarding: resume, preferences, work history |
 | `/job/search` | Find and score jobs posted in the last 48 hours, plus feed hiring leads |
-| `/job/report` | Show the latest report, pending items, and their paths |
+| `/job/report` | Show the latest report, pending items, actions, and paths; `--open` starts the interactive report |
 | `/job/feed-search` | Search LinkedIn posts for hiring leads (feed only) |
 | `/job/application-email` | Draft an application email for a feed lead with an email |
 | `/job/tailor` | Tailored resume for a saved job |

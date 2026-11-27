@@ -10,6 +10,11 @@
 import path from "node:path"
 import type { PendingState } from "./automation.ts"
 import type {
+  CompanyPreferences,
+} from "./company-preferences.ts"
+import { isCompanyExcluded } from "./company-preferences.ts"
+import type { ReportAction } from "./report-actions.ts"
+import type {
   EmailCardData,
   FormCardData,
   LeadCardData,
@@ -165,7 +170,72 @@ function copyTextButton(text: string, label: string): string {
   return `<button type="button" class="copy-button" data-copy-text="${escapeHtml(text)}">${label}</button>`
 }
 
-function renderEmail(card: EmailCardData, index: number): string {
+const ACTION_LABELS: Record<string, string> = {
+  apply: "Aplicar",
+  skip: "No aplicar",
+  retry: "Reintentar",
+  mark_sent: "Ya lo envié",
+  draft_cv: "Armar CV",
+  draft_mp: "Armar MP",
+  note: "Guardar nota",
+}
+
+function cardAttributes(card: ReportCard): string {
+  const folder = card.item.jobFolder ?? ""
+  return ` data-company="${escapeHtml(card.item.company)}" data-role="${escapeHtml(
+    card.item.role,
+  )}"${folder === "" ? "" : ` data-folder="${escapeHtml(folder)}"`}`
+}
+
+function actionTypes(card: ReportCard): string[] {
+  if (card.kind === "email") return ["mark_sent", "skip", "note"]
+  if (card.kind === "form") return ["retry", "skip", "note"]
+  if (card.kind === "lead") {
+    const types = ["apply", "skip"]
+    if (card.cv === undefined) types.push("draft_cv")
+    if (card.message === undefined) types.push("draft_mp")
+    types.push("note")
+    return types
+  }
+  return ["apply", "skip", "retry", "note"]
+}
+
+function actionLabel(card: ReportCard, type: string): string {
+  if (type === "skip" && card.kind === "email") return "No enviar"
+  return ACTION_LABELS[type] ?? type
+}
+
+function renderActions(card: ReportCard, options: ReportHtmlOptions): string {
+  const buttons = actionTypes(card)
+    .map(
+      (type) =>
+        `<button type="button" class="action-button" data-action="${type}">${actionLabel(card, type)}</button>`,
+    )
+    .join("")
+  const company = card.item.company
+  const excluded =
+    options.companyPreferences === undefined
+      ? false
+      : isCompanyExcluded(options.companyPreferences, company)
+  const companyLine =
+    company === ""
+      ? ""
+      : excluded
+        ? `<p class="company-pref"><span class="chip excluded">No recibir más</span> <button type="button" class="action-button" data-company-pref="yes">Volver a recibir ofertas</button></p>`
+        : `<p class="company-pref"><button type="button" class="action-button" data-company-pref="no">No recibir más ofertas de esta compañía</button></p>`
+  return `<div class="card-actions">
+  <div class="actions">${buttons}</div>
+  <textarea class="note-area" data-note rows="2" placeholder="Nota para el agente (opcional)"></textarea>
+  ${companyLine}
+  <p class="muted action-status" data-action-status></p>
+</div>`
+}
+
+function renderEmail(
+  card: EmailCardData,
+  index: number,
+  options: ReportHtmlOptions,
+): string {
   const bodyRows = Math.min(24, Math.max(10, card.draft.body.split("\n").length + 2))
   const cc =
     card.draft.cc === undefined
@@ -178,7 +248,8 @@ function renderEmail(card: EmailCardData, index: number): string {
     card.attach === undefined
       ? ""
       : `<br><strong>Adjuntar:</strong> ${link(card.attachHref, card.attach)}`
-  return `<article class="card">
+  const actions = renderActions(card, options)
+  return `<article class="card"${cardAttributes(card)}>
   <div class="card-head"><h3>${escapeHtml(card.item.company)} — ${escapeHtml(
     card.item.role,
   )}</h3><span class="chip">Email para enviar</span></div>
@@ -195,10 +266,15 @@ function renderEmail(card: EmailCardData, index: number): string {
     "button",
   )}</div>
   <p class="path">Draft: ${escapeHtml(card.draftPath)}</p>
+  ${actions}
 </article>`
 }
 
-function renderForm(card: FormCardData, index: number): string {
+function renderForm(
+  card: FormCardData,
+  index: number,
+  options: ReportHtmlOptions,
+): string {
   const dataLines = [
     ...card.fields.map((field) => `${field.label}: ${field.value}`),
     ...(card.premarked.length === 0
@@ -242,7 +318,7 @@ function renderForm(card: FormCardData, index: number): string {
           dataText,
           dataRows,
         )}<div class="actions">${copyButton(`copy-${index}`, "Copiar datos")}</div>`
-  return `<article class="card">
+  return `<article class="card"${cardAttributes(card)}>
   <div class="card-head"><h3>${escapeHtml(card.item.company)} — ${escapeHtml(
     card.item.role,
   )}</h3><span class="chip">${escapeHtml(stageLabel(card.item.stage))}</span></div>
@@ -259,10 +335,15 @@ function renderForm(card: FormCardData, index: number): string {
       ? ""
       : `<p class="path">Review: ${escapeHtml(card.reviewPath)}</p>`
   }
+  ${renderActions(card, options)}
 </article>`
 }
 
-function renderLead(card: LeadCardData, index: number): string {
+function renderLead(
+  card: LeadCardData,
+  index: number,
+  options: ReportHtmlOptions,
+): string {
   const meta = [
     card.author === undefined || card.author === "" ? "" : `Autor: ${card.author}`,
     card.fit === undefined || card.fit === "" ? "" : `Fit: ${card.fit}`,
@@ -307,7 +388,7 @@ function renderLead(card: LeadCardData, index: number): string {
     card.postUrl === undefined || card.postUrl === card.applyUrl
       ? ""
       : link(card.postUrl, "Ver post", "button")
-  return `<article class="card">
+  return `<article class="card"${cardAttributes(card)}>
   <div class="card-head"><h3>${escapeHtml(card.item.company)} — ${escapeHtml(
     card.item.role,
   )}</h3><span class="chip">Lead</span></div>
@@ -319,23 +400,33 @@ function renderLead(card: LeadCardData, index: number): string {
   <p><strong>Artefactos:</strong> CV: ${cv} · MP: ${mp} · Email: ${email}</p>
   ${message}
   <p class="path">Lead: ${escapeHtml(card.leadPath)}</p>
+  ${renderActions(card, options)}
 </article>`
 }
 
-function renderOther(card: Extract<ReportCard, { kind: "other" }>): string {
+function renderOther(
+  card: Extract<ReportCard, { kind: "other" }>,
+  options: ReportHtmlOptions,
+): string {
   const url = card.item.url === "" ? "" : `<p><strong>URL:</strong> ${link(card.item.url, card.item.url)}</p>`
   const folder =
     card.item.jobFolder === undefined || card.item.jobFolder === ""
       ? ""
       : `<p class="path">${escapeHtml(card.item.jobFolder)}</p>`
-  return `<article class="card">
+  return `<article class="card"${cardAttributes(card)}>
   <div class="card-head"><h3>${escapeHtml(card.item.company)} — ${escapeHtml(
     card.item.role,
   )}</h3><span class="chip">${escapeHtml(stageLabel(card.item.stage))}</span></div>
   <p>${escapeHtml(card.item.action)}</p>
   ${url}
   ${folder}
+  ${renderActions(card, options)}
 </article>`
+}
+
+export interface ReportApi {
+  actionsUrl: string
+  companyUrl: string
 }
 
 export interface ReportHtmlOptions {
@@ -345,6 +436,9 @@ export interface ReportHtmlOptions {
   status?: "completed" | "error"
   model?: string
   reportPath?: string
+  companyPreferences?: CompanyPreferences
+  actions?: ReportAction[]
+  interactive?: ReportApi
 }
 
 const NEEDS_YOU_HEADING = /^##\s+(needs you|necesita(?:s)? de vos|pendientes)\s*$/i
@@ -447,14 +541,33 @@ export function buildReportHtml(options: ReportHtmlOptions): string {
   const body = cards
     .map((card, index) =>
       card.kind === "email"
-        ? renderEmail(card, index)
+        ? renderEmail(card, index, options)
         : card.kind === "form"
-          ? renderForm(card, index)
+          ? renderForm(card, index, options)
           : card.kind === "lead"
-            ? renderLead(card, index)
-            : renderOther(card),
+            ? renderLead(card, index, options)
+            : renderOther(card, options),
     )
     .join("\n")
+  const pending = (options.actions ?? []).filter((action) => action.status === "pending")
+  const actionsHtml =
+    pending.length === 0
+      ? ""
+      : `<h2>Tus acciones</h2><ul>${pending
+          .map(
+            (action) =>
+              `<li>${escapeHtml(action.company)} — ${escapeHtml(
+                action.role,
+              )}: <strong>${escapeHtml(action.type)}</strong>${
+                action.note === undefined ? "" : ` — ${escapeHtml(action.note)}`
+              }</li>`,
+          )
+          .join("")}</ul>`
+  const apiConfig = options.interactive === undefined ? "null" : JSON.stringify(options.interactive)
+  const modeHint =
+    options.interactive === undefined
+      ? "Modo archivo: las acciones se copian para pegarlas en el chat del agente."
+      : "Modo interactivo: las acciones se guardan para que el agente las procese al inicio del próximo turno."
   const statusText = options.status === "error" ? "Run con error" : "Run terminado"
   const meta = [statusText, `${cards.length} pendiente(s)`, options.model ?? ""]
     .filter((part) => part !== "")
@@ -486,6 +599,14 @@ export function buildReportHtml(options: ReportHtmlOptions): string {
   .chip { background: #fff4e5; color: #8a4b00; border-radius: 999px; padding: 2px 10px; font-size: 12px; white-space: nowrap; }
   .copy-area { width: 100%; box-sizing: border-box; margin-top: 10px; padding: 12px; border: 1px solid #dde3ea; border-radius: 8px; background: #fbfcfd; color: inherit; font: 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; resize: vertical; }
   .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+  .card-actions { border-top: 1px solid #dde3ea; margin-top: 16px; padding-top: 12px; }
+  .action-button { display: inline-block; border: 1px solid #c9d8ea; background: #eef3f9; color: #0b4f9c; border-radius: 8px; padding: 6px 11px; font: inherit; font-weight: 600; cursor: pointer; }
+  .action-button:hover { background: #dbe7f6; }
+  .action-button:disabled { opacity: .6; cursor: wait; }
+  .note-area { width: 100%; box-sizing: border-box; margin-top: 10px; padding: 8px 10px; border: 1px solid #dde3ea; border-radius: 8px; background: #fbfcfd; color: inherit; font: 13px inherit; resize: vertical; }
+  .company-pref { margin: 8px 0 0; }
+  .chip.excluded { background: #fdecea; color: #a61b1b; }
+  .action-status { min-height: 1.2em; }
   .button, .copy-button { display: inline-block; border: 0; background: #0b63ce; color: #fff; text-decoration: none; border-radius: 8px; padding: 8px 14px; font: inherit; font-weight: 600; cursor: pointer; }
   .button:hover, .copy-button:hover { background: #084a9b; }
   .copy-button { font-size: 14px; }
@@ -499,8 +620,13 @@ export function buildReportHtml(options: ReportHtmlOptions): string {
     body { background: #101418; color: #e6edf3; }
     .card { background: #161b22; border-color: #30363d; }
     .copy-area { background: #0d1117; border-color: #30363d; }
+    .note-area { background: #0d1117; border-color: #30363d; }
+    .card-actions { border-color: #30363d; }
+    .action-button { background: #17263a; border-color: #2d4a6d; color: #8fc2ff; }
+    .action-button:hover { background: #1e3350; }
     .meta, .path, footer, .eyebrow, .muted { color: #8b949e; }
     .chip { background: #3d2a00; color: #ffd28a; }
+    .chip.excluded { background: #4a1f1f; color: #ffb3b3; }
     a { color: #58a6ff; }
   }
 </style>
@@ -512,11 +638,110 @@ export function buildReportHtml(options: ReportHtmlOptions): string {
   <p class="meta">${escapeHtml(meta)}</p>
 </header>
 <main>
+  <p class="muted">${escapeHtml(modeHint)}</p>
+  ${actionsHtml}
   <h2>Pendientes</h2>
   ${cards.length === 0 ? '<p class="empty">Sin pendientes.</p>' : body}
   ${reportMarkdownToHtml(markdown)}
 </main>
 ${footer}
+<script>
+window.__REPORT_API__ = ${apiConfig};
+async function reportCopy(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const helper = document.createElement("textarea");
+    helper.value = text;
+    helper.style.position = "fixed";
+    helper.style.opacity = "0";
+    document.body.appendChild(helper);
+    helper.select();
+    document.execCommand("copy");
+    helper.remove();
+  }
+}
+async function reportPost(url, body) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new Error(await response.text());
+  return response.json();
+}
+function reportCard(button) {
+  const card = button.closest("article.card");
+  if (!card) return null;
+  return {
+    card,
+    company: card.getAttribute("data-company") || "",
+    role: card.getAttribute("data-role") || "",
+    jobFolder: card.getAttribute("data-folder") || undefined,
+    note: (card.querySelector("[data-note]")?.value || "").trim() || undefined,
+  };
+}
+document.querySelectorAll("[data-action]").forEach((button) => {
+  button.addEventListener("click", async () => {
+    const info = reportCard(button);
+    if (!info) return;
+    const type = button.getAttribute("data-action");
+    const status = info.card.querySelector("[data-action-status]");
+    const payload = {
+      type,
+      company: info.company,
+      role: info.role,
+      jobFolder: info.jobFolder,
+      note: info.note,
+    };
+    if (window.__REPORT_API__) {
+      button.disabled = true;
+      try {
+        await reportPost(window.__REPORT_API__.actionsUrl, payload);
+        if (status) status.textContent = "Guardado. El agente lo procesa al inicio del próximo turno.";
+        button.textContent = "Guardado";
+      } catch (error) {
+        if (status) status.textContent = "No se pudo guardar: " + error;
+        button.disabled = false;
+      }
+      return;
+    }
+    const lines = ["ACCIÓN PARA EL AGENTE", "action: " + type, "company: " + info.company, "role: " + info.role];
+    if (info.jobFolder) lines.push("jobFolder: " + info.jobFolder);
+    if (info.note) lines.push("note: " + JSON.stringify(info.note));
+    await reportCopy(lines.join("\\n") + "\\n");
+    if (status) status.textContent = "Copiado. Pegalo en el chat del agente.";
+  });
+});
+document.querySelectorAll("[data-company-pref]").forEach((button) => {
+  button.addEventListener("click", async () => {
+    const info = reportCard(button);
+    if (!info) return;
+    const receiveOffers = button.getAttribute("data-company-pref") === "yes";
+    const status = info.card.querySelector("[data-action-status]");
+    if (window.__REPORT_API__) {
+      button.disabled = true;
+      try {
+        await reportPost(window.__REPORT_API__.companyUrl, {
+          company: info.company,
+          receiveOffers,
+        });
+        if (status) status.textContent = receiveOffers ? "Volvés a recibir ofertas." : "No vas a recibir más ofertas.";
+        button.disabled = false;
+        location.reload();
+      } catch (error) {
+        if (status) status.textContent = "No se pudo guardar: " + error;
+        button.disabled = false;
+      }
+      return;
+    }
+    await reportCopy(
+      "ACCIÓN PARA EL AGENTE\\ncompany: " + info.company + "\\nreceiveOffers: " + receiveOffers + "\\n",
+    );
+    if (status) status.textContent = "Copiado. Pegalo en el chat del agente.";
+  });
+});
+</script>
 <script>
 document.querySelectorAll("[data-copy], [data-copy-text]").forEach((button) => {
   button.addEventListener("click", async () => {

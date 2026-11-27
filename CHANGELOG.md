@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-11-27
+
+### Added
+
+- The HTML report is interactive when the localhost server is available:
+  each card can queue **Aplicar**, **No aplicar**, **Reintentar**, **Ya lo
+  envié**, **Armar CV/MP**, or a note, and toggle whether to keep receiving
+  offers from that company. If the server cannot start, the buttons copy a
+  structured instruction for chat.
+- `state/user-actions.json` queues report actions. The agent processes them at
+  the start of a session or scheduled run and marks them processed.
+- `state/company-preferences.json` stores per-company offer preferences.
+  Job search, feed search, and backlog skip excluded companies; `preferences.md`
+  stays the human-authored list.
+- `state/skipped-jobs.json` persists "do not apply" decisions;
+  `history.ts backlog` filters them.
+- New commands: `company.ts`, `actions.ts`, `job-decisions.ts`, and
+  `report-server.ts`; `/job/report --open` starts the interactive report and
+  `--serve` prints its URL.
+- Welcome diagnostics in `logs/welcome.log`.
+
+### Changed
+
+- The TUI welcome waits for the greeting before navigating. If no greeting
+  arrives in ~12 seconds, it stays on home and shows a toast instead of a
+  blank session. It also deduplicates multiple plugin instances.
+- The scheduled prompt reads report actions and company preferences before
+  starting the pipeline.
+
 ## [0.18.0] - 2026-11-23
 
 ### Changed

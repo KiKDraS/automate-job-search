@@ -38,6 +38,9 @@ only the returned value enters context.
 - In an interactive session, when LinkedIn shows a checkpoint or challenge:
   stop the task, tell the user, and wait. Never attempt to bypass a challenge.
 - One browser instance at a time; finish or close tasks cleanly.
+- The TUI welcome waits up to ~12 seconds for the greeting. If it does not
+  arrive, it stays on home and shows a toast instead of opening a blank
+  session. Diagnostics go to `<data dir>/logs/welcome.log`.
 
 ## CAPTCHA handoff
 

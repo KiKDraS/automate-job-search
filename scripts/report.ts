@@ -17,7 +17,10 @@ import { promises as fs } from "node:fs"
 import path from "node:path"
 import { resolveDataDir } from "../lib/data-dir.ts"
 import { parseAutomationConfig, parsePendingState, type PendingState } from "../lib/automation.ts"
+import { readCompanyPreferences } from "../lib/company-preferences.ts"
+import { pendingActions, readActions } from "../lib/report-actions.ts"
 import { openFile } from "../lib/open.ts"
+import { openReportInteractive, startReportServer } from "../lib/report-server.ts"
 import { buildReportHtml, stageLabel } from "../lib/report-html.ts"
 import { collectReportCards, type ReportCard } from "../lib/report-data.ts"
 import { fail } from "./args.ts"
@@ -175,12 +178,17 @@ async function main(): Promise<void> {
   }
 
   const cards = await collectReportCards(dataDir, pending, reportsDir)
+  const companyPreferences = await readCompanyPreferences(dataDir)
+  const actionsState = await readActions(dataDir)
+  const pendingActionItems = pendingActions(actionsState)
   await fs.writeFile(
     htmlPath,
     buildReportHtml({
       date: reportDate,
       markdown,
       cards,
+      companyPreferences,
+      actions: actionsState.actions,
       status: "completed",
       model,
       reportPath: requested,
@@ -189,12 +197,37 @@ async function main(): Promise<void> {
 
   console.log(`Run ${reportDate} — ${cards.length} pendiente(s)`)
   for (const [index, card] of cards.entries()) printCard(card, index, dataDir)
+  console.log(`Acciones del reporte: ${pendingActionItems.length} pendiente(s)`)
+  for (const action of pendingActionItems) {
+    console.log(`- ${action.type}: ${action.company} — ${action.role}`)
+  }
   console.log(`Reporte: ${htmlPath}`)
   console.log(`Markdown: ${requested}`)
   console.log(`Pendientes: ${pendingPath}`)
 
+  if (args.includes("--serve")) {
+    const info = await startReportServer(dataDir, reportDate)
+    if (info === null) {
+      console.log("No se pudo iniciar el reporte interactivo; abriendo el archivo.")
+      if (openFile(htmlPath, { background: true })) console.log("Abriendo el reporte…")
+    } else {
+      console.log(`Reporte interactivo: ${info.url}`)
+      if (!args.includes("--no-open")) {
+        console.log(
+          openFile(info.url)
+            ? "Abriendo el reporte interactivo…"
+            : `No se pudo abrir: ${info.url}`,
+        )
+      }
+    }
+    return
+  }
+
   if (args.includes("--open")) {
-    console.log(openFile(htmlPath) ? "Abriendo el reporte…" : `No se pudo abrir: ${htmlPath}`)
+    const opened = await openReportInteractive(dataDir, reportDate, htmlPath)
+    if (opened === "server") console.log("Abriendo el reporte interactivo…")
+    else if (opened === "file") console.log("Abriendo el reporte (modo archivo)…")
+    else console.log(`No se pudo abrir: ${htmlPath}`)
   }
 }
 

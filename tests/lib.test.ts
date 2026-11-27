@@ -1681,6 +1681,7 @@ test("buildReportHtml renders pending cards and the Markdown body", () => {
   assert.ok(html.includes("Email para enviar"))
   assert.ok(html.includes("Hello body"))
   assert.ok(html.includes("Copiar email"))
+  assert.ok(html.includes("Ya envié el email"))
   assert.ok(html.includes("&lt;script&gt;alert(1)&lt;/script&gt;"))
   assert.ok(!html.includes("<script>alert(1)</script>"))
   assert.ok(html.includes("old"))
@@ -1732,6 +1733,8 @@ test("buildReportHtml renders form cards with data, CAPTCHA and resume", () => {
   assert.ok(html.includes("resume.pdf"))
   assert.ok(html.includes("https://example.com/apply"))
   assert.ok(html.includes("Resolvé el CAPTCHA y enviá una vez"))
+  assert.ok(html.includes('data-action="mark_sent"'))
+  assert.ok(html.includes("Ya envié el formulario"))
 })
 
 test("parseApplyReview reads the filled table and blockers", () => {
@@ -2449,7 +2452,7 @@ test("report server state parser validates the URL and token", () => {
       url: "http://127.0.0.1:4321/report?token=abc",
       date: "2026-11-27",
       startedAt: "2026-11-27T00:00:00.000Z",
-      serverVersion: 3,
+      serverVersion: 4,
     }),
   )
   assert.equal(info?.port, 4321)

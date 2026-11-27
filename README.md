@@ -307,15 +307,17 @@ a new tab, the exact action, and the CV/MP/email artifacts (or their absence).
 `/job/report` prints the same content in full.
 
 The HTML is also interactive when the localhost report server is available:
-each card can queue **Aplicar**, **Desestimar**, **Reintentar**, **Ya lo
-envié**, **Armar CV/MP**, or a note for the agent, and toggle whether you want
-to keep receiving offers from that company. **Desestimar** removes the card
-from the pending list and records a dismissed decision; job files, resumes,
-drafts, and history stay. The agent reads `state/user-actions.json` at the next
-session or scheduled run and applies those decisions. If the server cannot
-start, the same buttons copy a structured instruction you can paste into chat.
-Company exclusions live in `state/company-preferences.json`; search, feed, and
-backlog skip those companies.
+each card can queue **Aplicar**, **Desestimar**, **Reintentar**, **Ya envié el
+formulario/email**, **Armar CV/MP**, or a note for the agent, and toggle whether
+you want to keep receiving offers from that company. **Ya envié el
+formulario/email** records a manual send; the agent logs it and closes the
+pending card. **Desestimar** removes the card from the pending list and records
+a dismissed decision; job files, resumes, drafts, and history stay. The agent
+reads `state/user-actions.json` at the next session or scheduled run and applies
+those decisions. If the server cannot start, the same buttons copy a structured
+instruction you can paste into chat. Company exclusions live in
+`state/company-preferences.json`; search, feed, and backlog skip those
+companies.
 
 ## Commands
 

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.1] - 2026-11-27
+
+### Added
+
+- **Ya envié el formulario** on blocked form cards and **Ya envié el email**
+  on email cards. The report queues a `mark_sent` action; the agent records the
+  manual submission and closes the pending card with `actions.ts sent`.
+
 ## [0.20.0] - 2026-11-27
 
 ### Added

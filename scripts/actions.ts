@@ -7,16 +7,22 @@
  *   npx tsx scripts/actions.ts pending
  *   npx tsx scripts/actions.ts add --type apply --company "<c>" --role "<r>" [--folder <jobs/...>] [--note "<text>"]
  *   npx tsx scripts/actions.ts done --id <id> [--result "<what happened>"]
+ *   npx tsx scripts/actions.ts sent --id <id>
+ *   npx tsx scripts/actions.ts dismiss --id <id>
  */
+import { promises as fs } from "node:fs"
+import path from "node:path"
 import {
   appendAction,
   markActionProcessed,
   pendingActions,
   readActions,
+  type ReportAction,
   type ReportActionType,
 } from "../lib/report-actions.ts"
 import { removePendingItem } from "../lib/pending.ts"
 import { skipJob } from "../lib/job-decisions.ts"
+import { isApplied, readAppliedIndex } from "../lib/applied.ts"
 import { resolveDataDir } from "../lib/data-dir.ts"
 import { fail, flagValue } from "./args.ts"
 
@@ -31,6 +37,21 @@ const TYPES: readonly ReportActionType[] = [
   "draft_mp",
   "note",
 ]
+
+async function hasSentRecord(dataDir: string, action: ReportAction): Promise<boolean> {
+  if (action.jobFolder !== undefined && action.jobFolder.startsWith("jobs/")) {
+    const applied = path.join(dataDir, action.jobFolder, "applied.md")
+    if (await fs.stat(applied).then((stat) => stat.isFile(), () => false)) return true
+  }
+  const index = await readAppliedIndex(dataDir)
+  return (
+    isApplied(index, {
+      folder: action.jobFolder,
+      company: action.company,
+      role: action.role,
+    }) !== null
+  )
+}
 
 async function main(): Promise<void> {
   const [command, ...args] = process.argv.slice(2)
@@ -86,6 +107,12 @@ async function main(): Promise<void> {
     const action = state.actions.find((item) => item.id === id)
     if (action === undefined) return fail(SCRIPT, `action not found: ${id}`)
     if (action.type !== "mark_sent") return fail(SCRIPT, `action is not mark_sent: ${action.type}`)
+    if (!(await hasSentRecord(dataDir, action))) {
+      return fail(
+        SCRIPT,
+        "no application record found; log the send first (applied.md or applications.md)",
+      )
+    }
     const removed = await removePendingItem(dataDir, {
       jobFolder: action.jobFolder,
       company: action.company,
@@ -97,7 +124,7 @@ async function main(): Promise<void> {
       `manual send recorded (${removed} pending item(s) removed)`,
     )
     console.log(`recorded ${action.company} — ${action.role}`)
-    console.log(`${removed} pending item(s) removed; run the matching log first`)
+    console.log(`${removed} pending item(s) removed; the application record exists`)
     return
   }
 

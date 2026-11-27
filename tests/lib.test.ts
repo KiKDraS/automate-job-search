@@ -116,6 +116,7 @@ import {
   pendingActions,
   readActions,
   validateReportAction,
+  type ReportAction,
 } from "../lib/report-actions.ts"
 import {
   isJobSkipped,
@@ -126,7 +127,7 @@ import {
 } from "../lib/job-decisions.ts"
 import { removePendingItem } from "../lib/pending.ts"
 import { hasGreeting, isReusableWelcome, waitForGreeting } from "../lib/greeting.ts"
-import { readReportServerInfo } from "../lib/report-server.ts"
+import { readReportServerInfo, reportServerPort } from "../lib/report-server.ts"
 
 test("buildJobSearchUrl supports a two-day window", () => {
   const url = new URL(
@@ -1737,6 +1738,51 @@ test("buildReportHtml renders form cards with data, CAPTCHA and resume", () => {
   assert.ok(html.includes("Ya envié el formulario"))
 })
 
+test("buildReportHtml marks a pending mark_sent card as reported", () => {
+  const cards: ReportCard[] = [
+    {
+      kind: "form",
+      item: {
+        company: "Acme",
+        role: "React Developer",
+        url: "https://example.com/apply",
+        stage: "needs_answer",
+        action: "Send it",
+        jobFolder: "jobs/acme",
+      },
+      url: "https://example.com/apply",
+      fields: [],
+      premarked: [],
+      missing: [],
+      captcha: "",
+      blocker: "",
+      resumePath: "/data/jobs/acme/resume.pdf",
+      resumeExists: true,
+      resumeFallback: false,
+    },
+  ]
+  const actions: ReportAction[] = [
+    {
+      id: "a1",
+      createdAt: "2026-11-27T00:00:00.000Z",
+      type: "mark_sent",
+      company: "Acme",
+      role: "React Developer",
+      jobFolder: "jobs/acme",
+      status: "pending",
+    },
+  ]
+  const html = buildReportHtml({
+    date: "2026-11-27",
+    markdown: "# Run\n",
+    cards,
+    actions,
+  })
+  assert.ok(html.includes("Enviado reportado"))
+  assert.ok(html.includes("disabled"))
+  assert.ok(html.includes("la tarjeta se oculta"))
+})
+
 test("parseApplyReview reads the filled table and blockers", () => {
   const review = parseApplyReview(`# Apply review — Acme
 
@@ -2185,6 +2231,17 @@ test("filterNeedsYou leaves the Markdown untouched without cards", () => {
   assert.equal(filterNeedsYou(markdown, []), markdown)
 })
 
+test("filterNeedsYou drops stale Needs you when pending is empty", () => {
+  const filtered = filterNeedsYou(
+    "## Summary\n\n- ok\n\n## Needs you\n\n1. old\n\n## Skipped\n\n- none\n",
+    [],
+    true,
+  )
+  assert.ok(!filtered.includes("Needs you"))
+  assert.ok(filtered.includes("## Summary"))
+  assert.ok(filtered.includes("## Skipped"))
+})
+
 test("formatPendingSummary truncates and reports extras", () => {
   const summary = formatPendingSummary(
     {
@@ -2452,12 +2509,19 @@ test("report server state parser validates the URL and token", () => {
       url: "http://127.0.0.1:4321/report?token=abc",
       date: "2026-11-27",
       startedAt: "2026-11-27T00:00:00.000Z",
-      serverVersion: 4,
+      serverVersion: 5,
     }),
   )
   assert.equal(info?.port, 4321)
   assert.equal(readReportServerInfo('{"pid":1}'), null)
   assert.equal(readReportServerInfo("not json"), null)
+})
+
+test("reportServerPort is stable and inside the reserved range", () => {
+  const first = reportServerPort("/data/jobs")
+  assert.equal(first, reportServerPort("/data/jobs"))
+  assert.ok(first >= 45_000 && first < 46_000)
+  assert.notEqual(first, reportServerPort("/data/other"))
 })
 
 test("buildReportHtml renders report actions and company toggles", () => {

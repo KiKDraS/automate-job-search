@@ -13,6 +13,7 @@ export const REPORT_ACTIONS_FILE = path.join("state", "user-actions.json")
 
 export const ACTION_TYPES = [
   "apply",
+  "dismiss",
   "skip",
   "retry",
   "mark_sent",

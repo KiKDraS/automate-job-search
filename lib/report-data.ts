@@ -8,12 +8,9 @@
  */
 import { promises as fs } from "node:fs"
 import path from "node:path"
-import {
-  buildMailto,
-  parseEmailDraft,
-  type EmailDraft,
-} from "./email.ts"
+import { buildMailto, parseEmailDraft, type EmailDraft } from "./email.ts"
 import type { PendingItem, PendingState } from "./automation.ts"
+import { isJobSkipped, readJobDecisions } from "./job-decisions.ts"
 
 export interface FormField {
   label: string
@@ -442,7 +439,11 @@ export async function collectReportCards(
   reportsDir: string,
 ): Promise<ReportCard[]> {
   const cards: ReportCard[] = []
+  const decisions = await readJobDecisions(dataDir)
   for (const item of pending?.items ?? []) {
+    if (item.jobFolder !== undefined && isJobSkipped(decisions, item.jobFolder)) {
+      continue
+    }
     const relative = (item.jobFolder ?? "").replaceAll("\\", "/")
     const targetPath = relative === "" ? null : path.join(dataDir, relative)
     if (

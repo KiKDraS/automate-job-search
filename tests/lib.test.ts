@@ -124,6 +124,7 @@ import {
   skipJob,
   unskipJob,
 } from "../lib/job-decisions.ts"
+import { removePendingItem } from "../lib/pending.ts"
 import { hasGreeting, isReusableWelcome, waitForGreeting } from "../lib/greeting.ts"
 import { readReportServerInfo } from "../lib/report-server.ts"
 
@@ -2374,6 +2375,52 @@ test("job decisions skip and unskip folders", async () => {
   }
 })
 
+test("removePendingItem removes the matching card and keeps the rest", async () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), "ajs-pending-"))
+  mkdirSync(path.join(dir, "state"), { recursive: true })
+  writeFileSync(
+    path.join(dir, "state", "pending-search.json"),
+    JSON.stringify({
+      generatedAt: "2026-11-27T00:00:00.000Z",
+      items: [
+        {
+          company: "Acme",
+          role: "React Developer",
+          url: "https://example.com/job",
+          stage: "lead",
+          action: "Open it",
+          jobFolder: "jobs/acme",
+        },
+        {
+          company: "Other",
+          role: "Dev",
+          url: "https://example.com/other",
+          stage: "lead",
+          action: "Open it",
+          jobFolder: "jobs/other",
+        },
+      ],
+    }),
+  )
+  try {
+    const removed = await removePendingItem(dir, {
+      jobFolder: "jobs/acme",
+      company: "Acme",
+      role: "React Developer",
+    })
+    assert.equal(removed, 1)
+    const state = JSON.parse(
+      readFileSync(path.join(dir, "state", "pending-search.json"), "utf8"),
+    ) as { items: Array<{ company: string }> }
+    assert.deepEqual(
+      state.items.map((item) => item.company),
+      ["Other"],
+    )
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
 test("welcome helpers require a greeting and no user message", () => {
   assert.equal(hasGreeting([{ type: "synthetic" }]), false)
   assert.equal(hasGreeting([{ type: "assistant" }]), true)
@@ -2402,7 +2449,7 @@ test("report server state parser validates the URL and token", () => {
       url: "http://127.0.0.1:4321/report?token=abc",
       date: "2026-11-27",
       startedAt: "2026-11-27T00:00:00.000Z",
-      serverVersion: 1,
+      serverVersion: 3,
     }),
   )
   assert.equal(info?.port, 4321)
@@ -2437,7 +2484,9 @@ test("buildReportHtml renders report actions and company toggles", () => {
     companyPreferences: prefs ?? undefined,
   })
   assert.ok(staticHtml.includes('data-action="apply"'))
+  assert.ok(staticHtml.includes('data-action="dismiss"'))
   assert.ok(staticHtml.includes('data-action="draft_mp"'))
+  assert.ok(!staticHtml.includes('data-action="skip"'))
   assert.ok(staticHtml.includes('data-company-pref="yes"'))
   assert.ok(staticHtml.includes("window.__REPORT_API__ = null"))
 
@@ -2453,4 +2502,34 @@ test("buildReportHtml renders report actions and company toggles", () => {
   })
   assert.ok(interactiveHtml.includes('"actionsUrl":"/api/actions?token=abc"'))
   assert.ok(interactiveHtml.includes("Modo interactivo"))
+})
+
+test("buildReportHtml maps attachments and footer files through fileUrl", () => {
+  const cards: ReportCard[] = [
+    {
+      kind: "email",
+      item: {
+        company: "Acme",
+        role: "React Developer",
+        url: "mailto:jobs@example.com",
+        stage: "email_draft",
+        action: "Send",
+      },
+      draft: { to: "jobs@example.com", subject: "Hi", body: "Hello" },
+      mailto: "mailto:jobs@example.com?subject=Hi",
+      attach: "resume/base.pdf",
+      attachHref: "../resume/base.pdf",
+      draftPath: "/data/feed/acme-email.md",
+    },
+  ]
+  const html = buildReportHtml({
+    date: "2026-11-27",
+    markdown: "# Run\n",
+    cards,
+    reportPath: "/data/reports/2026-11-27.md",
+    fileUrl: (href) => `/api/file?path=${href}`,
+  })
+  assert.ok(html.includes('href="/api/file?path=../resume/base.pdf"'))
+  assert.ok(html.includes('href="/api/file?path=reports/2026-11-27.md"'))
+  assert.ok(html.includes('href="/api/file?path=state/pending-search.json"'))
 })

@@ -271,8 +271,11 @@ order:
 - `apply`: use the automatic apply flow when the job is saved, fit Medium or
   High, and neither `applied.md` nor `state/skipped-jobs.json` blocks it.
   Otherwise report why it cannot be applied.
-- `skip`: run `npx tsx scripts/job-decisions.ts skip --folder "<folder>"` and
-  do not apply.
+- `dismiss`: run `npx tsx scripts/actions.ts dismiss --id "<id>"`. It removes
+  the pending card, records the dismissed decision, and keeps the files. Never
+  apply.
+- `skip` (legacy): run `npx tsx scripts/job-decisions.ts skip --folder
+  "<folder>"` and do not apply.
 - `retry`: continue the job with the retry flow.
 - `mark_sent`: record what the user sent (application or outreach) with the
   matching log; never send anything yourself.

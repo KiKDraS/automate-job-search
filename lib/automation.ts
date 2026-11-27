@@ -262,7 +262,7 @@ export function buildScheduledPrompt(dataDir: string, config: AutomationConfig):
     : "Do not apply; save the jobs and list them for the user."
   const feed = config.includeFeedSearch ? "Run the feed search too." : "Skip the feed search."
   const backlog = config.includeBacklog
-    ? "Start with the backlog: run npx tsx scripts/history.ts backlog and skip Excluded companies."
+    ? "Start with the backlog: run npx tsx scripts/history.ts backlog and skip Excluded companies from preferences.md and state/company-preferences.json."
     : "Skip the backlog."
   const max =
     config.maxApplicationsPerRun === 0
@@ -271,6 +271,8 @@ export function buildScheduledPrompt(dataDir: string, config: AutomationConfig):
   return [
     "Scheduled run. Enter scheduled mode and do not ask questions.",
     `Read ${path.join(dataDir, AUTOMATION_FILE)} first.`,
+    `Read ${path.join(dataDir, "state", "user-actions.json")} and process pending report actions before the search; mark each with npx tsx scripts/actions.ts done --id <id> --result "<what happened>".`,
+    `Read ${path.join(dataDir, "state", "company-preferences.json")} and skip companies with receiveOffers false in the backlog, job search, and feed search.`,
     `The runner owns ${path.join(dataDir, SEARCH_LOCK_FILE)} for this run; ignore it and never delete it.`,
     "Use only the user's data: profile.md, preferences.md, resume/base.md, application-data.md, language.md.",
     "If any required file is missing, write a setup-incomplete report and stop.",
@@ -278,7 +280,7 @@ export function buildScheduledPrompt(dataDir: string, config: AutomationConfig):
     "Tailor each Medium/High fit, pass draft-review, then apply.",
     "Do every automatic application before the human-only steps.",
     "For a feed lead with an email, draft the application email, pass draft-review, and add the mailto to Needs you; do not send it.",
-    "For CAPTCHA, login, account creation, or a missing required answer, leave the form filled when possible and add the URL and the exact action to Needs you.",
+    "The scheduled browser is headless. For CAPTCHA, login, account creation, or a missing required answer, write the URL, resume, and copy-ready data to Needs you; close the tabs and do not leave a window open.",
     apply,
     max,
     "Do not publish posts, send messages, change the repo, create accounts, or solve CAPTCHAs.",

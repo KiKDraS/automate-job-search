@@ -29,9 +29,11 @@ import {
 import { buildNotificationCommand, formatNotificationFallback } from "../lib/notify.ts"
 import { resolveOpencodePath } from "../lib/opencode-bin.ts"
 import { cleanupExpiredData } from "../lib/cleanup.ts"
-import { openFile } from "../lib/open.ts"
+import { openReportInteractive } from "../lib/report-server.ts"
 import { buildReportHtml, formatPendingSummary } from "../lib/report-html.ts"
 import { collectReportCards } from "../lib/report-data.ts"
+import { readCompanyPreferences } from "../lib/company-preferences.ts"
+import { readActions } from "../lib/report-actions.ts"
 import { applicationsWrittenSince, canRetryRun, isTransportFailure } from "../lib/retry.ts"
 import { todayIso } from "../lib/jobstore.ts"
 
@@ -302,10 +304,14 @@ ${result.error ? `Error: ${result.error.message}` : ""}
     try {
       const markdown = await fs.readFile(reportPath, "utf8")
       const cards = await collectReportCards(dataDir, pendingState, reportsDir)
+      const companyPreferences = await readCompanyPreferences(dataDir)
+      const actionsState = await readActions(dataDir)
       const html = buildReportHtml({
         date: todayIso(),
         markdown,
         cards,
+        companyPreferences,
+        actions: actionsState.actions,
         status: result.status === 0 ? "completed" : "error",
         model: config.model === "" ? "OpenCode default" : config.model,
         reportPath,
@@ -317,7 +323,11 @@ ${result.error ? `Error: ${result.error.message}` : ""}
         `Report HTML failed: ${error instanceof Error ? error.message : String(error)}`,
       )
     }
-    const opened = htmlWritten && config.openReport && openFile(htmlPath, { background: true })
+    const openResult =
+      htmlWritten && config.openReport
+        ? await openReportInteractive(dataDir, todayIso(), htmlPath)
+        : false
+    const opened = openResult !== false
 
     await fs.writeFile(
       path.join(stateDir, "last-run.json"),
@@ -333,6 +343,7 @@ ${result.error ? `Error: ${result.error.message}` : ""}
           report: reportPath,
           html: htmlPath,
           opened,
+          reportMode: openResult === false ? "none" : openResult,
         },
         null,
         2,

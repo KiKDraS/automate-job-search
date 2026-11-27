@@ -18,7 +18,9 @@ import { parseAutomationConfig, parsePendingState, type PendingState } from "../
 import { readCompanyPreferences, setCompanyPreference } from "../lib/company-preferences.ts"
 import { resolveDataDir } from "../lib/data-dir.ts"
 import { openFile } from "../lib/open.ts"
-import { appendAction, readActions } from "../lib/report-actions.ts"
+import { appendAction, markActionProcessed, readActions } from "../lib/report-actions.ts"
+import { removePendingItem } from "../lib/pending.ts"
+import { skipJob } from "../lib/job-decisions.ts"
 import { collectReportCards } from "../lib/report-data.ts"
 import { buildReportHtml } from "../lib/report-html.ts"
 import { REPORT_SERVER_FILE, REPORT_SERVER_VERSION, type ReportServerInfo } from "../lib/report-server.ts"
@@ -171,7 +173,24 @@ async function main(): Promise<void> {
             jobFolder: typeof raw["jobFolder"] === "string" ? raw["jobFolder"] : undefined,
             note: typeof raw["note"] === "string" ? raw["note"] : undefined,
           })
-          sendJson(res, 200, { ok: true, id: action.id })
+          let dismissed = false
+          if (action.type === "dismiss") {
+            const removed = await removePendingItem(dataDir, {
+              jobFolder: action.jobFolder,
+              company: action.company,
+              role: action.role,
+            })
+            if (action.jobFolder !== undefined) {
+              await skipJob(dataDir, action.jobFolder, "dismissed from report")
+            }
+            await markActionProcessed(
+              dataDir,
+              action.id,
+              `dismissed (${removed} pending item(s) removed)`,
+            )
+            dismissed = true
+          }
+          sendJson(res, 200, { ok: true, id: action.id, dismissed })
         } catch (error) {
           sendJson(res, 400, {
             error: error instanceof Error ? error.message : String(error),

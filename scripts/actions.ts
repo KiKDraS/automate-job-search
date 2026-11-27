@@ -15,12 +15,15 @@ import {
   readActions,
   type ReportActionType,
 } from "../lib/report-actions.ts"
+import { removePendingItem } from "../lib/pending.ts"
+import { skipJob } from "../lib/job-decisions.ts"
 import { resolveDataDir } from "../lib/data-dir.ts"
 import { fail, flagValue } from "./args.ts"
 
 const SCRIPT = "actions"
 const TYPES: readonly ReportActionType[] = [
   "apply",
+  "dismiss",
   "skip",
   "retry",
   "mark_sent",
@@ -76,7 +79,32 @@ async function main(): Promise<void> {
     return
   }
 
-  return fail(SCRIPT, "usage: list | pending | add ... | done --id <id> [--result <text>]")
+  if (command === "dismiss") {
+    const id = flagValue(SCRIPT, args, "--id")
+    if (id === undefined) return fail(SCRIPT, "usage: dismiss --id <id>")
+    const state = await readActions(dataDir)
+    const action = state.actions.find((item) => item.id === id)
+    if (action === undefined) return fail(SCRIPT, `action not found: ${id}`)
+    if (action.type !== "dismiss") return fail(SCRIPT, `action is not dismiss: ${action.type}`)
+    const removed = await removePendingItem(dataDir, {
+      jobFolder: action.jobFolder,
+      company: action.company,
+      role: action.role,
+    })
+    if (action.jobFolder !== undefined) {
+      await skipJob(dataDir, action.jobFolder, "dismissed from report")
+    }
+    await markActionProcessed(
+      dataDir,
+      action.id,
+      `dismissed (${removed} pending item(s) removed)`,
+    )
+    console.log(`dismissed ${action.company} — ${action.role}`)
+    console.log(`${removed} pending item(s) removed; files kept`)
+    return
+  }
+
+  return fail(SCRIPT, "usage: list | pending | add ... | done --id <id> | dismiss --id <id>")
 }
 
 await main()
